@@ -1,0 +1,70 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Nunito', sans-serif;
+  color: #2D3436;
+  background: #FFFDF7;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 768px) {
+  .desk { display: none !important; }
+  .grid2 { grid-template-columns: 1fr !important; }
+}
+
+@media (min-width: 769px) {
+  .mob { display: none !important; }
+  .mob-bar { display: none !important; }
+}
+
+/* Mobile bottom booking bar */
+@media (max-width: 768px) {
+  .mob-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 997;
+    background: rgba(255, 253, 247, 0.97);
+    backdrop-filter: blur(12px);
+    padding: 10px 16px;
+    box-shadow: 0 -2px 20px rgba(0,0,0,0.08);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Float animation for buttons */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+.float-btn {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
