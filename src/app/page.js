@@ -9,7 +9,7 @@ const L = { wa: "https://wa.me/38269371111?text=Zdravo!%20Želim%20zakazati%20te
 
 // ═══ SVG ICONS ═══
 const WA = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>;
-const VB = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#7360F2"/><text x="12" y="17" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial,sans-serif">V</text></svg>;
+const VB = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M11.398.002C9.473.028 5.331.344 3.014 2.467 1.294 4.177.518 6.768.354 9.981.19 13.194.15 19.68 5.888 21.087l.003.001h.005l-.003 2.46s-.04.992.616 1.193c.792.244 1.257-.51 2.015-1.324.415-.447.988-1.103 1.42-1.605 3.912.328 6.92-.423 7.262-.539.79-.269 5.267-.831 5.996-6.781.753-6.153-.366-10.039-2.416-11.799C19.018 1.12 15.43-.064 11.398.002zM12.04 1.73c3.631-.052 6.812.874 8.358 2.278 1.722 1.48 2.73 4.922 2.058 10.334-.605 4.96-4.233 5.313-4.896 5.54-.284.096-2.85.737-6.12.528 0 0-2.423 2.924-3.18 3.69-.12.12-.26.167-.353.144-.131-.033-.167-.19-.165-.42l.023-3.997c-4.81-1.18-4.527-6.635-4.392-9.323.136-2.687.773-4.932 2.236-6.372C7.638 2.18 10.506 1.754 12.04 1.73zm-.36 3.494c-.167 0-.167.252 0 .256 1.264.032 2.6.45 3.492 1.384.893.934 1.25 2.13 1.33 3.394.014.205.272.195.258-.01-.088-1.37-.483-2.67-1.467-3.695-.983-1.024-2.379-1.487-3.613-1.53zm-3.928.84c-.379-.006-.765.127-1.054.465l-.003.003c-.378.422-.508.884-.379 1.327.133.453.44.806.704 1.093l.019.021c.49.583 1.06 1.098 1.712 1.548l.026.02c.667.466 1.367.837 2.132 1.137l.003.001c.499.197.97.21 1.373-.013.44-.244.758-.617.903-1.071.075-.234-.002-.468-.175-.644l-1.251-1.208c-.195-.164-.452-.17-.644-.07l-.689.41c-.159.094-.374.072-.508-.04a8.3 8.3 0 01-1.232-1.262c-.108-.14-.123-.338-.024-.502l.396-.67c.108-.18.113-.42-.034-.604l-1.06-1.37c-.117-.148-.268-.225-.418-.236a.59.59 0 00-.097.005l-.003-.001c.067-.02.134-.03.203-.032h.007l-.007-.031.101.013zm4.42 1.168c-.15-.002-.162.231-.013.24.855.058 1.638.502 2.185 1.095.548.593.853 1.37.868 2.166.003.166.258.16.256-.006-.017-.87-.354-1.728-.952-2.374-.597-.647-1.452-1.1-2.344-1.12zm.478 1.197c-.128.013-.14.2-.012.221.535.098.97.534 1.095 1.072.036.156.291.124.258-.034a1.625 1.625 0 00-1.34-1.259z"/></svg>;
 const IG = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>;
 const FB = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>;
 const TK = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>;
@@ -44,7 +44,7 @@ const ME = {
     p1: "Grašak je osnovan u oktobru 2023. kao prvi dječiji frizerski salon u Crnoj Gori. Prostor isključivo za djecu — stolice u obliku autića, crtaći na ekranima, edukativne igračke i knjige od naših drugara iz Pinta.co.me.",
     p2: "Koristimo isključivo AZETA BIO organsku kozmetiku — bezbjednu od prvog dana života. Strpljenje je naša najvažnija vještina.",
   },
-  team: { title: "Naš tim", name: "Nikola", role: "Dječiji frizer", bio: "Radi sa djecom od prvog dana Graška. Strpljiv, pažljiv i uvijek sa osmjehom.", hire: "Pridruži se timu! 💚", hireDesc: "Tražimo frizere koji vole djecu.", hireCta: "Pošalji CV" },
+  team: { title: "Naš tim", name: "Nikola", role: "Dječiji frizer", bio: "Radi sa djecom od prvog dana Graška. Strpljiv, pažljiv i uvijek sa osmjehom.", hire: "Pridruži se timu! 💚", hireDesc: "Voliš djecu i uživaš da provodiš vrijeme s njima? Tražimo frizere koji imaju strpljenja i osmjeh za najmlađe.", hireCta: "Pridruži se", franchise: "Želiš svoj Grašak? 🌱", franchiseDesc: "Volite djecu, brinete o njima i želite svoj salon? Javite nam se — naučićemo vas sve!", franchiseCta: "Zatraži franšizu" },
   reviews: {
     title: "Šta kažu roditelji", sub: "Preko 50 recenzija sa najvišom ocjenom od srećnih porodica",
     items: [
@@ -101,7 +101,7 @@ const EN = {
     loyalty: { title: "💳 \"Veseli Grašak\" Card", desc: "15% off all basic services. For regulars.", badge: "15% OFF" }
   },
   about: { title: "About Us", p1: "Founded October 2023 as Montenegro's first kids-only hair salon. Car-shaped chairs, cartoons, educational toys from Pinta.co.me.", p2: "We use AZETA BIO organic cosmetics — safe from birth. Patience is our most important skill." },
-  team: { title: "Our Team", name: "Nikola", role: "Kids' Hairstylist", bio: "With kids since day one at Grašak. Patient, attentive, always smiling.", hire: "Join our team! 💚", hireDesc: "Looking for hairstylists who love kids.", hireCta: "Send CV" },
+  team: { title: "Our Team", name: "Nikola", role: "Kids' Hairstylist", bio: "With kids since day one at Grašak. Patient, attentive, always smiling.", hire: "Join our team! 💚", hireDesc: "Love children and enjoy spending time with them? We're looking for hairstylists with patience and a smile for the little ones.", hireCta: "Join us", franchise: "Want your own Grašak? 🌱", franchiseDesc: "Love kids and caring for them? Contact us — we'll teach you everything!", franchiseCta: "Request franchise" },
   reviews: { title: "What Parents Say", sub: "Over 50 top-rated reviews from happy families",
     items: [
       { name: "Mira Radovic", info: "Local Guide", text: "Wonderful, attentive to children and very fast." },
@@ -153,7 +153,7 @@ const RU = {
     loyalty: { title: "💳 Карта «Весёлый Грашак»", desc: "15% скидка на базовые услуги.", badge: "СКИДКА 15%" }
   },
   about: { title: "О нас", p1: "Грашак основан в октябре 2023 как первый детский салон в Черногории. Кресла-машинки, мультики, игрушки и книги от Pinta.co.me.", p2: "Используем AZETA BIO — безопасно с рождения. Терпение — наш главный навык." },
-  team: { title: "Команда", name: "Никола", role: "Детский парикмахер", bio: "С детьми с первого дня Грашака. Терпеливый, внимательный.", hire: "В нашу команду! 💚", hireDesc: "Ищем парикмахеров, которые любят детей.", hireCta: "Отправить CV" },
+  team: { title: "Команда", name: "Никола", role: "Детский парикмахер", bio: "С детьми с первого дня Грашака. Терпеливый, внимательный.", hire: "В нашу команду! 💚", hireDesc: "Любите детей и проводить с ними время? Ищем парикмахеров с терпением и улыбкой для малышей.", hireCta: "Присоединяйтесь", franchise: "Хотите свой Грашак? 🌱", franchiseDesc: "Любите детей и заботитесь о них? Свяжитесь — мы всему научим!", franchiseCta: "Запросить франшизу" },
   reviews: { title: "Отзывы родителей", sub: "Более 50 отзывов с высшей оценкой",
     items: [
       { name: "Мира", info: "Local Guide", text: "Замечательно, внимательны к детям и очень быстро." },
@@ -205,7 +205,7 @@ const ES = {
     loyalty: { title: "💳 Tarjeta \"Veseli Grašak\"", desc: "15% de descuento en servicios básicos.", badge: "15% DESC." }
   },
   about: { title: "Sobre nosotros", p1: "Fundado en octubre 2023 como primera peluquería infantil de Montenegro. Sillas-coche, dibujos, juguetes de Pinta.co.me.", p2: "Usamos AZETA BIO — seguro desde el nacimiento. La paciencia es nuestra habilidad." },
-  team: { title: "Equipo", name: "Nikola", role: "Peluquero infantil", bio: "Con los niños desde el primer día. Paciente y atento.", hire: "¡Únete! 💚", hireDesc: "Buscamos peluqueros que amen a los niños.", hireCta: "Enviar CV" },
+  team: { title: "Equipo", name: "Nikola", role: "Peluquero infantil", bio: "Con los niños desde el primer día. Paciente y atento.", hire: "¡Únete! 💚", hireDesc: "¿Amas a los niños y disfrutas pasar tiempo con ellos? Buscamos peluqueros con paciencia y sonrisa.", hireCta: "Únete", franchise: "¿Quieres tu propio Grašak? 🌱", franchiseDesc: "¿Amas a los niños? ¡Contáctanos y te enseñamos todo!", franchiseCta: "Solicitar franquicia" },
   reviews: { title: "Opiniones", sub: "Más de 50 reseñas con la puntuación más alta",
     items: [
       { name: "Mira", info: "Local Guide", text: "Maravilloso, atentos con los niños y muy rápidos." },
@@ -257,7 +257,7 @@ const TR = {
     loyalty: { title: "💳 \"Veseli Grašak\" Kart", desc: "Temel hizmetlerde %15 indirim.", badge: "%15 İNDİRİM" }
   },
   about: { title: "Hakkımızda", p1: "Ekim 2023'te Karadağ'ın ilk çocuk salonu. Araba koltuklar, çizgi filmler, oyuncaklar.", p2: "AZETA BIO — doğumdan itibaren güvenli. Sabır en önemli becerimiz." },
-  team: { title: "Ekibimiz", name: "Nikola", role: "Çocuk kuaförü", bio: "İlk günden çocuklarla. Sabırlı ve dikkatli.", hire: "Ekibimize katıl! 💚", hireDesc: "Çocukları seven kuaförler arıyoruz.", hireCta: "CV Gönder" },
+  team: { title: "Ekibimiz", name: "Nikola", role: "Çocuk kuaförü", bio: "İlk günden çocuklarla. Sabırlı ve dikkatli.", hire: "Ekibimize katıl! 💚", hireDesc: "Çocukları seviyor ve onlarla vakit geçirmekten keyif alıyor musunuz? Sabırlı ve güler yüzlü kuaförler arıyoruz.", hireCta: "Katıl", franchise: "Kendi Grašak'ınızı ister misiniz? 🌱", franchiseDesc: "Çocukları seviyor ve onlara bakıyorsunuz? Bize ulaşın — her şeyi öğretiriz!", franchiseCta: "Franchise talep et" },
   reviews: { title: "Veliler ne diyor", sub: "50'den fazla en yüksek puanlı yorum",
     items: [
       { name: "Mira", info: "Local Guide", text: "Harika, çocuklara karşı dikkatli ve çok hızlı." },
@@ -301,11 +301,12 @@ const allLangs = { me: ME, cy: cyrObj(ME), en: EN, ru: RU, es: ES, tr: TR };
 allLangs.cy.lang = "Ћирилица";
 allLangs.cy.flag = "🇲🇪";
 // Fixed Cyrillic for hero + about (not auto-transliterated)
-allLangs.cy.hero = { badge: "🏆 Први дјечији салон у Црној Гори", title: "Без суза. Без страха.", sub: "Само осмијеси и супер фризуре! 💇‍♂️✨", desc: "Више од 5000 срећне дјеце. Ваше је сљедеће.", cta: "Закажи термин", cta2: "Погледај услуге" };
+allLangs.cy.hero = { badge: "🏆 Први дјечији салон у Црној Гори", title: "Без суза. Без страха.", sub: "Само осмјеси и супер фризуре! 💇‍♂️✨", desc: "Више од 5000 срећне дјеце. Ваше је сљедеће.", cta: "Закажи термин", cta2: "Погледај услуге" };
 allLangs.cy.about = { title: "О нама", p1: "Грашак је основан у октобру 2023. као први дјечији фризерски салон у Црној Гори. Простор искључиво за дјецу — столице у облику аутића, цртаћи на екранима, едукативне играчке и књиге од наших другара из Pinta.co.me.", p2: "Користимо искључиво AZETA BIO органску козметику — безбједну од првог дана живота. Стрпљење је наша најважнија вјештина." };
 allLangs.cy.partners = "Наши партнери";
 allLangs.cy.pintaDesc = "Играчке и књиге за дјецу";
 allLangs.cy.azetaDesc = "Органска козметика 0м+";
+allLangs.cy.team = { title: "Наш тим", name: "Никола", role: "Дјечији фризер", bio: "Ради са дјецом од првог дана Грашка. Стрпљив, пажљив и увијек са осмјехом.", hire: "Придружи се тиму! 💚", hireDesc: "Волиш дјецу и уживаш да проводиш вријеме с њима? Тражимо фризере који имају стрпљења и осмјех за најмлађе.", hireCta: "Придружи се", franchise: "Желиш свој Грашак? 🌱", franchiseDesc: "Волите дјецу, бринете о њима и желите свој салон? Јавите нам се — научићемо вас све!", franchiseCta: "Затражи франшизу" };
 
 // ═══ MAIN COMPONENT ═══
 export default function GrasakWebsite() {
@@ -492,19 +493,7 @@ export default function GrasakWebsite() {
               </div>
             ))}
           </div>
-          <div style={{ marginTop:32, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }} className="grid2">
-            <a href={L.azetaIG} target="_blank" rel="noopener noreferrer" style={{ background:C.greenLt, borderRadius:16, padding:20, textAlign:"center", textDecoration:"none", transition:"all 0.3s" }}>
-              <span style={{ fontSize:28, display:"block", marginBottom:6 }}>🌿</span>
-              <p style={{ color:C.green, fontWeight:700, fontSize:15, marginBottom:4 }}>AZETA BIO</p>
-              <p style={{ color:C.gray, fontSize:12 }}>{t.azetaDesc}</p>
-            </a>
-            <a href={L.pinta} target="_blank" rel="noopener noreferrer" style={{ background:"#FFF3E0", borderRadius:16, padding:20, textAlign:"center", textDecoration:"none", transition:"all 0.3s" }}>
-              <span style={{ fontSize:28, display:"block", marginBottom:6 }}>🧩</span>
-              <p style={{ color:"#E65100", fontWeight:700, fontSize:15, marginBottom:4 }}>Pinta.co.me</p>
-              <p style={{ color:C.gray, fontSize:12 }}>{t.pintaDesc}</p>
-            </a>
-          </div>
-          <div style={{ marginTop:16, background:`linear-gradient(135deg, ${C.gold}15, ${C.gold}30)`, borderRadius:16, padding:20, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
+          <div style={{ marginTop:32, background:`linear-gradient(135deg, ${C.gold}15, ${C.gold}30)`, borderRadius:16, padding:20, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
             <div><h3 style={{ fontFamily:"'Baloo 2', cursive", fontSize:18, fontWeight:700 }}>{t.svc.loyalty.title}</h3><p style={{ color:C.gray, fontSize:14 }}>{t.svc.loyalty.desc}</p></div>
             <div style={{ background:C.gold, color:"white", padding:"8px 20px", borderRadius:50, fontWeight:800, fontFamily:"'Baloo 2', cursive" }}>{t.svc.loyalty.badge}</div>
           </div>
@@ -518,26 +507,6 @@ export default function GrasakWebsite() {
             <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:38, fontWeight:800, marginBottom:16 }}>{t.about.title}</h2>
             <p style={{ color:C.gray, fontSize:16, lineHeight:1.7, marginBottom:16 }}>{t.about.p1}</p>
             <p style={{ color:C.gray, fontSize:16, lineHeight:1.7, marginBottom:20 }}>{t.about.p2}</p>
-            {/* ── PARTNERS ── */}
-            <p style={{ fontSize:13, fontWeight:600, color:C.gray, textTransform:"uppercase", letterSpacing:1.5, marginBottom:10 }}>{t.partners}</p>
-            <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-              <a href={L.pinta} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:12, background:C.greenLt, border:`2px solid ${C.green}30`, borderRadius:16, padding:"14px 22px", textDecoration:"none", transition:"all 0.3s", boxShadow:"0 2px 8px rgba(0,0,0,0.04)", flex:"1", minWidth:200 }}>
-                <span style={{ fontSize:32 }}>🧩</span>
-                <div>
-                  <div style={{ fontFamily:"'Baloo 2', cursive", fontSize:17, fontWeight:700, color:C.dark }}>Pinta.co.me</div>
-                  <div style={{ fontSize:12, color:C.gray }}>{t.pintaDesc}</div>
-                </div>
-                <span style={{ fontSize:14, color:C.green, fontWeight:700, marginLeft:"auto" }}>→</span>
-              </a>
-              <a href={L.azetaIG} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:12, background:C.greenLt, border:`2px solid ${C.green}30`, borderRadius:16, padding:"14px 22px", textDecoration:"none", transition:"all 0.3s", boxShadow:"0 2px 8px rgba(0,0,0,0.04)", flex:"1", minWidth:200 }}>
-                <span style={{ fontSize:32 }}>🌿</span>
-                <div>
-                  <div style={{ fontFamily:"'Baloo 2', cursive", fontSize:17, fontWeight:700, color:C.dark }}>AZETA BIO</div>
-                  <div style={{ fontSize:12, color:C.gray }}>{t.azetaDesc}</div>
-                </div>
-                <span style={{ fontSize:14, color:C.green, fontWeight:700, marginLeft:"auto" }}>→</span>
-              </a>
-            </div>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <img src="/images/oprema.jpg" alt="Oprema salona" style={{ borderRadius:16, objectFit:"cover", width:"100%", height:180 }} />
@@ -555,10 +524,15 @@ export default function GrasakWebsite() {
           <h3 style={{ fontFamily:"'Baloo 2', cursive", fontSize:20, fontWeight:700 }}>{t.team.name}</h3>
           <p style={{ color:C.green, fontWeight:600, marginBottom:8 }}>{t.team.role}</p>
           <p style={{ color:C.gray, fontSize:15, marginBottom:24 }}>{t.team.bio}</p>
-          <div style={{ background:"white", borderRadius:16, padding:20 }}>
+          <div style={{ background:"white", borderRadius:16, padding:20, marginBottom:12 }}>
             <h4 style={{ fontFamily:"'Baloo 2', cursive", fontSize:18, marginBottom:8 }}>{t.team.hire}</h4>
-            <p style={{ color:C.gray, fontSize:14, marginBottom:12 }}>{t.team.hireDesc}</p>
-            <a href="https://wa.me/38269371111?text=Zdravo!%20Zainteresovan/a%20sam%20za%20posao%20frizera%20u%20Grašku.%20Šaljem%20CV." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.green}, ${C.greenDk})`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.hireCta}</a>
+            <p style={{ color:C.gray, fontSize:14, marginBottom:12, lineHeight:1.6 }}>{t.team.hireDesc}</p>
+            <a href="https://wa.me/38269371111?text=Zdravo!%20Želim%20da%20se%20pridružim%20timu%20Graška.%20Volim%20djecu%20i%20imam%20iskustvo%20kao%20frizer." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.green}, ${C.greenDk})`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.hireCta}</a>
+          </div>
+          <div style={{ background:"white", borderRadius:16, padding:20, border:`2px solid ${C.gold}40` }}>
+            <h4 style={{ fontFamily:"'Baloo 2', cursive", fontSize:18, marginBottom:8 }}>{t.team.franchise}</h4>
+            <p style={{ color:C.gray, fontSize:14, marginBottom:12, lineHeight:1.6 }}>{t.team.franchiseDesc}</p>
+            <a href="https://wa.me/38269371111?text=Zdravo!%20Zainteresovan/a%20sam%20za%20franšizu%20Grašak.%20Volim%20djecu%20i%20želim%20da%20saznam%20više." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.gold}, #D4A017)`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.franchiseCta}</a>
           </div>
         </div>
       </section>
@@ -712,26 +686,6 @@ export default function GrasakWebsite() {
             {Object.entries(t.nav).map(([id, label]) => (
               <a key={id} onClick={() => go(id)} style={{ color:"rgba(255,255,255,0.7)", textDecoration:"none", fontSize:14, cursor:"pointer" }}>{label}</a>
             ))}
-          </div>
-          {/* ── PARTNERS IN FOOTER ── */}
-          <div style={{ borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:24, marginBottom:20 }}>
-            <p style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:600, textTransform:"uppercase", letterSpacing:2, marginBottom:14 }}>{t.partners}</p>
-            <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap" }}>
-              <a href={L.pinta} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:12, padding:"10px 20px", textDecoration:"none", transition:"all 0.3s" }}>
-                <span style={{ fontSize:22 }}>🧩</span>
-                <div style={{ textAlign:"left" }}>
-                  <div style={{ color:"white", fontSize:14, fontWeight:700 }}>Pinta.co.me</div>
-                  <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11 }}>{t.pintaDesc}</div>
-                </div>
-              </a>
-              <a href={L.azetaIG} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:12, padding:"10px 20px", textDecoration:"none", transition:"all 0.3s" }}>
-                <span style={{ fontSize:22 }}>🌿</span>
-                <div style={{ textAlign:"left" }}>
-                  <div style={{ color:"white", fontSize:14, fontWeight:700 }}>AZETA BIO</div>
-                  <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11 }}>{t.azetaDesc}</div>
-                </div>
-              </a>
-            </div>
           </div>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>{t.footer.rights}</p>
         </div>
