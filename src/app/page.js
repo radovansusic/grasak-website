@@ -9,7 +9,7 @@ const L = { wa: "https://wa.me/38269371111?text=Zdravo!%20Želim%20zakazati%20te
 
 // ═══ SVG ICONS ═══
 const WA = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>;
-const VB = ({s=24}) => <svg width={s} height={s} viewBox="0 0 48 48" fill="currentColor"><path d="M24 0C10.745 0 0 10.745 0 24s10.745 24 24 24 24-10.745 24-24S37.255 0 24 0zm11.085 32.55c-.573 1.622-2.835 2.971-4.467 3.27-.443.079-1.02.142-1.686.142-1.175 0-2.737-.22-5.152-1.27-3.35-1.454-6.298-4.294-8.396-6.927-1.455-1.83-2.424-3.46-2.916-4.903-.702-2.067-.479-3.693.268-4.727.372-.516.886-.866 1.35-1.06.34-.143.713-.22 1.028-.22.41 0 .736.12.937.352.496.57 1.328 2.32 1.639 3.015.22.494.376.877.376 1.187 0 .438-.27.825-.55 1.117l-.32.343c-.174.183-.347.366-.347.615 0 .158.064.33.174.527.764 1.363 1.838 2.609 3.148 3.593 1.023.769 2.29 1.35 3.27 1.735.326.127.579.186.79.186.338 0 .548-.173.702-.36l.696-.877c.275-.348.553-.523.833-.523.186 0 .38.073.588.186l3.59 2.093c.298.174.502.338.597.52.175.336.175 1.15-.153 2.137z"/></svg>;
+const VB = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="12" fill="#7360F2"/><text x="12" y="17" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial,sans-serif">V</text></svg>;
 const IG = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>;
 const FB = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>;
 const TK = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg>;
@@ -17,20 +17,21 @@ const TK = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="curre
 // ═══ TRANSLATIONS ═══
 const ME = {
   lang: "Latinica", flag: "🇲🇪",
+  partners: "Naši partneri", pintaDesc: "Igračke i knjige za djecu", azetaDesc: "Organska kozmetika 0m+",
   nav: { services: "Usluge", about: "O nama", booking: "Zakaži", contact: "Kontakt", faq: "Pitanja" },
-  hero: { badge: "🏆 Prvi dječiji salon u Crnoj Gori", title: "Bez suza. Bez straha.", sub: "Samo osmjesi i stylish frizure! 💇‍♂️✨", desc: "Više od 5000 srećne djece. Vaše je sljedeće.", cta: "Zakaži termin", cta2: "Pogledaj usluge" },
+  hero: { badge: "🏆 Prvi dječiji salon u Crnoj Gori", title: "Bez suza. Bez straha.", sub: "Samo osmjesi i super frizure! 💇‍♂️✨", desc: "Više od 5000 srećne djece. Vaše je sljedeće.", cta: "Zakaži termin", cta2: "Pogledaj usluge" },
   stats: [["5000+","Šišanja"],["50+","⭐ Recenzija"],["3365+","Pratilaca"]],
   svc: {
     title: "Usluge i cjenovnik", sub: "Sve prilagođeno djeci — od stolica do kozmetike",
     tabs: ["Sve","Osnovno","Paketi","Dodatno"],
     items: [
       { n: "Kratko šišanje ✂️", d: "Mašinica i/ili makaze. Brzo, precizno.", p: "8€", t: "~15min", c: 1, pop: true },
-      { n: "Srednje šišanje ✂️", d: "Makaze i oblikovanje.", p: "10€", t: "~20min", c: 1 },
-      { n: "Dugo šišanje ✂️", d: "Šišanje + sušenje. Za složenije frizure.", p: "12€", t: "~30min", c: 1 },
+      { n: "Srednje šišanje ✂️", d: "Mašinica i/ili makaze. Brzo, precizno.", p: "10€", t: "~20min", c: 1 },
+      { n: "Dugo šišanje ✂️", d: "Mašinica i/ili makaze. Brzo, precizno.", p: "12€", t: "~30min", c: 1 },
       { n: "🌟 Prvo šišanje", d: "Šišanje + fotografija + diploma + pramen kose. AZETA BIO kozmetika (0m+).", p: "14€", t: "~30min", c: 2, pop: true, badge: "📸 + diploma" },
       { n: "Mali tim (2 djece)", d: "Kratko/srednje za dvoje. Ušteda za porodicu.", p: "14€", t: "~30min", c: 2 },
-      { n: "Veseli paket (2 djece)", d: "Kratko + srednje. Ušteda + pribor za kosu.", p: "19€", t: "~40min", c: 2 },
-      { n: "Mini društvo (3 djece)", d: "Tri kratka/srednja. Najveća ušteda.", p: "24€", t: "~45min", c: 2 },
+      { n: "Veseli paket (3 djece)", d: "Ušteda za porodicu.", p: "19€", t: "~40min", c: 2 },
+      { n: "Mini društvo (4 djece)", d: "Četiri kratka/srednja. Najveća ušteda.", p: "24€", t: "~45min", c: 2 },
       { n: "Mini SPA tretman 🧴", d: "Šampon i masaža glave.", p: "6€", t: "~15min", c: 3 },
       { n: "Feniranje 💨", d: "Sušenje i oblikovanje fenom.", p: "7€", t: "~15min", c: 3 },
       { n: "Pribor za kosu 🎀", d: "Trake, ukosnice... po artiklu.", p: "3-6€", t: "", c: 3 },
@@ -78,19 +79,20 @@ const ME = {
 
 const EN = {
   lang: "English", flag: "🇬🇧",
+  partners: "Our partners", pintaDesc: "Educational toys & books", azetaDesc: "Organic cosmetics 0m+",
   nav: { services: "Services", about: "About", booking: "Book Now", contact: "Contact", faq: "FAQ" },
-  hero: { badge: "🏆 First kids salon in Montenegro", title: "No tears. No fear.", sub: "Just smiles and stylish haircuts! 💇‍♂️✨", desc: "Over 5,000 happy kids. Yours is next.", cta: "Book appointment", cta2: "View services" },
+  hero: { badge: "🏆 First kids salon in Montenegro", title: "No tears. No fear.", sub: "Just smiles and awesome haircuts! 💇‍♂️✨", desc: "Over 5,000 happy kids. Yours is next.", cta: "Book appointment", cta2: "View services" },
   stats: [["5000+","Haircuts"],["50+","⭐ Reviews"],["3365+","Followers"]],
   svc: {
     title: "Services & Pricing", sub: "Everything adapted for children", tabs: ["All","Basic","Packages","Extra"],
     items: [
       { n: "Short haircut ✂️", d: "Clippers and/or scissors. Quick, precise.", p: "€8", t: "~15min", c: 1, pop: true },
-      { n: "Medium haircut ✂️", d: "Scissors and styling.", p: "€10", t: "~20min", c: 1 },
-      { n: "Long haircut ✂️", d: "Cut + blow-dry.", p: "€12", t: "~30min", c: 1 },
+      { n: "Medium haircut ✂️", d: "Clippers and/or scissors. Quick, precise.", p: "€10", t: "~20min", c: 1 },
+      { n: "Long haircut ✂️", d: "Clippers and/or scissors. Quick, precise.", p: "€12", t: "~30min", c: 1 },
       { n: "🌟 First Haircut", d: "Haircut + photo + diploma + lock of hair. AZETA BIO (0m+).", p: "€14", t: "~30min", c: 2, pop: true, badge: "📸 + diploma" },
       { n: "Little Team (2 kids)", d: "Short/medium for two kids.", p: "€14", t: "~30min", c: 2 },
-      { n: "Happy Package (2)", d: "Short + medium. Save + accessory.", p: "€19", t: "~40min", c: 2 },
-      { n: "Mini Squad (3 kids)", d: "Three haircuts. Best deal.", p: "€24", t: "~45min", c: 2 },
+      { n: "Happy Package (3 kids)", d: "Family savings.", p: "€19", t: "~40min", c: 2 },
+      { n: "Mini Squad (4 kids)", d: "Four haircuts. Best deal.", p: "€24", t: "~45min", c: 2 },
       { n: "Mini SPA 🧴", d: "Shampoo and scalp massage.", p: "€6", t: "~15min", c: 3 },
       { n: "Blow-dry 💨", d: "Drying and styling.", p: "€7", t: "~15min", c: 3 },
       { n: "Hair accessories 🎀", d: "Bands, clips... per item.", p: "€3-6", t: "", c: 3 },
@@ -129,19 +131,20 @@ const EN = {
 
 const RU = {
   lang: "Русский", flag: "🇷🇺",
+  partners: "Наши партнёры", pintaDesc: "Игрушки и книги для детей", azetaDesc: "Органическая косметика 0м+",
   nav: { services: "Услуги", about: "О нас", booking: "Записаться", contact: "Контакт", faq: "Вопросы" },
   hero: { badge: "🏆 Первый детский салон в Черногории", title: "Без слёз. Без страха.", sub: "Только улыбки и стильные стрижки! 💇‍♂️✨", desc: "Более 5000 счастливых детей. Ваш — следующий.", cta: "Записаться", cta2: "Наши услуги" },
   stats: [["5000+","Стрижек"],["50+","⭐ Отзывов"],["3365+","Подписчиков"]],
   svc: {
     title: "Услуги и цены", sub: "Всё адаптировано для детей", tabs: ["Все","Базовые","Пакеты","Доп."],
     items: [
-      { n: "Короткая стрижка ✂️", d: "Машинка и/или ножницы.", p: "8€", t: "~15мин", c: 1, pop: true },
-      { n: "Средняя стрижка ✂️", d: "Ножницы и укладка.", p: "10€", t: "~20мин", c: 1 },
-      { n: "Длинная стрижка ✂️", d: "Стрижка + сушка.", p: "12€", t: "~30мин", c: 1 },
+      { n: "Короткая стрижка ✂️", d: "Машинка и/или ножницы. Быстро, точно.", p: "8€", t: "~15мин", c: 1, pop: true },
+      { n: "Средняя стрижка ✂️", d: "Машинка и/или ножницы. Быстро, точно.", p: "10€", t: "~20мин", c: 1 },
+      { n: "Длинная стрижка ✂️", d: "Машинка и/или ножницы. Быстро, точно.", p: "12€", t: "~30мин", c: 1 },
       { n: "🌟 Первая стрижка", d: "Стрижка + фото + диплом + прядь. AZETA BIO (0м+).", p: "14€", t: "~30мин", c: 2, pop: true, badge: "📸 + диплом" },
       { n: "Малая команда (2)", d: "Для двоих детей.", p: "14€", t: "~30мин", c: 2 },
-      { n: "Весёлый пакет (2)", d: "Короткая + средняя. Экономия.", p: "19€", t: "~40мин", c: 2 },
-      { n: "Мини-компания (3)", d: "Три стрижки. Лучшая цена.", p: "24€", t: "~45мин", c: 2 },
+      { n: "Весёлый пакет (3)", d: "Экономия для семьи.", p: "19€", t: "~40мин", c: 2 },
+      { n: "Мини-компания (4)", d: "Четыре стрижки. Лучшая цена.", p: "24€", t: "~45мин", c: 2 },
       { n: "Мини СПА 🧴", d: "Шампунь и массаж головы.", p: "6€", t: "~15мин", c: 3 },
       { n: "Укладка феном 💨", d: "Сушка и укладка.", p: "7€", t: "~15мин", c: 3 },
       { n: "Аксессуары для волос 🎀", d: "Ленты, заколки... за штуку.", p: "3-6€", t: "", c: 3 },
@@ -180,19 +183,20 @@ const RU = {
 
 const ES = {
   lang: "Español", flag: "🇪🇸",
+  partners: "Nuestros socios", pintaDesc: "Juguetes y libros educativos", azetaDesc: "Cosmética orgánica 0m+",
   nav: { services: "Servicios", about: "Nosotros", booking: "Reservar", contact: "Contacto", faq: "Preguntas" },
   hero: { badge: "🏆 Primera peluquería infantil en Montenegro", title: "Sin lágrimas. Sin miedo.", sub: "¡Solo sonrisas y cortes con estilo! 💇‍♂️✨", desc: "Más de 5000 niños felices. El tuyo es el siguiente.", cta: "Reservar cita", cta2: "Ver servicios" },
   stats: [["5000+","Cortes"],["50+","⭐ Reseñas"],["3365+","Seguidores"]],
   svc: {
     title: "Servicios y precios", sub: "Todo adaptado para niños", tabs: ["Todo","Básico","Paquetes","Extra"],
     items: [
-      { n: "Corte corto ✂️", d: "Máquina y/o tijeras.", p: "8€", t: "~15min", c: 1, pop: true },
-      { n: "Corte medio ✂️", d: "Tijeras y peinado.", p: "10€", t: "~20min", c: 1 },
-      { n: "Corte largo ✂️", d: "Corte + secado.", p: "12€", t: "~30min", c: 1 },
+      { n: "Corte corto ✂️", d: "Máquina y/o tijeras. Rápido, preciso.", p: "8€", t: "~15min", c: 1, pop: true },
+      { n: "Corte medio ✂️", d: "Máquina y/o tijeras. Rápido, preciso.", p: "10€", t: "~20min", c: 1 },
+      { n: "Corte largo ✂️", d: "Máquina y/o tijeras. Rápido, preciso.", p: "12€", t: "~30min", c: 1 },
       { n: "🌟 Primer corte", d: "Corte + foto + diploma + mechón. AZETA BIO (0m+).", p: "14€", t: "~30min", c: 2, pop: true, badge: "📸 + diploma" },
       { n: "Equipo (2 niños)", d: "Corto/medio para dos.", p: "14€", t: "~30min", c: 2 },
-      { n: "Paquete feliz (2)", d: "Corto + medio. Ahorro.", p: "19€", t: "~40min", c: 2 },
-      { n: "Mini grupo (3)", d: "Tres cortes. Mejor precio.", p: "24€", t: "~45min", c: 2 },
+      { n: "Paquete feliz (3 niños)", d: "Ahorro familiar.", p: "19€", t: "~40min", c: 2 },
+      { n: "Mini grupo (4 niños)", d: "Cuatro cortes. Mejor precio.", p: "24€", t: "~45min", c: 2 },
       { n: "Mini SPA 🧴", d: "Champú y masaje capilar.", p: "6€", t: "~15min", c: 3 },
       { n: "Secado 💨", d: "Secado y peinado.", p: "7€", t: "~15min", c: 3 },
       { n: "Accesorios 🎀", d: "Cintas, horquillas... por pieza.", p: "3-6€", t: "", c: 3 },
@@ -231,19 +235,20 @@ const ES = {
 
 const TR = {
   lang: "Türkçe", flag: "🇹🇷",
+  partners: "Ortaklarımız", pintaDesc: "Eğitici oyuncak ve kitaplar", azetaDesc: "Organik kozmetik 0a+",
   nav: { services: "Hizmetler", about: "Hakkımızda", booking: "Randevu", contact: "İletişim", faq: "SSS" },
   hero: { badge: "🏆 Karadağ'ın ilk çocuk salonu", title: "Gözyaşı yok. Korku yok.", sub: "Sadece gülümsemeler ve şık saçlar! 💇‍♂️✨", desc: "5000'den fazla mutlu çocuk. Sıradaki sizsiniz.", cta: "Randevu al", cta2: "Hizmetleri gör" },
   stats: [["5000+","Saç kesimi"],["50+","⭐ Yorum"],["3365+","Takipçi"]],
   svc: {
     title: "Hizmetler ve fiyatlar", sub: "Her şey çocuklara uygun", tabs: ["Tümü","Temel","Paketler","Ekstra"],
     items: [
-      { n: "Kısa kesim ✂️", d: "Makine ve/veya makas.", p: "8€", t: "~15dk", c: 1, pop: true },
-      { n: "Orta kesim ✂️", d: "Makas ve şekillendirme.", p: "10€", t: "~20dk", c: 1 },
-      { n: "Uzun kesim ✂️", d: "Kesim + kurutma.", p: "12€", t: "~30dk", c: 1 },
+      { n: "Kısa kesim ✂️", d: "Makine ve/veya makas. Hızlı, hassas.", p: "8€", t: "~15dk", c: 1, pop: true },
+      { n: "Orta kesim ✂️", d: "Makine ve/veya makas. Hızlı, hassas.", p: "10€", t: "~20dk", c: 1 },
+      { n: "Uzun kesim ✂️", d: "Makine ve/veya makas. Hızlı, hassas.", p: "12€", t: "~30dk", c: 1 },
       { n: "🌟 İlk kesim", d: "Kesim + fotoğraf + diploma + saç tutamı. AZETA BIO (0a+).", p: "14€", t: "~30dk", c: 2, pop: true, badge: "📸 + diploma" },
       { n: "Küçük takım (2)", d: "İki çocuk için.", p: "14€", t: "~30dk", c: 2 },
-      { n: "Mutlu paket (2)", d: "Kısa + orta. Tasarruf.", p: "19€", t: "~40dk", c: 2 },
-      { n: "Mini grup (3)", d: "Üç kesim. En iyi fiyat.", p: "24€", t: "~45dk", c: 2 },
+      { n: "Mutlu paket (3)", d: "Aile tasarrufu.", p: "19€", t: "~40dk", c: 2 },
+      { n: "Mini grup (4)", d: "Dört kesim. En iyi fiyat.", p: "24€", t: "~45dk", c: 2 },
       { n: "Mini SPA 🧴", d: "Şampuan ve kafa masajı.", p: "6€", t: "~15dk", c: 3 },
       { n: "Fön 💨", d: "Kurutma ve şekillendirme.", p: "7€", t: "~15dk", c: 3 },
       { n: "Saç aksesuarı 🎀", d: "Bant, toka... parça başı.", p: "3-6€", t: "", c: 3 },
@@ -295,6 +300,12 @@ const cyrObj = (o) => { if (typeof o === 'string') return lat2cyr(o); if (Array.
 const allLangs = { me: ME, cy: cyrObj(ME), en: EN, ru: RU, es: ES, tr: TR };
 allLangs.cy.lang = "Ћирилица";
 allLangs.cy.flag = "🇲🇪";
+// Fixed Cyrillic for hero + about (not auto-transliterated)
+allLangs.cy.hero = { badge: "🏆 Први дјечији салон у Црној Гори", title: "Без суза. Без страха.", sub: "Само осмијеси и супер фризуре! 💇‍♂️✨", desc: "Више од 5000 срећне дјеце. Ваше је сљедеће.", cta: "Закажи термин", cta2: "Погледај услуге" };
+allLangs.cy.about = { title: "О нама", p1: "Грашак је основан у октобру 2023. као први дјечији фризерски салон у Црној Гори. Простор искључиво за дјецу — столице у облику аутића, цртаћи на екранима, едукативне играчке и књиге од наших другара из Pinta.co.me.", p2: "Користимо искључиво AZETA BIO органску козметику — безбједну од првог дана живота. Стрпљење је наша најважнија вјештина." };
+allLangs.cy.partners = "Наши партнери";
+allLangs.cy.pintaDesc = "Играчке и књиге за дјецу";
+allLangs.cy.azetaDesc = "Органска козметика 0м+";
 
 // ═══ MAIN COMPONENT ═══
 export default function GrasakWebsite() {
@@ -433,6 +444,27 @@ export default function GrasakWebsite() {
         </div>
       </section>
 
+      {/* ═══ PARTNERS TRUST STRIP ═══ */}
+      <section style={{ padding:"28px 20px", background:"white", borderTop:"1px solid #f0f0f0", borderBottom:"1px solid #f0f0f0" }}>
+        <div style={{ maxWidth:900, margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"center", gap:40, flexWrap:"wrap" }}>
+          <span style={{ fontSize:13, color:C.gray, fontWeight:600, textTransform:"uppercase", letterSpacing:1 }}>{t.partners || "Naši partneri"}</span>
+          <a href={L.pinta} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none", padding:"8px 20px", borderRadius:12, background:C.greenLt, border:`2px solid ${C.green}30`, transition:"all 0.3s" }}>
+            <span style={{ fontSize:24 }}>🧩</span>
+            <div>
+              <div style={{ fontFamily:"'Baloo 2', cursive", fontSize:16, fontWeight:800, color:C.green }}>Pinta.co.me</div>
+              <div style={{ fontSize:11, color:C.gray, fontWeight:500 }}>{t.pintaDesc || "Igračke i knjige za djecu"}</div>
+            </div>
+          </a>
+          <a href={L.azetaIG} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:10, textDecoration:"none", padding:"8px 20px", borderRadius:12, background:"#f0f7f0", border:"2px solid #c8e6c930", transition:"all 0.3s" }}>
+            <span style={{ fontSize:24 }}>🌿</span>
+            <div>
+              <div style={{ fontFamily:"'Baloo 2', cursive", fontSize:16, fontWeight:800, color:"#2e7d32" }}>AZETA BIO</div>
+              <div style={{ fontSize:11, color:C.gray, fontWeight:500 }}>{t.azetaDesc || "Organska kozmetika 0m+"}</div>
+            </div>
+          </a>
+        </div>
+      </section>
+
       {/* ═══ SERVICES ═══ */}
       <section id="services" style={{ padding:"70px 20px", background:`linear-gradient(180deg, #FFF8E7, ${C.light})` }}>
         <div style={{ maxWidth:1100, margin:"0 auto" }}>
@@ -460,9 +492,17 @@ export default function GrasakWebsite() {
               </div>
             ))}
           </div>
-          <div style={{ marginTop:32, background:C.greenLt, borderRadius:16, padding:20, textAlign:"center" }}>
-            <p style={{ color:C.green, fontWeight:600, fontSize:15 }}>{t.svc.azeta}</p>
-            <a href={L.azetaIG} target="_blank" rel="noopener noreferrer" style={{ color:C.green, fontSize:13, fontWeight:700 }}>@azeta_biocg</a>
+          <div style={{ marginTop:32, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }} className="grid2">
+            <a href={L.azetaIG} target="_blank" rel="noopener noreferrer" style={{ background:C.greenLt, borderRadius:16, padding:20, textAlign:"center", textDecoration:"none", transition:"all 0.3s" }}>
+              <span style={{ fontSize:28, display:"block", marginBottom:6 }}>🌿</span>
+              <p style={{ color:C.green, fontWeight:700, fontSize:15, marginBottom:4 }}>AZETA BIO</p>
+              <p style={{ color:C.gray, fontSize:12 }}>{t.azetaDesc}</p>
+            </a>
+            <a href={L.pinta} target="_blank" rel="noopener noreferrer" style={{ background:"#FFF3E0", borderRadius:16, padding:20, textAlign:"center", textDecoration:"none", transition:"all 0.3s" }}>
+              <span style={{ fontSize:28, display:"block", marginBottom:6 }}>🧩</span>
+              <p style={{ color:"#E65100", fontWeight:700, fontSize:15, marginBottom:4 }}>Pinta.co.me</p>
+              <p style={{ color:C.gray, fontSize:12 }}>{t.pintaDesc}</p>
+            </a>
           </div>
           <div style={{ marginTop:16, background:`linear-gradient(135deg, ${C.gold}15, ${C.gold}30)`, borderRadius:16, padding:20, display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:12 }}>
             <div><h3 style={{ fontFamily:"'Baloo 2', cursive", fontSize:18, fontWeight:700 }}>{t.svc.loyalty.title}</h3><p style={{ color:C.gray, fontSize:14 }}>{t.svc.loyalty.desc}</p></div>
@@ -478,7 +518,26 @@ export default function GrasakWebsite() {
             <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:38, fontWeight:800, marginBottom:16 }}>{t.about.title}</h2>
             <p style={{ color:C.gray, fontSize:16, lineHeight:1.7, marginBottom:16 }}>{t.about.p1}</p>
             <p style={{ color:C.gray, fontSize:16, lineHeight:1.7, marginBottom:20 }}>{t.about.p2}</p>
-            <a href={L.pinta} target="_blank" rel="noopener noreferrer" style={{ color:C.green, fontWeight:700, fontSize:14, textDecoration:"none" }}>🧩 Pinta.co.me →</a>
+            {/* ── PARTNERS ── */}
+            <p style={{ fontSize:13, fontWeight:600, color:C.gray, textTransform:"uppercase", letterSpacing:1.5, marginBottom:10 }}>{t.partners}</p>
+            <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+              <a href={L.pinta} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:12, background:C.greenLt, border:`2px solid ${C.green}30`, borderRadius:16, padding:"14px 22px", textDecoration:"none", transition:"all 0.3s", boxShadow:"0 2px 8px rgba(0,0,0,0.04)", flex:"1", minWidth:200 }}>
+                <span style={{ fontSize:32 }}>🧩</span>
+                <div>
+                  <div style={{ fontFamily:"'Baloo 2', cursive", fontSize:17, fontWeight:700, color:C.dark }}>Pinta.co.me</div>
+                  <div style={{ fontSize:12, color:C.gray }}>{t.pintaDesc}</div>
+                </div>
+                <span style={{ fontSize:14, color:C.green, fontWeight:700, marginLeft:"auto" }}>→</span>
+              </a>
+              <a href={L.azetaIG} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:12, background:C.greenLt, border:`2px solid ${C.green}30`, borderRadius:16, padding:"14px 22px", textDecoration:"none", transition:"all 0.3s", boxShadow:"0 2px 8px rgba(0,0,0,0.04)", flex:"1", minWidth:200 }}>
+                <span style={{ fontSize:32 }}>🌿</span>
+                <div>
+                  <div style={{ fontFamily:"'Baloo 2', cursive", fontSize:17, fontWeight:700, color:C.dark }}>AZETA BIO</div>
+                  <div style={{ fontSize:12, color:C.gray }}>{t.azetaDesc}</div>
+                </div>
+                <span style={{ fontSize:14, color:C.green, fontWeight:700, marginLeft:"auto" }}>→</span>
+              </a>
+            </div>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <img src="/images/oprema.jpg" alt="Oprema salona" style={{ borderRadius:16, objectFit:"cover", width:"100%", height:180 }} />
@@ -499,7 +558,7 @@ export default function GrasakWebsite() {
           <div style={{ background:"white", borderRadius:16, padding:20 }}>
             <h4 style={{ fontFamily:"'Baloo 2', cursive", fontSize:18, marginBottom:8 }}>{t.team.hire}</h4>
             <p style={{ color:C.gray, fontSize:14, marginBottom:12 }}>{t.team.hireDesc}</p>
-            <a href={L.email} style={{ background:`linear-gradient(135deg, ${C.green}, ${C.greenDk})`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.hireCta}</a>
+            <a href="https://wa.me/38269371111?text=Zdravo!%20Zainteresovan/a%20sam%20za%20posao%20frizera%20u%20Grašku.%20Šaljem%20CV." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.green}, ${C.greenDk})`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.hireCta}</a>
           </div>
         </div>
       </section>
@@ -649,10 +708,30 @@ export default function GrasakWebsite() {
             <span style={{ fontFamily:"'Baloo 2', cursive", fontSize:24, fontWeight:800 }}>Grašak</span>
           </div>
           <p style={{ color:C.green, fontWeight:600, marginBottom:16 }}>{t.footer.tag}</p>
-          <div style={{ display:"flex", gap:20, justifyContent:"center", marginBottom:16, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", gap:20, justifyContent:"center", marginBottom:24, flexWrap:"wrap" }}>
             {Object.entries(t.nav).map(([id, label]) => (
               <a key={id} onClick={() => go(id)} style={{ color:"rgba(255,255,255,0.7)", textDecoration:"none", fontSize:14, cursor:"pointer" }}>{label}</a>
             ))}
+          </div>
+          {/* ── PARTNERS IN FOOTER ── */}
+          <div style={{ borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:24, marginBottom:20 }}>
+            <p style={{ color:"rgba(255,255,255,0.5)", fontSize:12, fontWeight:600, textTransform:"uppercase", letterSpacing:2, marginBottom:14 }}>{t.partners}</p>
+            <div style={{ display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap" }}>
+              <a href={L.pinta} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:12, padding:"10px 20px", textDecoration:"none", transition:"all 0.3s" }}>
+                <span style={{ fontSize:22 }}>🧩</span>
+                <div style={{ textAlign:"left" }}>
+                  <div style={{ color:"white", fontSize:14, fontWeight:700 }}>Pinta.co.me</div>
+                  <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11 }}>{t.pintaDesc}</div>
+                </div>
+              </a>
+              <a href={L.azetaIG} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(255,255,255,0.08)", border:"1px solid rgba(255,255,255,0.15)", borderRadius:12, padding:"10px 20px", textDecoration:"none", transition:"all 0.3s" }}>
+                <span style={{ fontSize:22 }}>🌿</span>
+                <div style={{ textAlign:"left" }}>
+                  <div style={{ color:"white", fontSize:14, fontWeight:700 }}>AZETA BIO</div>
+                  <div style={{ color:"rgba(255,255,255,0.5)", fontSize:11 }}>{t.azetaDesc}</div>
+                </div>
+              </a>
+            </div>
           </div>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>{t.footer.rights}</p>
         </div>
