@@ -1,10 +1,11 @@
 import './globals.css';
+import Script from 'next/script';
 
 export const metadata = {
   title: 'Grašak — Dječiji frizerski salon | Podgorica',
   description: 'Grašak je prvi dječiji frizerski salon u Crnoj Gori. Bez suza, bez straha — samo osmjesi i stylish frizure. Šišanje od 8€. Zakazivanje: +382 69 371 111.',
   keywords: 'dječiji frizer, kids haircut, Podgorica, salon za djecu, Montenegro, šišanje djece, first haircut, prvo šišanje',
-  metadataBase: new URL('https://grasak.vercel.app'),
+  metadataBase: new URL('https://grasaksalon.me'),
   alternates: { canonical: '/' },
   openGraph: {
     title: 'Grašak — Prvi dječiji salon u Crnoj Gori',
@@ -24,8 +25,8 @@ export default function RootLayout({ children }) {
     "@context": "https://schema.org",
     "@type": "HairSalon",
     "name": "Grašak — Dječiji frizerski salon",
-    "image": "https://grasak.vercel.app/images/salon.jpg",
-    "url": "https://grasak.vercel.app",
+    "image": "https://grasaksalon.me/images/salon.jpg",
+    "url": "https://grasaksalon.me",
     "telephone": "+38269371111",
     "email": "grasaksalon@gmail.com",
     "address": {
@@ -52,7 +53,22 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* Google Analytics - G-N619BN5TEK */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-N619BN5TEK"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-N619BN5TEK');
+          `}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }
