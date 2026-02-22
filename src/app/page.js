@@ -439,7 +439,7 @@ export default function GrasakWebsite() {
             </div>
           </div>
           <div style={{ position:"relative" }}>
-            <img src="/images/salon.jpg" alt="Grašak salon" style={{ width:"100%", borderRadius:20, boxShadow:"0 16px 50px rgba(0,0,0,0.1)" }} />
+            <img src="/images/salon.jpg" alt="Grašak salon" fetchPriority="high" width={800} height={533} style={{ width:"100%", borderRadius:20, boxShadow:"0 16px 50px rgba(0,0,0,0.1)" }} />
             <img src="/images/djecak.jpg" alt="Dijete u salonu" style={{ position:"absolute", bottom:-16, left:-16, width:130, height:130, borderRadius:16, objectFit:"cover", border:"3px solid white", boxShadow:"0 6px 20px rgba(0,0,0,0.15)" }} />
           </div>
         </div>
