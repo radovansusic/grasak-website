@@ -385,7 +385,7 @@ export default function GrasakWebsite() {
           </div>
           <div className="desk" style={{ display:"flex", alignItems:"center", gap:20 }}>
             {Object.entries(t.nav).map(([id, label]) => (
-              <a key={id} onClick={() => go(id)} style={{ color:C.gray, textDecoration:"none", fontWeight:600, cursor:"pointer", fontSize:14 }}>{label}</a>
+              <a key={id} href={`#${id}`} onClick={(e) => { e.preventDefault(); go(id); }} style={{ color:C.gray, textDecoration:"none", fontWeight:600, cursor:"pointer", fontSize:14 }}>{label}</a>
             ))}
             <Btn onClick={() => go("booking")} style={{ padding:"8px 20px", fontSize:14 }}>📅 {t.nav.booking}</Btn>
             <div style={{ position:"relative" }} ref={langRef}>
@@ -407,7 +407,7 @@ export default function GrasakWebsite() {
       {mobMenu && <div style={{ position:"fixed", inset:0, background:"rgba(255,253,247,0.98)", zIndex:998, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:20, backdropFilter:"blur(20px)" }}>
         <button onClick={() => setMobMenu(false)} style={{ position:"absolute", top:16, right:20, background:"none", border:"none", fontSize:32, cursor:"pointer" }}>✕</button>
         {Object.entries(t.nav).map(([id, label]) => (
-          <a key={id} onClick={() => go(id)} style={{ fontFamily:"'Baloo 2', cursive", fontSize:26, color:C.dark, textDecoration:"none", cursor:"pointer" }}>{label}</a>
+          <a key={id} href={`#${id}`} onClick={(e) => { e.preventDefault(); go(id); }} style={{ fontFamily:"'Baloo 2', cursive", fontSize:26, color:C.dark, textDecoration:"none", cursor:"pointer" }}>{label}</a>
         ))}
         <Btn onClick={() => go("booking")}>📅 {t.nav.booking}</Btn>
         <div style={{ display:"flex", gap:8, marginTop:12 }}>
@@ -684,7 +684,7 @@ export default function GrasakWebsite() {
           <p style={{ color:C.green, fontWeight:600, marginBottom:16 }}>{t.footer.tag}</p>
           <div style={{ display:"flex", gap:20, justifyContent:"center", marginBottom:24, flexWrap:"wrap" }}>
             {Object.entries(t.nav).map(([id, label]) => (
-              <a key={id} onClick={() => go(id)} style={{ color:"rgba(255,255,255,0.7)", textDecoration:"none", fontSize:14, cursor:"pointer" }}>{label}</a>
+              <a key={id} href={`#${id}`} onClick={(e) => { e.preventDefault(); go(id); }} style={{ color:"rgba(255,255,255,0.7)", textDecoration:"none", fontSize:14, cursor:"pointer" }}>{label}</a>
             ))}
           </div>
           <p style={{ color:"rgba(255,255,255,0.4)", fontSize:12 }}>{t.footer.rights}</p>
