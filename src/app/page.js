@@ -73,7 +73,7 @@ const ME = {
     park: "🅿️ Besplatan parking", dir: "📍 Uputstvo do nas",
     hrs: "Radno vrijeme", hrsList: ["Utorak – Nedjelja: 11:00 – 21:00", "Ponedjeljak: Zatvoreno"],
   },
-  footer: { rights: "© 2025 Grašak — Dječiji frizerski salon. Sva prava zadržana.", tag: "Prvi dječiji salon u Crnoj Gori 💚" },
+  footer: { rights: "© 2026 Grašak — Dječiji frizerski salon. Sva prava zadržana.", tag: "Prvi dječiji salon u Crnoj Gori 💚" },
   social: { title: "Pratite nas", follow: "Iz Graška" },
 };
 
@@ -125,7 +125,7 @@ const EN = {
     park: "🅿️ Free parking", dir: "📍 Directions",
     hrs: "Opening hours", hrsList: ["Tuesday – Sunday: 11:00 – 21:00", "Monday: Closed"],
   },
-  footer: { rights: "© 2025 Grašak — Kids' Hair Salon. All rights reserved.", tag: "First kids salon in Montenegro 💚" },
+  footer: { rights: "© 2026 Grašak — Kids' Hair Salon. All rights reserved.", tag: "First kids salon in Montenegro 💚" },
   social: { title: "Follow us", follow: "From Grašak" },
 };
 
@@ -177,7 +177,7 @@ const RU = {
     park: "🅿️ Бесплатная парковка", dir: "📍 Как добраться",
     hrs: "Часы работы", hrsList: ["Вт – Вс: 11:00 – 21:00", "Понедельник: Выходной"],
   },
-  footer: { rights: "© 2025 Грашак — Детский салон. Все права защищены.", tag: "Первый детский салон в Черногории 💚" },
+  footer: { rights: "© 2026 Грашак — Детский салон. Все права защищены.", tag: "Первый детский салон в Черногории 💚" },
   social: { title: "Мы в соцсетях", follow: "Из Грашака" },
 };
 
@@ -229,7 +229,7 @@ const ES = {
     park: "🅿️ Parking gratuito", dir: "📍 Cómo llegar",
     hrs: "Horario", hrsList: ["Martes – Domingo: 11:00 – 21:00", "Lunes: Cerrado"],
   },
-  footer: { rights: "© 2025 Grašak — Peluquería infantil.", tag: "Primera peluquería infantil en Montenegro 💚" },
+  footer: { rights: "© 2026 Grašak — Peluquería infantil.", tag: "Primera peluquería infantil en Montenegro 💚" },
   social: { title: "Síguenos", follow: "Desde Grašak" },
 };
 
@@ -281,7 +281,7 @@ const TR = {
     park: "🅿️ Ücretsiz park", dir: "📍 Yol tarifi",
     hrs: "Çalışma saatleri", hrsList: ["Salı – Pazar: 11:00 – 21:00", "Pazartesi: Kapalı"],
   },
-  footer: { rights: "© 2025 Grašak — Çocuk kuaförü.", tag: "Karadağ'ın ilk çocuk salonu 💚" },
+  footer: { rights: "© 2026 Grašak — Çocuk kuaförü.", tag: "Karadağ'ın ilk çocuk salonu 💚" },
   social: { title: "Bizi takip edin", follow: "Grašak'tan" },
 };
 
@@ -308,6 +308,72 @@ allLangs.cy.pintaDesc = "Играчке и књиге за дјецу";
 allLangs.cy.azetaDesc = "Органска козметика 0м+";
 allLangs.cy.team = { title: "Наш тим", name: "Никола", role: "Дјечији фризер", bio: "Ради са дјецом од првог дана Грашка. Стрпљив, пажљив и увијек са осмјехом.", hire: "Придружи се тиму! 💚", hireDesc: "Волиш дјецу и уживаш да проводиш вријеме с њима? Тражимо фризере који имају стрпљења и осмјех за најмлађе.", hireCta: "Придружи се", franchise: "Желиш свој Грашак? 🌱", franchiseDesc: "Волите дјецу, бринете о њима и желите свој салон? Јавите нам се — научићемо вас све!", franchiseCta: "Затражи франшизу" };
 
+// ═══ INTERSECTION OBSERVER HOOK ═══
+function useInView(options = {}) {
+  const ref = useRef(null);
+  const [inView, setInView] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) { setInView(true); return; }
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setInView(true); obs.unobserve(el); }
+    }, { threshold: 0.15, ...options });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, inView];
+}
+
+// ═══ ANIMATED COUNTER HOOK ═══
+function useCounter(end, inView, duration = 1800) {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    if (!inView) return;
+    const num = parseInt(end.replace(/[^0-9]/g, ''), 10);
+    if (isNaN(num)) return;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) { setCount(num); return; }
+    const start = performance.now();
+    const step = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setCount(Math.floor(eased * num));
+      if (progress < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, [inView, end, duration]);
+  return count;
+}
+
+// ═══ SECTION WRAPPER WITH FADE-IN ═══
+function AnimSection({ children, id, style, className }) {
+  const [ref, inView] = useInView();
+  return (
+    <section id={id} ref={ref} className={className} style={{
+      ...style,
+      opacity: inView ? 1 : 0,
+      transform: inView ? 'translateY(0)' : 'translateY(30px)',
+      transition: 'opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1)',
+    }}>
+      {children}
+    </section>
+  );
+}
+
+// ═══ STAT COUNTER COMPONENT ═══
+function StatCounter({ value, label, inView }) {
+  const count = useCounter(value, inView);
+  const suffix = value.replace(/[0-9]/g, '');
+  return (
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontFamily: "'Baloo 2', cursive", fontSize: 26, fontWeight: 800, color: C.green }}>{count}{suffix}</div>
+      <div style={{ fontSize: 12, color: C.gray, fontWeight: 600 }}>{label}</div>
+    </div>
+  );
+}
+
 // ═══ MAIN COMPONENT ═══
 export default function GrasakWebsite() {
   const [lang, setLang] = useState("me");
@@ -316,12 +382,20 @@ export default function GrasakWebsite() {
   const [svcCat, setSvcCat] = useState(0);
   const [faqOpen, setFaqOpen] = useState(null);
   const [scrollY, setScrollY] = useState(0);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const langRef = useRef(null);
+  const [statsRef, statsInView] = useInView();
 
   const t = allLangs[lang];
 
   useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
+    const onScroll = () => {
+      setScrollY(window.scrollY);
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      setScrollProgress(docHeight > 0 ? (window.scrollY / docHeight) * 100 : 0);
+      setShowBackToTop(window.scrollY > 500);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -366,9 +440,17 @@ export default function GrasakWebsite() {
 
   return (
     <>
+      {/* ─── SCROLL PROGRESS BAR ─── */}
+      <div style={{ position:"fixed", top:0, left:0, right:0, height:3, zIndex:1100, background:"transparent" }}>
+        <div style={{ height:"100%", background:`linear-gradient(90deg, ${C.green}, ${C.gold})`, width:`${scrollProgress}%`, transition:"width 0.1s linear", borderRadius:"0 2px 2px 0" }} />
+      </div>
+
       {/* ─── FLOATING BUTTONS ─── */}
       <a href={L.wa} target="_blank" rel="noopener noreferrer" className="float-btn" style={{ position:"fixed", bottom:80, right:24, zIndex:999, width:56, height:56, borderRadius:"50%", background:"#25D366", display:"flex", alignItems:"center", justifyContent:"center", color:"white", boxShadow:"0 4px 15px rgba(0,0,0,0.2)", textDecoration:"none" }}><WA s={28}/></a>
       <a href={L.viber} className="float-btn" style={{ position:"fixed", bottom:80, right:90, zIndex:999, width:56, height:56, borderRadius:"50%", background:"#7360F2", display:"flex", alignItems:"center", justifyContent:"center", color:"white", boxShadow:"0 4px 15px rgba(0,0,0,0.2)", textDecoration:"none", animationDelay:"0.5s" }}><VB s={28}/></a>
+
+      {/* ─── BACK TO TOP ─── */}
+      <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} style={{ position:"fixed", bottom:80, left:24, zIndex:999, width:44, height:44, borderRadius:"50%", background:`linear-gradient(135deg, ${C.green}, ${C.greenDk})`, color:"white", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, boxShadow:"0 4px 15px rgba(57,116,107,0.3)", opacity: showBackToTop ? 1 : 0, pointerEvents: showBackToTop ? "auto" : "none", transform: showBackToTop ? "translateY(0)" : "translateY(20px)", transition:"all 0.3s" }}>↑</button>
 
       {/* ─── MOBILE BOTTOM BAR ─── */}
       <div className="mob-bar">
@@ -429,12 +511,9 @@ export default function GrasakWebsite() {
               <Btn onClick={() => go("booking")}>{t.hero.cta}</Btn>
               <Btn primary={false} onClick={() => go("services")}>{t.hero.cta2}</Btn>
             </div>
-            <div style={{ display:"flex", gap:28 }}>
+            <div ref={statsRef} style={{ display:"flex", gap:28 }}>
               {t.stats.map(([v, l], i) => (
-                <div key={i} style={{ textAlign:"center" }}>
-                  <div style={{ fontFamily:"'Baloo 2', cursive", fontSize:26, fontWeight:800, color:C.green }}>{v}</div>
-                  <div style={{ fontSize:12, color:C.gray, fontWeight:600 }}>{l}</div>
-                </div>
+                <StatCounter key={i} value={v} label={l} inView={statsInView} />
               ))}
             </div>
           </div>
@@ -467,7 +546,7 @@ export default function GrasakWebsite() {
       </section>
 
       {/* ═══ SERVICES ═══ */}
-      <section id="services" style={{ padding:"70px 20px", background:`linear-gradient(180deg, #FFF8E7, ${C.light})` }}>
+      <AnimSection id="services" style={{ padding:"70px 20px", background:`linear-gradient(180deg, #FFF8E7, ${C.light})` }}>
         <div style={{ maxWidth:1100, margin:"0 auto" }}>
           <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:38, fontWeight:800, textAlign:"center", marginBottom:8 }}>{t.svc.title}</h2>
           <p style={{ textAlign:"center", color:C.gray, fontSize:16, marginBottom:36 }}>{t.svc.sub}</p>
@@ -478,7 +557,7 @@ export default function GrasakWebsite() {
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px, 1fr))", gap:16 }}>
             {svcItems.map((s, i) => (
-              <div key={i} style={{ background:"white", borderRadius:16, padding:20, boxShadow:"0 2px 12px rgba(0,0,0,0.05)", border: s.pop ? `2px solid ${C.green}` : "2px solid transparent", position:"relative", transition:"all 0.3s" }}>
+              <div key={i} style={{ background:"rgba(255,255,255,0.75)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", borderRadius:16, padding:20, boxShadow:"0 2px 12px rgba(0,0,0,0.05)", border: s.pop ? `2px solid ${C.green}` : "1px solid rgba(255,255,255,0.6)", position:"relative", transition:"all 0.3s" }}>
                 {s.pop && <div style={{ position:"absolute", top:-10, right:16, background:C.gold, color:"white", padding:"2px 12px", borderRadius:50, fontSize:11, fontWeight:700 }}>POPULAR</div>}
                 {s.badge && <div style={{ position:"absolute", top:-10, left:16, background:C.green, color:"white", padding:"2px 10px", borderRadius:50, fontSize:11, fontWeight:700 }}>{s.badge}</div>}
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
@@ -498,10 +577,10 @@ export default function GrasakWebsite() {
             <div style={{ background:C.gold, color:"white", padding:"8px 20px", borderRadius:50, fontWeight:800, fontFamily:"'Baloo 2', cursive" }}>{t.svc.loyalty.badge}</div>
           </div>
         </div>
-      </section>
+      </AnimSection>
 
       {/* ═══ ABOUT ═══ */}
-      <section id="about" style={{ padding:"70px 20px" }}>
+      <AnimSection id="about" style={{ padding:"70px 20px" }}>
         <div style={{ maxWidth:1100, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:40, alignItems:"center" }} className="grid2">
           <div>
             <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:38, fontWeight:800, marginBottom:16 }}>{t.about.title}</h2>
@@ -514,10 +593,10 @@ export default function GrasakWebsite() {
             <img src="/images/tri_za_ustedu.jpg" alt="Porodični paketi" style={{ borderRadius:16, objectFit:"cover", width:"100%", height:180, gridColumn:"span 2" }} />
           </div>
         </div>
-      </section>
+      </AnimSection>
 
       {/* ═══ TEAM ═══ */}
-      <section style={{ padding:"50px 20px", background:C.greenLt }}>
+      <AnimSection style={{ padding:"50px 20px", background:C.greenLt }}>
         <div style={{ maxWidth:600, margin:"0 auto", textAlign:"center" }}>
           <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:32, fontWeight:800, marginBottom:24 }}>{t.team.title}</h2>
           <img src="/images/nikola.jpg" alt="Nikola" style={{ width:120, height:120, borderRadius:"50%", objectFit:"cover", border:`3px solid ${C.green}`, marginBottom:12 }} />
@@ -535,16 +614,16 @@ export default function GrasakWebsite() {
             <a href="https://wa.me/38269371111?text=Zdravo!%20Zainteresovan/a%20sam%20za%20franšizu%20Grašak.%20Volim%20djecu%20i%20želim%20da%20saznam%20više." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.gold}, #D4A017)`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.franchiseCta}</a>
           </div>
         </div>
-      </section>
+      </AnimSection>
 
       {/* ═══ REVIEWS ═══ */}
-      <section style={{ padding:"70px 20px" }}>
+      <AnimSection style={{ padding:"70px 20px" }}>
         <div style={{ maxWidth:1100, margin:"0 auto" }}>
           <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:38, fontWeight:800, textAlign:"center", marginBottom:8 }}>{t.reviews.title}</h2>
           <p style={{ textAlign:"center", color:C.gray, fontSize:16, marginBottom:36 }}>{t.reviews.sub}</p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(260px, 1fr))", gap:16 }}>
             {t.reviews.items.map((r, i) => (
-              <div key={i} style={{ background:"white", borderRadius:16, padding:20, boxShadow:"0 2px 12px rgba(0,0,0,0.05)", border:"1px solid #f0f0f0" }}>
+              <div key={i} style={{ background:"rgba(255,255,255,0.8)", backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)", borderRadius:16, padding:20, boxShadow:"0 2px 12px rgba(0,0,0,0.05)", border:"1px solid rgba(255,255,255,0.6)" }}>
                 <div style={{ color:C.gold, fontSize:18, marginBottom:8 }}>★★★★★</div>
                 <p style={{ color:C.dark, fontSize:15, lineHeight:1.6, marginBottom:12, fontStyle:"italic" }}>&ldquo;{r.text}&rdquo;</p>
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -558,10 +637,10 @@ export default function GrasakWebsite() {
             <a href={L.reviews} target="_blank" rel="noopener noreferrer" style={{ color:C.green, fontWeight:700, fontSize:15, textDecoration:"none" }}>{t.reviews.cta}</a>
           </div>
         </div>
-      </section>
+      </AnimSection>
 
       {/* ═══ GALLERY ═══ */}
-      <section style={{ padding:"50px 20px", background:C.greenLt }}>
+      <AnimSection style={{ padding:"50px 20px", background:C.greenLt }}>
         <div style={{ maxWidth:1100, margin:"0 auto" }}>
           <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:32, fontWeight:800, textAlign:"center", marginBottom:8 }}>{t.gallery.title}</h2>
           <p style={{ textAlign:"center", color:C.gray, fontSize:15, marginBottom:28 }}>{t.gallery.sub}</p>
@@ -576,10 +655,10 @@ export default function GrasakWebsite() {
             <SocBtn href={L.tiktok} bg="#010101"><TK s={20}/></SocBtn>
           </div>
         </div>
-      </section>
+      </AnimSection>
 
       {/* ═══ FAQ ═══ */}
-      <section id="faq" style={{ padding:"70px 20px" }}>
+      <AnimSection id="faq" style={{ padding:"70px 20px" }}>
         <div style={{ maxWidth:700, margin:"0 auto" }}>
           <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:38, fontWeight:800, textAlign:"center", marginBottom:8 }}>{t.faq.title}</h2>
           <p style={{ textAlign:"center", color:C.gray, fontSize:16, marginBottom:36 }}>{t.faq.sub}</p>
@@ -594,10 +673,10 @@ export default function GrasakWebsite() {
             </div>
           ))}
         </div>
-      </section>
+      </AnimSection>
 
       {/* ═══ BOOKING ═══ */}
-      <section id="booking" style={{ padding:"70px 20px", background:`linear-gradient(180deg, ${C.greenLt}, ${C.light})` }}>
+      <AnimSection id="booking" style={{ padding:"70px 20px", background:`linear-gradient(180deg, ${C.greenLt}, ${C.light})` }}>
         <div style={{ maxWidth:600, margin:"0 auto" }}>
           <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:38, fontWeight:800, textAlign:"center", marginBottom:8 }}>{t.booking.title}</h2>
           <p style={{ textAlign:"center", color:C.gray, fontSize:16, marginBottom:36 }}>{t.booking.sub}</p>
@@ -628,10 +707,10 @@ export default function GrasakWebsite() {
             <p style={{ textAlign:"center", marginTop:12, color:C.gray, fontSize:13 }}>{t.booking.cancel}</p>
           </form>
         </div>
-      </section>
+      </AnimSection>
 
       {/* ═══ CONTACT ═══ */}
-      <section id="contact" style={{ padding:"70px 20px" }}>
+      <AnimSection id="contact" style={{ padding:"70px 20px" }}>
         <div style={{ maxWidth:1100, margin:"0 auto", display:"grid", gridTemplateColumns:"1fr 1fr", gap:40 }} className="grid2">
           <div>
             <h2 style={{ fontFamily:"'Baloo 2', cursive", fontSize:38, fontWeight:800, marginBottom:8 }}>{t.contact.title}</h2>
@@ -659,7 +738,7 @@ export default function GrasakWebsite() {
             <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2955.6!2d19.263!3d42.441!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x1ae339b0be9d7c95!2sGRA%C5%A0AK!5e0!3m2!1sen!2sme!4v1700000000000!5m2!1sen!2sme" width="100%" height="100%" style={{ border:0, minHeight:300 }} allowFullScreen loading="lazy" referrerPolicy="no-referrer-when-downgrade" title="Grašak lokacija"></iframe>
           </div>
         </div>
-      </section>
+      </AnimSection>
 
       {/* ═══ SOCIAL ═══ */}
       <section style={{ padding:"40px 20px", background:C.greenLt, textAlign:"center" }}>
