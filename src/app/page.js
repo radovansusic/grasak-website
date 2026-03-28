@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { trackWhatsAppClick, trackViberClick, trackFormSubmit, trackCTAClick } from "@/utils/analytics";
 
 // ═══ COLORS ═══
 const C = { green: "#39746B", greenDk: "#2D5F58", greenLt: "#E8F5F0", gold: "#ECB11E", goldLt: "#FFF8E7", light: "#FFFDF7", dark: "#2D3436", gray: "#636E72" };
 
 // ═══ LINKS ═══
-const L = { wa: "https://wa.me/38269371111?text=Zdravo!%20Želim%20zakazati%20termin%20za%20šišanje%20u%20Grašku.", viber: "viber://chat?number=%2B38269371111&draft=Zdravo!%20%C5%BDelim%20zakazati%20termin%20za%20%C5%A1i%C5%A1anje%20u%20Gra%C5%A1ku.%20%F0%9F%92%87%E2%80%8D%E2%99%82%EF%B8%8F", ig: "https://www.instagram.com/djecijisalon", fb: "https://www.facebook.com/p/Dječiji-salon-Grašak-61559455795290/", tiktok: "https://www.tiktok.com/@djeciji.salon", maps: "https://www.google.com/maps/place/GRAŠAK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95", reviews: "https://www.google.com/maps/place/GRAŠAK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95", email: "mailto:grasaksalon@gmail.com", pinta: "http://www.pinta.co.me/", azetaIG: "https://www.instagram.com/azeta_biocg" };
+const L = { wa: "https://wa.me/38269371111?text=Zdravo!%20%C5%BDelim%20zakazati%20termin%20za%20%C5%A1i%C5%A1anje%20u%20Gra%C5%A1ku.", viber: "viber://chat?number=%2B38269371111&draft=Zdravo!%20%C5%BDelim%20zakazati%20termin%20za%20%C5%A1i%C5%A1anje%20u%20Gra%C5%A1ku.%20%F0%9F%92%87%E2%80%8D%E2%99%82%EF%B8%8F", ig: "https://www.instagram.com/djecijisalon", fb: "https://www.facebook.com/p/Dječiji-salon-Grašak-61559455795290/", tiktok: "https://www.tiktok.com/@djeciji.salon", maps: "https://www.google.com/maps/place/GRAŠAK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95", reviews: "https://www.google.com/maps/place/GRAŠAK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95", email: "mailto:grasaksalon@gmail.com", pinta: "http://www.pinta.co.me/", azetaIG: "https://www.instagram.com/azeta_biocg" };
 
 // ═══ SVG ICONS ═══
 const WA = ({s=24}) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>;
@@ -416,6 +417,8 @@ export default function GrasakWebsite() {
     const parts = [];
     for (const [k, v] of fd.entries()) { if (v) parts.push(`${k}: ${v}`); }
     const msg = encodeURIComponent("Zdravo! Želim zakazati termin:\n" + parts.join("\n"));
+    trackFormSubmit('booking');
+    trackWhatsAppClick('booking_form');
     window.open(`https://wa.me/38269371111?text=${msg}`, "_blank");
   };
 
@@ -446,7 +449,7 @@ export default function GrasakWebsite() {
       </div>
 
       {/* ─── FLOATING BUTTONS ─── */}
-      <a href={L.wa} target="_blank" rel="noopener noreferrer" className="float-btn" style={{ position:"fixed", bottom:80, right:24, zIndex:999, width:56, height:56, borderRadius:"50%", background:"#25D366", display:"flex", alignItems:"center", justifyContent:"center", color:"white", boxShadow:"0 4px 15px rgba(0,0,0,0.2)", textDecoration:"none" }}><WA s={28}/></a>
+      <a href={L.wa} target="_blank" rel="noopener noreferrer" onClick={() => trackWhatsAppClick('floating_button')} className="float-btn" style={{ position:"fixed", bottom:80, right:24, zIndex:999, width:56, height:56, borderRadius:"50%", background:"#25D366", display:"flex", alignItems:"center", justifyContent:"center", color:"white", boxShadow:"0 4px 15px rgba(0,0,0,0.2)", textDecoration:"none" }}><WA s={28}/></a>
       <a href={L.viber} className="float-btn" style={{ position:"fixed", bottom:80, right:90, zIndex:999, width:56, height:56, borderRadius:"50%", background:"#7360F2", display:"flex", alignItems:"center", justifyContent:"center", color:"white", boxShadow:"0 4px 15px rgba(0,0,0,0.2)", textDecoration:"none", animationDelay:"0.5s" }}><VB s={28}/></a>
 
       {/* ─── BACK TO TOP ─── */}
@@ -454,7 +457,7 @@ export default function GrasakWebsite() {
 
       {/* ─── MOBILE BOTTOM BAR ─── */}
       <div className="mob-bar">
-        <a href={L.wa} target="_blank" rel="noopener noreferrer" style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px", borderRadius:12, background:"#25D366", color:"white", fontWeight:700, fontSize:14, fontFamily:"'Baloo 2', cursive", textDecoration:"none" }}><WA s={18}/> WhatsApp</a>
+        <a href={L.wa} target="_blank" rel="noopener noreferrer" onClick={() => trackWhatsAppClick('mobile_bar')} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px", borderRadius:12, background:"#25D366", color:"white", fontWeight:700, fontSize:14, fontFamily:"'Baloo 2', cursive", textDecoration:"none" }}><WA s={18}/> WhatsApp</a>
         <button onClick={() => go("booking")} style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:6, padding:"10px", borderRadius:12, background:`linear-gradient(135deg, ${C.green}, ${C.greenDk})`, color:"white", fontWeight:700, fontSize:14, fontFamily:"'Baloo 2', cursive", border:"none", cursor:"pointer" }}>📅 {t.nav.booking}</button>
       </div>
 
@@ -606,12 +609,12 @@ export default function GrasakWebsite() {
           <div style={{ background:"white", borderRadius:16, padding:20, marginBottom:12 }}>
             <h4 style={{ fontFamily:"'Baloo 2', cursive", fontSize:18, marginBottom:8 }}>{t.team.hire}</h4>
             <p style={{ color:C.gray, fontSize:14, marginBottom:12, lineHeight:1.6 }}>{t.team.hireDesc}</p>
-            <a href="https://wa.me/38269371111?text=Zdravo!%20Želim%20da%20se%20pridružim%20timu%20Graška.%20Volim%20djecu%20i%20imam%20iskustvo%20kao%20frizer." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.green}, ${C.greenDk})`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.hireCta}</a>
+            <a href="https://wa.me/38269371111?text=Zdravo!%20%C5%BDelim%20da%20se%20pridru%C5%BEim%20timu%20Gra%C5%A1ka.%20Volim%20djecu%20i%20imam%20iskustvo%20kao%20frizer." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.green}, ${C.greenDk})`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.hireCta}</a>
           </div>
           <div style={{ background:"white", borderRadius:16, padding:20, border:`2px solid ${C.gold}40` }}>
             <h4 style={{ fontFamily:"'Baloo 2', cursive", fontSize:18, marginBottom:8 }}>{t.team.franchise}</h4>
             <p style={{ color:C.gray, fontSize:14, marginBottom:12, lineHeight:1.6 }}>{t.team.franchiseDesc}</p>
-            <a href="https://wa.me/38269371111?text=Zdravo!%20Zainteresovan/a%20sam%20za%20franšizu%20Grašak.%20Volim%20djecu%20i%20želim%20da%20saznam%20više." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.gold}, #D4A017)`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.franchiseCta}</a>
+            <a href="https://wa.me/38269371111?text=Zdravo!%20Zainteresovan/a%20sam%20za%20fran%C5%A1izu%20Gra%C5%A1ak.%20Volim%20djecu%20i%20%C5%BEelim%20da%20saznam%20vi%C5%A1e." target="_blank" rel="noopener" style={{ background:`linear-gradient(135deg, ${C.gold}, #D4A017)`, color:"white", padding:"10px 24px", borderRadius:50, fontWeight:700, fontFamily:"'Baloo 2', cursive", textDecoration:"none", fontSize:14, display:"inline-block" }}>{t.team.franchiseCta}</a>
           </div>
         </div>
       </AnimSection>
@@ -729,8 +732,8 @@ export default function GrasakWebsite() {
               {t.contact.hrsList.map((h, i) => <div key={i} style={{ fontSize:14, color: i===1 ? "#e74c3c" : C.gray, fontWeight: i===1 ? 600 : 400 }}>{h}</div>)}
             </div>
             <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-              <a href={L.wa} target="_blank" rel="noopener noreferrer" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:50, background:"#25D366", color:"white", fontWeight:700, fontSize:14, fontFamily:"'Baloo 2', cursive", textDecoration:"none" }}><WA s={18}/> WhatsApp</a>
-              <a href={L.viber} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:50, background:"#7360F2", color:"white", fontWeight:700, fontSize:14, fontFamily:"'Baloo 2', cursive", textDecoration:"none" }}><VB s={18}/> Viber</a>
+              <a href={L.wa} target="_blank" rel="noopener noreferrer" onClick={() => trackWhatsAppClick('contact_section')} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:50, background:"#25D366", color:"white", fontWeight:700, fontSize:14, fontFamily:"'Baloo 2', cursive", textDecoration:"none" }}><WA s={18}/> WhatsApp</a>
+              <a href={L.viber} onClick={() => trackViberClick()} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:50, background:"#7360F2", color:"white", fontWeight:700, fontSize:14, fontFamily:"'Baloo 2', cursive", textDecoration:"none" }}><VB s={18}/> Viber</a>
               <a href={L.maps} target="_blank" rel="noopener noreferrer" style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:50, background:C.green, color:"white", fontWeight:700, fontSize:14, fontFamily:"'Baloo 2', cursive", textDecoration:"none" }}>{t.contact.dir}</a>
             </div>
           </div>
