@@ -141,7 +141,7 @@ export default function Navbar() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 top-0 z-40 flex flex-col bg-cream/98 pt-28 backdrop-blur lg:hidden"
+            className="fixed inset-0 top-0 z-40 flex flex-col bg-cream pt-28 lg:hidden"
           >
             <ul className="flex flex-col items-center gap-4 px-8">
               {links.map((l, i) => (
@@ -158,8 +158,8 @@ export default function Navbar() {
                     onClick={() => setOpen(false)}
                     className={({ isActive }) =>
                       cn(
-                        'block rounded-full px-6 py-3 text-center font-display text-2xl font-bold',
-                        isActive ? 'bg-grass text-white' : 'text-ink',
+                        'block rounded-full px-6 py-4 text-center font-display text-2xl font-bold shadow-md',
+                        isActive ? 'bg-grass text-white' : 'bg-white text-ink',
                       )
                     }
                   >

@@ -70,9 +70,15 @@ export default function Footer() {
             >
               V
             </a>
-            <Link to="/kontakt" aria-label={tr('footer.location')} className="rounded-full bg-white/10 p-2 transition-colors hover:bg-grass">
+            <a
+              href="https://www.google.com/maps/place/GRAŠAK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95"
+              target="_blank"
+              rel="noreferrer"
+              aria-label={tr('footer.location')}
+              className="rounded-full bg-white/10 p-2 transition-colors hover:bg-grass"
+            >
               <MapPin className="h-5 w-5" />
-            </Link>
+            </a>
           </div>
         </div>
 
@@ -94,11 +100,16 @@ export default function Footer() {
           <ul className="mt-4 space-y-3 text-sm">
             <li className="flex gap-2">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-sun" />
-              <span>
+              <a
+                href="https://www.google.com/maps/place/GRAŠAK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-sun"
+              >
                 {tr('footer.address1')}
                 <br />
                 {tr('footer.address2')}
-              </span>
+              </a>
             </li>
             <li className="flex gap-2">
               <Phone className="mt-0.5 h-4 w-4 shrink-0 text-sun" />

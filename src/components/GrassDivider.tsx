@@ -53,6 +53,7 @@ export default function GrassDivider({ palette, flip = false, className = 'h-[11
   const rootRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) return
     const ctx = gsap.context(() => {
       gsap.utils.toArray<SVGPathElement>('.grass-layer').forEach((el, i) => {
         const speed = LAYERS[i]?.speed ?? 0

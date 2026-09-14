@@ -14,6 +14,7 @@ export default function Layout() {
   const lenisRef = useRef<Lenis | null>(null)
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) return
     const lenis = new Lenis({ lerp: 0.1 })
     lenisRef.current = lenis
     let raf = 0

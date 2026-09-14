@@ -16,7 +16,7 @@ const ITEMS: { Icon: typeof Star; cls: string; style: CSSProperties }[] = [
 
 function FloatDecor() {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden overflow-hidden md:block">
       {ITEMS.map(({ Icon, cls, style }, i) => (
         <Icon key={i} className={`absolute animate-float-sine ${cls}`} style={style} />
       ))}
