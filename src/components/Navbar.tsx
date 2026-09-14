@@ -10,6 +10,7 @@ const LANGS: { code: Lang; label: string }[] = [
   { code: 'cnr', label: 'ME' },
   { code: 'en', label: 'EN' },
   { code: 'ru', label: 'RU' },
+  { code: 'tr', label: 'TR' },
 ]
 
 function LangSwitcher({ className }: { className?: string }) {

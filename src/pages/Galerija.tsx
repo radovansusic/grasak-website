@@ -36,7 +36,7 @@ const FILTERS: { key: CategoryKey; labelKey: string }[] = [
 const ITEMS: { src: string; categoryKey: Exclude<CategoryKey, 'all'>; captionKey: string }[] = [
   { src: '/real-salon.jpg', categoryKey: 'salon', captionKey: 'galerija.cap1' },
   { src: '/real-oprema.jpg', categoryKey: 'salon', captionKey: 'galerija.cap2' },
-  { src: '/real-djecak.jpg', categoryKey: 'fun', captionKey: 'galerija.cap3' },
+  { src: '/mural.jpg', categoryKey: 'fun', captionKey: 'galerija.cap3' },
   { src: '/real-zadovoljni.jpg', categoryKey: 'hair', captionKey: 'galerija.cap4' },
   { src: '/real-tri_za_ustedu.jpg', categoryKey: 'hair', captionKey: 'galerija.cap5' },
   { src: '/real-prvo_sisanje.jpg', categoryKey: 'first', captionKey: 'galerija.cap6' },

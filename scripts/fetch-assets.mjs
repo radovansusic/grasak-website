@@ -43,12 +43,12 @@ const ASSETS = {
   // stvarne fotografije salona
   'real-salon.jpg': 'https://grasaksalon.me/images/salon.jpg',
   'real-oprema.jpg': 'https://grasaksalon.me/images/oprema.jpg',
-  'real-djecak.jpg': 'https://grasaksalon.me/images/djecak.jpg',
+  'mural.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F5305c5eef62896ad00e91c46e864a15b1e7a7917c6943d8d6cc62d196231cd68?filename=mural.jpg&sig=m4druEFkJKRVqOeBktEkPfc0kzoo-t-6DzrYLWxOCBg=&t=o',
   'real-zadovoljni.jpg': 'https://grasaksalon.me/images/zadovoljni.jpg',
   'real-tri_za_ustedu.jpg': 'https://grasaksalon.me/images/tri_za_ustedu.jpg',
   'real-prvo_sisanje.jpg': 'https://grasaksalon.me/images/prvo_sisanje.jpg',
   'real-nikola.jpg': 'https://grasaksalon.me/images/nikola.jpg',
-  'logo.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F086fbb758895aa819ded07540163f9c71fe5f89b563d8a3b9eb4c9d19b644c8b?filename=logo.jpg&sig=3F_-RwHWr4vi23tFbwjKlmsxInzGNpleuStdypJtp3s=&t=o',
+  'logo.jpg': 'https://raw.githubusercontent.com/radovansusic/grasak-website/main/public/images/logo-large.jpg',
 }
 
 let failed = 0

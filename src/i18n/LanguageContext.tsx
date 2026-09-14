@@ -26,7 +26,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
-      if (saved === 'cnr' || saved === 'en' || saved === 'ru') return saved
+      if (saved === 'cnr' || saved === 'en' || saved === 'ru' || saved === 'tr') return saved
     } catch {
       /* ignore */
     }

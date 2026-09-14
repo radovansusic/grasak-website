@@ -427,8 +427,8 @@ function MapSection() {
         >
           <iframe
             title={tr('kontakt.mapTitle')}
-            src="https://www.google.com/maps?q=Branka%20Deleti%C4%87a%20bb%2C%20Podgorica&output=embed"
-            className="h-[420px] w-full border-0 grayscale transition-all duration-500 hover:grayscale-0"
+            src="https://www.google.com/maps?q=Gra%C5%A1ak%20dje%C4%8Diji%20frizerski%20salon%2C%20Branka%20Deleti%C4%87a%20bb%2C%20Podgorica&output=embed"
+            className="h-[340px] w-full border-0 md:h-[460px] md:grayscale md:transition-all md:duration-500 md:hover:grayscale-0"
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
             allowFullScreen
@@ -438,7 +438,7 @@ function MapSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.3, ease: EASE }}
-            className="absolute left-4 top-4 max-w-[280px] rounded-2xl bg-white p-5 shadow-xl md:left-6 md:top-6"
+            className="mx-4 -mt-10 max-w-[320px] rounded-2xl bg-white p-5 shadow-xl md:absolute md:left-6 md:top-6 md:mx-0 md:mt-0"
           >
             <div className="flex items-center gap-3">
               <img src="/map-pin.svg" alt="" className="h-10 w-10" />
@@ -451,16 +451,28 @@ function MapSection() {
                 </p>
               </div>
             </div>
-            <a
-              href="https://share.google/CnE83gNRY2AHknR45"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold hover:underline"
-              style={{ color: GRASS_DEEP }}
-            >
-              {tr('kontakt.mapOpen')}
-              <ExternalLink size={14} />
-            </a>
+            <div className="mt-3 flex flex-col gap-2">
+              <a
+                href="https://www.google.com/maps/place/GRAŠAK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-bold hover:underline"
+                style={{ color: GRASS_DEEP }}
+              >
+                {tr('kontakt.mapBusiness')}
+                <ExternalLink size={14} />
+              </a>
+              <a
+                href="https://www.google.com/maps/dir/?api=1&destination=Grašak+dječiji+frizerski+salon,+Branka+Deletića+bb,+Podgorica"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 text-sm font-bold hover:underline"
+                style={{ color: CORAL }}
+              >
+                {tr('kontakt.mapDir')}
+                <ExternalLink size={14} />
+              </a>
+            </div>
           </motion.div>
         </motion.div>
       </div>
@@ -592,7 +604,7 @@ export default function Kontakt() {
                 transition={{ duration: 0.5, delay: i * 0.05, ease: EASE }}
               >
                 {w}
-                {i < titleWords.length - 1 ? ' ' : ''}
+                {i < titleWords.length - 1 ? ' ' : ''}
               </motion.span>
             ))}
           </h1>
@@ -628,7 +640,7 @@ export default function Kontakt() {
         <div className="mx-auto grid max-w-[1200px] gap-5 px-6 sm:grid-cols-3">
           {[
             { src: '/real-salon.jpg', alt: 'Enterijer salona Grašak' },
-            { src: '/real-djecak.jpg', alt: 'Mural graška sa malim gostom' },
+            { src: '/mural.jpg', alt: 'Mural graška sa malim gostom' },
             { src: '/real-nikola.jpg', alt: 'Frizer Nikola u akciji' },
           ].map((img, i) => (
             <motion.img
