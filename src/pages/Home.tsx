@@ -285,6 +285,7 @@ export default function Home() {
               <img
                 src={img.src}
                 alt={img.alt}
+                loading="lazy"
                 className="h-64 w-full rounded-3xl object-cover shadow-md"
               />
             </motion.div>

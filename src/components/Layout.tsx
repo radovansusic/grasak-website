@@ -47,7 +47,13 @@ export default function Layout() {
       <PageLoader />
       <ScrollProgress />
       <Navbar />
-      <main className="flex-1">
+      <a
+        href="#sadrzaj"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[300] focus:rounded-full focus:bg-grass focus:px-5 focus:py-2 focus:font-bold focus:text-white"
+      >
+        Idi na sadržaj
+      </a>
+      <main id="sadrzaj" className="flex-1">
         <Outlet />
       </main>
       <Footer />
