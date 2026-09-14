@@ -1,5 +1,5 @@
 // Centralni izvor Google recenzija, stvarne recenzije s javnog Google profila salona.
-// Ažuriranje: dopišite novu recenziju u niz ispod (ime, tekst, ocjenu), sajt je prikaže automatski.
+// Ažuriranje: dopišite novu recenziju u niz ispod (ime, tekst, ocjena), sajt je prikaže automatski.
 // Zbirna ocjena i broj recenzija uživo: GOOGLE_MAPS_URL.
 
 export const GOOGLE_MAPS_URL =
