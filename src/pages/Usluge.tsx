@@ -33,7 +33,7 @@ function HeroTitle() {
             transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 + i * 0.05 }}
           >
             {word}
-            {i < words.length - 1 ? ' ' : ''}
+            {i < words.length - 1 ? ' ' : ''}
           </motion.span>
         </span>
       ))}

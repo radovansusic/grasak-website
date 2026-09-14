@@ -28,7 +28,7 @@ export default function ReviewCard({ name, role, quote, rating }: Review) {
         </div>
         <ExternalLink className="h-4 w-4 text-ink/30 transition-colors group-hover:text-grass" />
       </div>
-      <blockquote className="mt-4 flex-1 text-ink/80">„{quote}“</blockquote>
+      <blockquote className="mt-4 flex-1 text-ink/80">„{quote}"</blockquote>
       <figcaption className="mt-5 flex items-center justify-between gap-3">
         <span className="min-w-0">
           <span className="block truncate font-display text-lg font-bold text-ink">{name}</span>
