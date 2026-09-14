@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
+  <!-- grass tuft -->
+  <g fill="#4CAF50">
+    <path d="M28 64 C26 48 22 38 14 30 C24 36 30 46 32 62 Z"/>
+    <path d="M36 64 C36 44 34 30 30 18 C38 30 41 46 40 64 Z"/>
+    <path d="M46 64 C48 46 52 34 60 26 C52 40 50 52 50 64 Z"/>
+    <path d="M22 64 C20 54 16 48 10 44 C17 48 22 55 24 64 Z" fill="#2E7D32"/>
+    <path d="M52 64 C54 54 58 47 64 43 C58 50 55 57 54 64 Z" fill="#2E7D32"/>
+  </g>
+  <!-- scissors snipping -->
+  <g transform="translate(52 18) rotate(20)" stroke="#FF7A59" stroke-width="3.4" fill="none" stroke-linecap="round">
+    <circle cx="0" cy="14" r="4.5"/>
+    <circle cx="12" cy="14" r="4.5"/>
+    <path d="M3 10 L16 -6"/>
+    <path d="M10 10 L-2 -6"/>
+  </g>
+  <!-- wordmark -->
+  <text x="78" y="52" font-family="'Baloo 2', 'Comic Sans MS', sans-serif" font-weight="800" font-size="38" fill="#2E7D32">Grašak</text>
+  <circle cx="222" cy="30" r="4" fill="#FFC93C"/>
+</svg>
