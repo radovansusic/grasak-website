@@ -85,7 +85,7 @@ function WordSplitHeading({ text, className }: { text: string; className?: strin
             transition={{ duration: 0.6, ease: EASE, delay: 0.15 + i * 0.05 }}
           >
             {w}
-            {i < words.length - 1 ? ' ' : ''}
+            {i < words.length - 1 ? ' ' : ''}
           </motion.span>
         </span>
       ))}
