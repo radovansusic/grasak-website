@@ -43,6 +43,9 @@ const ASSETS = {
   // stvarne fotografije salona
   'real-salon.jpg': 'https://grasaksalon.me/images/salon.jpg',
   'real-oprema.jpg': 'https://grasaksalon.me/images/oprema.jpg',
+  'step1.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F6d01382512e4702dc58a87266b22ef84b06f769cfa5eaf32f206775528ade50a?filename=step1.jpg&sig=pnKrdQ4jiScvftmomKBXRMzGTKbEd5C8qxebAzoiz1g=&t=o',
+  'step2.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F2c55a12f05ec0599514fe2a21ebe30f293a37ce54fccaae04083e8e4cccb8e29?filename=step2.jpg&sig=B4megc9SE7u6S8GsFtaD0IuzrWfTUFa57PasF2DlB8Q=&t=o',
+  'step3.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F522545d5d10c20821c3d58a346512c61217fc82e7263a7e0d947be09b432ef3b?filename=step3.jpg&sig=k10aCZhKEvMbSnsZolrFv2W7sxMyAt_2WflPEf1BR4w=&t=o',
   'mural.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F5305c5eef62896ad00e91c46e864a15b1e7a7917c6943d8d6cc62d196231cd68?filename=mural.jpg&sig=m4druEFkJKRVqOeBktEkPfc0kzoo-t-6DzrYLWxOCBg=&t=o',
   'real-zadovoljni.jpg': 'https://grasaksalon.me/images/zadovoljni.jpg',
   'real-tri_za_ustedu.jpg': 'https://grasaksalon.me/images/tri_za_ustedu.jpg',

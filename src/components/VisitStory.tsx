@@ -10,10 +10,10 @@ gsap.registerPlugin(ScrollTrigger, useGSAP)
 export default function VisitStory() {
   const { tr, lang } = useLang()
   const steps = [
-    { title: tr('visit.s1t'), text: tr('visit.s1x'), icon: Car, color: 'bg-grass' },
-    { title: tr('visit.s2t'), text: tr('visit.s2x'), icon: Palette, color: 'bg-sun' },
-    { title: tr('visit.s3t'), text: tr('visit.s3x'), icon: Scissors, color: 'bg-coral' },
-    { title: tr('visit.s4t'), text: tr('visit.s4x'), icon: Smile, color: 'bg-sky' },
+    { title: tr('visit.s1t'), text: tr('visit.s1x'), icon: Car, color: 'bg-grass', image: '/step1.jpg' },
+    { title: tr('visit.s2t'), text: tr('visit.s2x'), icon: Palette, color: 'bg-sun', image: '/step2.jpg' },
+    { title: tr('visit.s3t'), text: tr('visit.s3x'), icon: Scissors, color: 'bg-coral', image: '/step3.jpg' },
+    { title: tr('visit.s4t'), text: tr('visit.s4x'), icon: Smile, color: 'bg-sky', image: '/first-haircut.jpg' },
   ]
   const root = useRef<HTMLDivElement>(null)
 
@@ -93,13 +93,12 @@ export default function VisitStory() {
               <div className="mt-4 font-display text-6xl font-bold text-grass/20">0{i + 1}</div>
               <h3 className="mt-2 font-display text-2xl font-bold text-ink">{s.title}</h3>
               <p className="mt-2 text-ink/70">{s.text}</p>
-              {i === 3 && (
-                <img
-                  src="/first-haircut.jpg"
-                  alt={tr('visit.imgAlt')}
-                  className="mt-4 h-40 w-full rounded-2xl object-cover"
-                />
-              )}
+              <img
+                src={s.image}
+                alt={s.title}
+                loading="lazy"
+                className="mt-4 h-44 w-full rounded-2xl object-cover"
+              />
             </div>
           ))}
         </div>
