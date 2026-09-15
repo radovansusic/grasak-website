@@ -48,9 +48,9 @@ const ASSETS = {
   'real-tri_za_ustedu.jpg': 'https://grasaksalon.me/images/tri_za_ustedu.jpg',
   'real-prvo_sisanje.jpg': 'https://grasaksalon.me/images/prvo_sisanje.jpg',
   'real-nikola.jpg': 'https://grasaksalon.me/images/nikola.jpg',
-  'logo.png': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Feafb28733741d34d7ddb89db008bbf298edb0c6c823df8698e9454f2cfab55c5?filename=logo.png&sig=YDuKkSELuDQb19-cMfz_WOB1ZLLrYK96gYeAWUG-Sms=&t=o',
-  'logo-footer.png': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F475588b025f589562bb916386c9fa9bb5715f434554e4f54f2b1d082869de555?filename=logo-footer.png&sig=u9JEXxNRyzADrahfMqo30kFSRF_PVeyQYR5IhW1q_kQ=&t=o',
-  'logo-192.png': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Fee4045d08950c26e53a354fe99be410a9f256c72ffa6e963e98d62784d3cecf3?filename=logo-192.png&sig=4xCiDLiosklOiv7tumLjI9tyxCiFwcGD2FV5Y742pFA=&t=o',
+  'logo.png': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F9d165796adf9dff8798ea0beba5340307486a85e9df6176db79192a8396d8108?filename=logo.png&sig=y_b0iObsMEi_CcdAb7AxkBbKfxDybM9LeH9O2dHaSg4=&t=o',
+  'logo-footer.png': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Ff67acf634309c2c7fb95b3a688860cf26592cdd61931def21f51c17b65b0cdba?filename=logo-footer.png&sig=ajkWXlFmVYoFm3sL1Bf63m_lLu3sHANXd2tqxd-hw8w=&t=o',
+  'logo-192.png': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F2789f8a604ff79977819e6dffc3fb08dbfe7a79a7c831a6a1b376ebdd3ee3844?filename=logo-192.png&sig=C5xev9KrSxz4TfAwSBDcbEy4fHFNJHCnJ72Az6hgGHQ=&t=o',
 }
 
 let failed = 0

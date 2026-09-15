@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Phone,
@@ -98,8 +98,13 @@ function BookingFormCard() {
     tr('kontakt.s7'),
     tr('kontakt.s8'),
     tr('kontakt.s9'),
+    tr('kontakt.s10'),
+    tr('kontakt.s11'),
   ]
   const [submitted, setSubmitted] = useState(false)
+  const [searchParams] = useSearchParams()
+  const wantsVaucer = searchParams.get('vaucer') === '1'
+  const defaultService = wantsVaucer ? tr('kontakt.s10') : SERVICES[0]
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -209,7 +214,7 @@ function BookingFormCard() {
                 <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
                   {tr('kontakt.serviceLabel')}
                 </span>
-                <select className={inputCls} defaultValue={SERVICES[0]}>
+                <select key={defaultService} className={inputCls} defaultValue={defaultService}>
                   {SERVICES.map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -640,7 +645,7 @@ export default function Kontakt() {
                 transition={{ duration: 0.5, delay: i * 0.05, ease: EASE }}
               >
                 {w}
-                {i < titleWords.length - 1 ? ' ' : ''}
+                {i < titleWords.length - 1 ? ' ' : ''}
               </motion.span>
             ))}
           </h1>

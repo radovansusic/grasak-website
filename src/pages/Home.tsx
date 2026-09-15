@@ -11,6 +11,7 @@ import FaqAccordion from '@/components/FaqAccordion'
 import StatCounter from '@/components/StatCounter'
 import CTABand from '@/components/CTABand'
 import VisitStory from '@/components/VisitStory'
+import Vaucer from '@/components/Vaucer'
 import Marquee from '@/components/Marquee'
 import GrassDivider from '@/components/GrassDivider'
 import OutlineHeading from '@/components/OutlineHeading'
@@ -405,6 +406,9 @@ export default function Home() {
 
       {/* BRAND INTERLUDE */}
       <BrandStrip className="bg-white" />
+
+      {/* 6b. POKLON VAUČERI */}
+      <Vaucer />
 
       {/* 7. FAQ TEASER */}
       <section className="bg-white px-6 py-16 md:py-24">
