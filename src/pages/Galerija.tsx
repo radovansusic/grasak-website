@@ -41,6 +41,7 @@ const ITEMS: { src: string; categoryKey: Exclude<CategoryKey, 'all'>; captionKey
   { src: '/real-tri_za_ustedu.jpg', categoryKey: 'hair', captionKey: 'galerija.cap5' },
   { src: '/real-prvo_sisanje.jpg', categoryKey: 'first', captionKey: 'galerija.cap6' },
   { src: '/real-nikola.jpg', categoryKey: 'salon', captionKey: 'galerija.cap7' },
+  { src: '/real-recepcija.jpg', categoryKey: 'salon', captionKey: 'galerija.cap7b' },
   { src: '/gallery-1.jpg', categoryKey: 'hair', captionKey: 'galerija.cap8' },
   { src: '/gallery-2.jpg', categoryKey: 'hair', captionKey: 'galerija.cap9' },
   { src: '/gallery-3.jpg', categoryKey: 'salon', captionKey: 'galerija.cap10' },
