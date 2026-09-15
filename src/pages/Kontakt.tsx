@@ -115,14 +115,14 @@ function BookingFormCard() {
     const d = new FormData(e.currentTarget)
     if (d.get('website')) return // honeypot anti-spam
     const lines = [
-      '🌱 NOVA REZERVACIJA SA SAJTA',
-      `👤 Roditelj: ${d.get('parentName') || '-'}`,
-      `📞 Telefon: ${d.get('phone') || '-'}`,
-      `👶 Dijete: ${d.get('childName') || '-'} (${d.get('childAge') || '-'} god.)`,
-      `✂️ Usluga: ${d.get('service') || '-'}`,
-      `📅 Željeni datum: ${d.get('date') || '-'}`,
-      `📝 Napomena: ${d.get('note') || '-'}`,
-      '— poslato preko sajta grasaksalon',
+      'NOVA REZERVACIJA SA SAJTA',
+      `Roditelj: ${d.get('parentName') || '-'}`,
+      `Telefon: ${d.get('phone') || '-'}`,
+      `Dijete: ${d.get('childName') || '-'} (${d.get('childAge') || '-'} god.)`,
+      `Usluga: ${d.get('service') || '-'}`,
+      `Željeni datum: ${d.get('date') || '-'}`,
+      `Napomena: ${d.get('note') || '-'}`,
+      '- poslato preko sajta grasaksalon',
     ]
     const msg = lines.join('\n')
     // automatski email salonu (bez klika korisnika) — FormSubmit, prva poruka traži aktivaciju
@@ -611,7 +611,7 @@ function MiniFaq() {
           <Eyebrow>{tr('kontakt.faqEyebrow')}</Eyebrow>
           <h2
             className="mt-4 text-3xl font-bold md:text-[42px]"
-            style={{ fontFamily: "'Baloo 2', cursive", color: INK }}
+            style={{ fontFamily: "'Baloo 2', cursive" }}
           >
             {tr('kontakt.faqTitle')}
           </h2>
@@ -721,7 +721,7 @@ export default function Kontakt() {
                 transition={{ duration: 0.5, delay: i * 0.05, ease: EASE }}
               >
                 {w}
-                {i < titleWords.length - 1 ? ' ' : ''}
+                {i < titleWords.length - 1 ? ' ' : ''}
               </motion.span>
             ))}
           </h1>

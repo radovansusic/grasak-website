@@ -22,14 +22,14 @@ export default function BookingForm() {
     const data = new FormData(e.currentTarget)
     if (data.get('website')) return
     const lines = [
-      '🌱 NOVA REZERVACIJA SA SAJTA',
-      `👤 Roditelj: ${data.get('parentName') || '-'}`,
-      `📞 Telefon: ${data.get('phone') || '-'}`,
-      `👶 Dijete: ${data.get('childName') || '-'} (${data.get('childAge') || '-'} god.)`,
-      `✂️ Usluga: ${data.get('service') || '-'}`,
-      `📅 Željeni datum: ${data.get('date') || '-'}`,
-      `📝 Napomena: ${data.get('note') || '-'}`,
-      '— poslato preko sajta grasaksalon',
+      'NOVA REZERVACIJA SA SAJTA',
+      `Roditelj: ${data.get('parentName') || '-'}`,
+      `Telefon: ${data.get('phone') || '-'}`,
+      `Dijete: ${data.get('childName') || '-'} (${data.get('childAge') || '-'} god.)`,
+      `Usluga: ${data.get('service') || '-'}`,
+      `Željeni datum: ${data.get('date') || '-'}`,
+      `Napomena: ${data.get('note') || '-'}`,
+      '- poslato preko sajta grasaksalon',
     ]
     const msg = lines.join('\n')
     // automatski email salonu (bez klika korisnika) — FormSubmit, prva poruka traži aktivaciju
