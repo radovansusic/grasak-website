@@ -14,6 +14,9 @@ export default function BookingForm() {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    // honeypot: ako je nevidljivo polje popunjeno, bot je — tiho odbaci
+    const data = new FormData(e.currentTarget)
+    if (data.get('website')) return
     setSent(true)
   }
 
@@ -51,6 +54,15 @@ export default function BookingForm() {
           </motion.div>
         ) : (
           <motion.form key="form" exit={{ opacity: 0 }} onSubmit={onSubmit} className="space-y-4">
+            {/* honeypot anti-spam polje — nevidljivo ljudima */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-[9999px] h-0 w-0 opacity-0"
+            />
             <h3 className="font-display text-2xl font-bold text-ink">{tr('booking.title')}</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <input required placeholder={tr('booking.namePlaceholder')} className={inputCls} aria-label={tr('booking.namePlaceholder')} />
