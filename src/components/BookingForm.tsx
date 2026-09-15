@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { PartyPopper } from 'lucide-react'
 import { useLang } from '@/i18n/LanguageContext'
+import { sendBookingEmail } from '@/lib/booking'
 
 const inputCls =
   'w-full rounded-2xl border-2 border-grass-tint bg-white px-4 py-3 text-ink outline-none transition-colors focus:border-grass'
@@ -31,6 +32,16 @@ export default function BookingForm() {
       '— poslato preko sajta grasaksalon',
     ]
     const msg = lines.join('\n')
+    // automatski email salonu (bez klika korisnika) — FormSubmit, prva poruka traži aktivaciju
+    void sendBookingEmail({
+      Roditelj: String(data.get('parentName') || '-'),
+      Telefon: String(data.get('phone') || '-'),
+      Dijete: `${data.get('childName') || '-'} (${data.get('childAge') || '-'} god.)`,
+      Usluga: String(data.get('service') || '-'),
+      'Željeni datum': String(data.get('date') || '-'),
+      Napomena: String(data.get('note') || '-'),
+      Izvor: 'Sajt grasaksalon (online forma)',
+    })
     const wa = 'https://wa.me/38269371111?text=' + encodeURIComponent(msg)
     const mail =
       'mailto:grasaksalon@gmail.com?subject=' +
