@@ -19,6 +19,7 @@ export default function VisitStory() {
 
   useGSAP(
     () => {
+      if (typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches) return
       const cards = gsap.utils.toArray<HTMLElement>('.story-card')
       const dots = gsap.utils.toArray<HTMLElement>('.story-dot')
       const progress = root.current?.querySelector<HTMLElement>('.story-progress-fill')
@@ -56,10 +57,10 @@ export default function VisitStory() {
         {/* left sticky label */}
         <div>
           <span className="inline-block rounded-full bg-sun px-4 py-1.5 text-[13px] font-bold uppercase tracking-[0.08em] text-ink">
-            Kako izgleda posjeta
+            {tr('visit.eyebrow')}
           </span>
           <h2 className="mt-4 font-display text-4xl font-bold text-ink md:text-5xl">
-            Posjeta koja liči na igru
+            {tr('visit.title')}
           </h2>
           <div className="mt-10 flex gap-4">
             <div className="relative w-1 rounded-full bg-grass-tint">
@@ -79,11 +80,11 @@ export default function VisitStory() {
         </div>
 
         {/* right cards */}
-        <div className="relative min-h-[420px]">
+        <div className="relative md:min-h-[420px]">
           {steps.map((s, i) => (
             <div
               key={s.title}
-              className="story-card absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-3xl bg-cream p-8 shadow-xl shadow-ink/10"
+              className="story-card relative mb-6 rounded-3xl bg-cream p-8 shadow-xl shadow-ink/10 last:mb-0 md:absolute md:inset-x-0 md:top-1/2 md:mb-0 md:-translate-y-1/2"
               style={{ zIndex: i + 1 }}
             >
               <span className={`flex h-14 w-14 items-center justify-center rounded-2xl ${s.color} text-white`}>
