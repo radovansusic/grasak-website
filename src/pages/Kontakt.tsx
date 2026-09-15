@@ -640,7 +640,7 @@ export default function Kontakt() {
                 transition={{ duration: 0.5, delay: i * 0.05, ease: EASE }}
               >
                 {w}
-                {i < titleWords.length - 1 ? ' ' : ''}
+                {i < titleWords.length - 1 ? ' ' : ''}
               </motion.span>
             ))}
           </h1>
