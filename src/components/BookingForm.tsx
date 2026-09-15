@@ -12,11 +12,41 @@ export default function BookingForm() {
   const services = [tr('booking.s1'), tr('booking.s2'), tr('booking.s3'), tr('booking.s4'), tr('booking.s5'), tr('booking.s6')]
   const [sent, setSent] = useState(false)
 
+  const [waUrl, setWaUrl] = useState('')
+  const [mailUrl, setMailUrl] = useState('')
+
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     // honeypot: ako je nevidljivo polje popunjeno, bot je — tiho odbaci
     const data = new FormData(e.currentTarget)
     if (data.get('website')) return
+    const lines = [
+      '🌱 NOVA REZERVACIJA SA SAJTA',
+      `👤 Roditelj: ${data.get('parentName') || '-'}`,
+      `📞 Telefon: ${data.get('phone') || '-'}`,
+      `👶 Dijete: ${data.get('childName') || '-'} (${data.get('childAge') || '-'} god.)`,
+      `✂️ Usluga: ${data.get('service') || '-'}`,
+      `📅 Željeni datum: ${data.get('date') || '-'}`,
+      `📝 Napomena: ${data.get('note') || '-'}`,
+      '— poslato preko sajta grasaksalon',
+    ]
+    const msg = lines.join('\n')
+    const wa = 'https://wa.me/38269371111?text=' + encodeURIComponent(msg)
+    const mail =
+      'mailto:grasaksalon@gmail.com?subject=' +
+      encodeURIComponent('Rezervacija sa sajta') +
+      '&body=' +
+      encodeURIComponent(msg)
+    setWaUrl(wa)
+    setMailUrl(mail)
+    // otvaranje preko privremenog anchor-a (prolazi popup blokere pouzdanije)
+    const a = document.createElement('a')
+    a.href = wa
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
     setSent(true)
   }
 
@@ -51,6 +81,26 @@ export default function BookingForm() {
             </span>
             <h3 className="mt-4 font-display text-3xl font-bold text-ink">{tr('booking.thanks')}</h3>
             <p className="mt-2 text-ink/70">{tr('booking.thanksSub')}</p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+              {waUrl && (
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-full bg-[#25D366] px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                >
+                  WhatsApp
+                </a>
+              )}
+              {mailUrl && (
+                <a
+                  href={mailUrl}
+                  className="flex items-center gap-2 rounded-full bg-sun px-6 py-2.5 text-sm font-bold text-ink transition hover:opacity-90"
+                >
+                  Email
+                </a>
+              )}
+            </div>
           </motion.div>
         ) : (
           <motion.form key="form" exit={{ opacity: 0 }} onSubmit={onSubmit} className="space-y-4">
@@ -65,11 +115,11 @@ export default function BookingForm() {
             />
             <h3 className="font-display text-2xl font-bold text-ink">{tr('booking.title')}</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              <input required placeholder={tr('booking.namePlaceholder')} className={inputCls} aria-label={tr('booking.namePlaceholder')} />
-              <input
+              <input required name="parentName" placeholder={tr('booking.namePlaceholder')} className={inputCls} aria-label={tr('booking.namePlaceholder')} />
+              <input name="phone"
                 required
                 type="tel"
-                pattern="[0-9+\s\-()]{6,17}"
+                pattern="[0-9+()\s-]{6,17}"
                 title={tr('booking.phoneTitle')}
                 placeholder={tr('booking.phonePlaceholder')}
                 className={inputCls}
@@ -77,14 +127,11 @@ export default function BookingForm() {
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <input
-                placeholder={tr('booking.childName')}
+              <input name="childName" placeholder={tr('booking.childName')}
                 className={inputCls}
                 aria-label={tr('booking.childName')}
               />
-              <input
-                type="text"
-                inputMode="numeric"
+              <input name="childAge" type="text" inputMode="numeric"
                 pattern="[0-9]+"
                 placeholder={tr('booking.childAge')}
                 className={inputCls}
@@ -92,7 +139,7 @@ export default function BookingForm() {
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <select required defaultValue="" className={inputCls} aria-label={tr('booking.serviceLabel')}>
+              <select name="service" required defaultValue="" className={inputCls} aria-label={tr('booking.serviceLabel')}>
                 <option value="" disabled>
                   {tr('booking.selectService')}
                 </option>
@@ -103,14 +150,14 @@ export default function BookingForm() {
                 ))}
               </select>
               <input
-                required
+                name="date" required
                 type="date"
                 min={new Date().toISOString().split('T')[0]}
                 className={inputCls}
                 aria-label={tr('booking.dateLabel')}
               />
             </div>
-            <textarea placeholder={tr('booking.notePlaceholder')} rows={3} className={inputCls} aria-label={tr('booking.noteLabel')} />
+            <textarea name="note" placeholder={tr('booking.notePlaceholder')} rows={3} className={inputCls} aria-label={tr('booking.noteLabel')} />
             <motion.button
               type="submit"
               whileHover={{ scale: 1.03 }}
