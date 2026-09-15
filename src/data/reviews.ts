@@ -7,6 +7,8 @@ export const GOOGLE_MAPS_URL =
 
 export const GOOGLE_RATING = 4.5
 
+export const GOOGLE_REVIEW_COUNT = 50
+
 export interface Review {
   name: string
   role: string

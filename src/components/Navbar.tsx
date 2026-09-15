@@ -73,7 +73,7 @@ export default function Navbar() {
       >
         <Link to="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
           <img
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Grašak logo"
             className={cn(
               'w-auto rounded-xl ring-2 ring-grass/15 transition-all duration-300',

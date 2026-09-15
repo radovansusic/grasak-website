@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 import { motion } from 'framer-motion'
 import type { Variants } from 'framer-motion'
 import { Scissors, Smile, Star, Instagram, MapPin, Heart, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react'
-import { reviews, GOOGLE_MAPS_URL, GOOGLE_RATING } from '@/data/reviews'
+import { reviews, GOOGLE_MAPS_URL, GOOGLE_RATING, GOOGLE_REVIEW_COUNT } from '@/data/reviews'
 import { useRef } from 'react'
 import SectionHeading from '@/components/SectionHeading'
 import PriceCard from '@/components/PriceCard'
@@ -302,7 +302,7 @@ export default function Home() {
           <SectionHeading
             eyebrow={tr('home.revEyebrow')}
             title={tr('home.revTitle')}
-            sub={tr('home.revSub')}
+            sub={tr('home.revSub', { count: GOOGLE_REVIEW_COUNT })}
           />
           <div className="relative">
             <motion.div

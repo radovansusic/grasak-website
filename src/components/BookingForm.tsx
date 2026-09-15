@@ -77,6 +77,21 @@ export default function BookingForm() {
               />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
+              <input
+                placeholder={tr('booking.childName')}
+                className={inputCls}
+                aria-label={tr('booking.childName')}
+              />
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]+"
+                placeholder={tr('booking.childAge')}
+                className={inputCls}
+                aria-label={tr('booking.childAge')}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
               <select required defaultValue="" className={inputCls} aria-label={tr('booking.serviceLabel')}>
                 <option value="" disabled>
                   {tr('booking.selectService')}

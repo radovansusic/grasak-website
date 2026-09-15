@@ -192,6 +192,21 @@ function BookingFormCard() {
             <div className="grid gap-5 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5">
                 <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
+                  {tr('kontakt.childName')}
+                </span>
+                <input type="text" className={inputCls} placeholder={tr('kontakt.childNamePh')} />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
+                  {tr('kontakt.childAge')}
+                </span>
+                <input type="text" inputMode="numeric" className={inputCls} placeholder={tr('kontakt.childAgePh')} />
+              </label>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
                   {tr('kontakt.serviceLabel')}
                 </span>
                 <select className={inputCls} defaultValue={SERVICES[0]}>
@@ -244,6 +259,16 @@ function BookingFormCard() {
 
 function InfoCards() {
   const { tr } = useLang()
+  const [copied, setCopied] = useState(false)
+  const onCopy = (text: string) => {
+    try {
+      navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* ignore */
+    }
+  }
   const INFO_CARDS = [
     {
       icon: Phone,
@@ -257,7 +282,8 @@ function InfoCards() {
       icon: Mail,
       title: tr('kontakt.email'),
       value: 'grasaksalon@gmail.com',
-      href: 'mailto:grasaksalon@gmail.com',
+      href: 'mailto:grasaksalon@gmail.com?subject=Upit%20-%20Gra%C5%A1ak%20salon',
+      copy: 'grasaksalon@gmail.com',
       bg: '#E5F6FD',
       accent: SKY,
     },
@@ -266,7 +292,7 @@ function InfoCards() {
       title: tr('kontakt.address'),
       value: tr('kontakt.addressValue'),
       extra: tr('kontakt.parking'),
-      href: 'https://share.google/CnE83gNRY2AHknR45',
+      href: 'https://www.google.com/maps/place/GRAŠAK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95',
       bg: '#E9F5EA',
       accent: GRASS,
     },
@@ -301,6 +327,7 @@ function InfoCards() {
         <motion.a
           key={card.title}
           href={card.href}
+          onClick={'copy' in card && card.copy ? () => onCopy(card.copy as string) : undefined}
           target={card.href.startsWith('http') ? '_blank' : undefined}
           rel="noreferrer"
           initial={{ opacity: 0, x: 40 }}
@@ -334,6 +361,15 @@ function InfoCards() {
               <span className="mt-1.5 flex items-center gap-1.5 text-sm font-semibold" style={{ color: GRASS_DEEP }}>
                 <Car size={16} />
                 {card.extra}
+              </span>
+            )}
+            {'copy' in card && card.copy && (
+              <span
+                className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-bold shadow-sm"
+                style={{ color: copied ? GRASS_DEEP : `${INK}99` }}
+              >
+                {copied ? <CheckCircle2 size={14} /> : <Mail size={14} />}
+                {copied ? tr('kontakt.copied') : tr('kontakt.emailHint')}
               </span>
             )}
           </span>
