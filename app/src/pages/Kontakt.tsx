@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Link } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Phone,
@@ -98,11 +98,48 @@ function BookingFormCard() {
     tr('kontakt.s7'),
     tr('kontakt.s8'),
     tr('kontakt.s9'),
+    tr('kontakt.s10'),
+    tr('kontakt.s11'),
   ]
   const [submitted, setSubmitted] = useState(false)
+  const [searchParams] = useSearchParams()
+  const wantsVaucer = searchParams.get('vaucer') === '1'
+  const defaultService = wantsVaucer ? tr('kontakt.s10') : SERVICES[0]
+
+  const [waUrl, setWaUrl] = useState('')
+  const [mailUrl, setMailUrl] = useState('')
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    const d = new FormData(e.currentTarget)
+    if (d.get('website')) return // honeypot anti-spam
+    const lines = [
+      '🌱 NOVA REZERVACIJA SA SAJTA',
+      `👤 Roditelj: ${d.get('parentName') || '-'}`,
+      `📞 Telefon: ${d.get('phone') || '-'}`,
+      `👶 Dijete: ${d.get('childName') || '-'} (${d.get('childAge') || '-'} god.)`,
+      `✂️ Usluga: ${d.get('service') || '-'}`,
+      `📅 Željeni datum: ${d.get('date') || '-'}`,
+      `📝 Napomena: ${d.get('note') || '-'}`,
+      '— poslato preko sajta grasaksalon',
+    ]
+    const msg = lines.join('\n')
+    const wa = 'https://wa.me/38269371111?text=' + encodeURIComponent(msg)
+    const mail =
+      'mailto:grasaksalon@gmail.com?subject=' +
+      encodeURIComponent('Rezervacija sa sajta') +
+      '&body=' +
+      encodeURIComponent(msg)
+    setWaUrl(wa)
+    setMailUrl(mail)
+    // otvaranje preko privremenog anchor-a (prolazi popup blokere pouzdanije)
+    const a = document.createElement('a')
+    a.href = wa
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
     setSubmitted(true)
   }
 
@@ -144,6 +181,27 @@ function BookingFormCard() {
             <p className="max-w-sm text-[17px] leading-relaxed" style={{ color: `${INK}B3` }}>
               {tr('kontakt.thanksSub')}
             </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {waUrl && (
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 rounded-full bg-[#25D366] px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                >
+                  <MessageCircle size={16} /> {tr('kontakt.waSend')}
+                </a>
+              )}
+              {mailUrl && (
+                <a
+                  href={mailUrl}
+                  className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                  style={{ backgroundColor: SKY, color: INK }}
+                >
+                  <Mail size={16} /> {tr('kontakt.mailSend')}
+                </a>
+              )}
+            </div>
             <button
               onClick={() => setSubmitted(false)}
               className="mt-2 rounded-full px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
@@ -160,6 +218,15 @@ function BookingFormCard() {
             transition={{ duration: 0.3 }}
             className="flex flex-col gap-5 p-8 md:p-10"
           >
+            {/* honeypot anti-spam — nevidljivo ljudima */}
+            <input
+              type="text"
+              name="website"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              className="pointer-events-none absolute -left-[9999px] h-0 w-0 opacity-0"
+            />
             <h3
               className="text-2xl font-bold md:text-[28px]"
               style={{ fontFamily: "'Baloo 2', cursive", color: INK }}
@@ -172,20 +239,34 @@ function BookingFormCard() {
                 <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
                   {tr('kontakt.nameLabel')}
                 </span>
-                <input required type="text" className={inputCls} placeholder={tr('kontakt.namePlaceholder')} />
+                <input required name="parentName" type="text" className={inputCls} placeholder={tr('kontakt.namePlaceholder')} />
               </label>
               <label className="flex flex-col gap-1.5">
                 <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
                   Broj telefona *
                 </span>
-                <input
-                  required
+                <input required name="phone"
                   type="tel"
-                  pattern="[0-9+\s\-()]{6,17}"
+                  pattern="[0-9+()\s-]{6,17}"
                   title="Unesite ispravan broj telefona (npr. 069 371 111)"
                   className={inputCls}
-                  placeholder="069 000 000"
+                   placeholder="069 000 000"
                 />
+              </label>
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
+                  {tr('kontakt.childName')}
+                </span>
+                <input name="childName" type="text" className={inputCls} placeholder={tr('kontakt.childNamePh')} />
+              </label>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
+                  {tr('kontakt.childAge')}
+                </span>
+                <input name="childAge" type="text" inputMode="numeric" className={inputCls} placeholder={tr('kontakt.childAgePh')} />
               </label>
             </div>
 
@@ -194,7 +275,7 @@ function BookingFormCard() {
                 <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
                   {tr('kontakt.serviceLabel')}
                 </span>
-                <select className={inputCls} defaultValue={SERVICES[0]}>
+                <select name="service" key={defaultService} className={inputCls} defaultValue={defaultService}>
                   {SERVICES.map((s) => (
                     <option key={s} value={s}>
                       {s}
@@ -206,7 +287,7 @@ function BookingFormCard() {
                 <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
                   {tr('kontakt.dateLabel')}
                 </span>
-                <input type="date" min={new Date().toISOString().split('T')[0]} className={inputCls} />
+                <input name="date" type="date" min={new Date().toISOString().split('T')[0]} className={inputCls} />
               </label>
             </div>
 
@@ -215,6 +296,7 @@ function BookingFormCard() {
                 Napomena
               </span>
               <textarea
+                name="note"
                 rows={4}
                 className={`${inputCls} resize-none`}
                 placeholder={tr('kontakt.notePlaceholder')}
@@ -625,7 +707,7 @@ export default function Kontakt() {
                 transition={{ duration: 0.5, delay: i * 0.05, ease: EASE }}
               >
                 {w}
-                {i < titleWords.length - 1 ? ' ' : ''}
+                {i < titleWords.length - 1 ? ' ' : ''}
               </motion.span>
             ))}
           </h1>
