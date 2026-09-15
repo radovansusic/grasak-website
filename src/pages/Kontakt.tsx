@@ -20,6 +20,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { useLang } from '@/i18n/LanguageContext'
+import { sendBookingEmail } from '@/lib/booking'
 
 const GRASS = '#4CAF50'
 const GRASS_DEEP = '#2E7D32'
@@ -124,6 +125,16 @@ function BookingFormCard() {
       '— poslato preko sajta grasaksalon',
     ]
     const msg = lines.join('\n')
+    // automatski email salonu (bez klika korisnika) — FormSubmit, prva poruka traži aktivaciju
+    void sendBookingEmail({
+      Roditelj: String(d.get('parentName') || '-'),
+      Telefon: String(d.get('phone') || '-'),
+      Dijete: `${d.get('childName') || '-'} (${d.get('childAge') || '-'} god.)`,
+      Usluga: String(d.get('service') || '-'),
+      'Željeni datum': String(d.get('date') || '-'),
+      Napomena: String(d.get('note') || '-'),
+      Izvor: 'Sajt grasaksalon (online forma)',
+    })
     const wa = 'https://wa.me/38269371111?text=' + encodeURIComponent(msg)
     const mail =
       'mailto:grasaksalon@gmail.com?subject=' +
@@ -181,15 +192,18 @@ function BookingFormCard() {
             <p className="max-w-sm text-[17px] leading-relaxed" style={{ color: `${INK}B3` }}>
               {tr('kontakt.thanksSub')}
             </p>
+            <p className="max-w-sm rounded-2xl px-4 py-2.5 text-[14px] font-bold" style={{ backgroundColor: '#E9F5EA', color: GRASS_DEEP }}>
+              {tr('kontakt.waHint')}
+            </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
               {waUrl && (
                 <a
                   href={waUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-full bg-[#25D366] px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
+                  className="flex items-center gap-2 rounded-full bg-[#25D366] px-8 py-4 text-base font-bold text-white shadow-lg shadow-[#25D366]/30 transition hover:scale-105"
                 >
-                  <MessageCircle size={16} /> {tr('kontakt.waSend')}
+                  <MessageCircle size={20} /> {tr('kontakt.waSend')}
                 </a>
               )}
               {mailUrl && (
