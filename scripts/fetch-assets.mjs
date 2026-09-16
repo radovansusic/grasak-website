@@ -41,9 +41,9 @@ const ASSETS = {
   // stvarne fotografije salona
   'real-salon.jpg': 'https://grasaksalon.me/images/salon.jpg',
   'real-oprema.jpg': 'https://grasaksalon.me/images/oprema.jpg',
-  'step1.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F50d57f374ca3261f1237fe70f9192bf4d76e19682595f3c4540007cd4e17fe0e?filename=step1.jpg&sig=VchNIsYcmt4CtAJd1XWn9qEQ7W5v-e0U6KWSnZMxLMI=&t=o',
-  'step2.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F03f4f3a9fe88109976b22568b7f04a9533cff7d2680712c2fb7d663fed759f4e?filename=step2.jpg&sig=SeciSq5NIlPaSMdzkXiIguwA5kzZO-32_yBsSt6G7ic=&t=o',
-  'step3.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F1eee6c73768b7d6c4a0c117e622f2b650fc547c86a9641caa1db8610e51b150a?filename=step3.jpg&sig=SOP_2zXSFrWRpvMMy7w27FPWKeKjTdUbaUa0ExXV4X0=&t=o',
+  'step1.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F0df61274b125842903dcba697c673f47ef4f8d2369b2b84c1359a84ad0b5ecc0?filename=step1.jpg&sig=WqKNjYE5e22k_khpM_D1ymLtbQDdNwft0_NLTvPDV3k=&t=o',
+  'step2.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F7d05ca4d180a6178f79d6b7efadc94daeabb0289f3efd9ba5f528070892e704f?filename=step2.jpg&sig=rsG-I7isXrLF_6I__68KWVXLE7VoCjFbBzVvcBXBQC4=&t=o',
+  'step3.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Fb064741f38589cd191843380610b68d9cd000cc90a0553d91ff3733832561455?filename=step3.jpg&sig=-qjJoDkWhDxrGv4vekFez4OyEVEofqgb94CTC8VUQQs=&t=o',
   'real-recepcija.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2Faa1e39b6789d232b2568a7c7d4d00c873016f94c764563d205b27f37cd2a9fef?filename=real-recepcija.jpg&sig=PvfZ9TI9Lxqxeylr3EwyR-omRjqz7VrUDxqUS_nbAqM=&t=o',
   'mural.jpg': 'https://www.kimi.com/apiv2-files/sign-obj/kimi-fs%2Ffiles%2Fblob%2F5305c5eef62896ad00e91c46e864a15b1e7a7917c6943d8d6cc62d196231cd68?filename=mural.jpg&sig=m4druEFkJKRVqOeBktEkPfc0kzoo-t-6DzrYLWxOCBg=&t=o',
   'real-zadovoljni.jpg': 'https://grasaksalon.me/images/zadovoljni.jpg',
