@@ -125,7 +125,7 @@ function BookingFormCard() {
       '- poslato preko sajta grasaksalon',
     ]
     const msg = lines.join('\n')
-    // automatski email salonu (bez klika korisnika) — FormSubmit, prva poruka traži aktivaciju
+    // automatski email salonu (bez klika korisnika) - FormSubmit, prva poruka traži aktivaciju
     void sendBookingEmail({
       Roditelj: String(d.get('parentName') || '-'),
       Telefon: String(d.get('phone') || '-'),
@@ -232,7 +232,7 @@ function BookingFormCard() {
             transition={{ duration: 0.3 }}
             className="flex flex-col gap-5 p-8 md:p-10"
           >
-            {/* honeypot anti-spam — nevidljivo ljudima */}
+            {/* honeypot anti-spam - nevidljivo ljudima */}
             <input
               type="text"
               name="website"
