@@ -12,6 +12,7 @@ import StatCounter from '@/components/StatCounter'
 import CTABand from '@/components/CTABand'
 import VisitStory from '@/components/VisitStory'
 import Vaucer from '@/components/Vaucer'
+import Aktuelnosti from '@/components/Aktuelnosti'
 import Marquee from '@/components/Marquee'
 import GrassDivider from '@/components/GrassDivider'
 import OutlineHeading from '@/components/OutlineHeading'
@@ -406,6 +407,9 @@ export default function Home() {
 
       {/* BRAND INTERLUDE */}
       <BrandStrip className="bg-white" />
+
+      {/* 6a. AKTUELNOSTI */}
+      <Aktuelnosti />
 
       {/* 6b. POKLON VAUČERI */}
       <Vaucer />
