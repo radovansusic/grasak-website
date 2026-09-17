@@ -102,6 +102,12 @@ const cnr: Dict = {
     cta: 'Zatraži poklon vaučer',
     note: 'Vaučer dobijate upakovan, na ime djeteta — spreman za poklon.',
   },
+  akt: {
+    eyebrow: 'Aktuelnosti',
+    title: 'Šta se dešava kod Graška',
+    sub: 'Akcije, najave, događaji i zanimljivosti iz dječijeg svijeta — sve na jednom mjestu.',
+    tag: { akcija: 'Akcija', najava: 'Najava', dogadjaj: 'Događaj', zanimljivost: 'Zanimljivost' },
+  },
   home: {
     badge: 'Prvi dječiji frizerski salon u Crnoj Gori',
     hero1: 'Bez straha. Kroz igru.',
@@ -488,6 +494,12 @@ const en: Dict = {
     cta: 'Request a gift voucher',
     note: 'The voucher arrives gift-wrapped with the child\'s name — ready to give.',
   },
+  akt: {
+    eyebrow: 'News',
+    title: "What's happening at Grašak",
+    sub: 'Promotions, announcements, events and fun facts from the world of kids — all in one place.',
+    tag: { akcija: 'Promo', najava: 'News', dogadjaj: 'Event', zanimljivost: 'Fun fact' },
+  },
   home: {
     badge: 'The first kids hair salon in Montenegro',
     hero1: 'No fear. Through play.',
@@ -873,6 +885,12 @@ const ru: Dict = {
     cta: 'Заказать подарочный ваучер',
     note: 'Ваучер вручается в подарочной упаковке с именем ребёнка.',
   },
+  akt: {
+    eyebrow: 'Новости',
+    title: 'Что происходит у Grašak',
+    sub: 'Акции, объявления, события и интересные факты из мира детей — всё в одном месте.',
+    tag: { akcija: 'Акция', najava: 'Новость', dogadjaj: 'Событие', zanimljivost: 'Факт' },
+  },
   home: {
     badge: 'Первая детская парикмахерская в Черногории',
     hero1: 'Без страха. Через игру.',
@@ -1257,6 +1275,12 @@ const tr: Dict = {
     v2b: 'Minikler için',
     cta: 'Hediye vauçeri iste',
     note: 'Vauçer, çocuğun adına hediye paketinde teslim edilir — vermeye hazır.',
+  },
+  akt: {
+    eyebrow: 'Güncel',
+    title: "Grašak'ta neler oluyor",
+    sub: 'Kampanyalar, duyurular, etkinlikler ve çocuk dünyasından ilginç bilgiler — hepsi bir arada.',
+    tag: { akcija: 'Kampanya', najava: 'Duyuru', dogadjaj: 'Etkinlik', zanimljivost: 'İlginç bilgi' },
   },
   home: {
     badge: 'Karadağ’ın ilk çocuk kuaförü',
