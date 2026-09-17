@@ -611,7 +611,7 @@ function MiniFaq() {
           <Eyebrow>{tr('kontakt.faqEyebrow')}</Eyebrow>
           <h2
             className="mt-4 text-3xl font-bold md:text-[42px]"
-            style={{ fontFamily: "'Baloo 2', cursive" }}
+            style={{ fontFamily: "'Baloo 2', cursive", color: INK }}
           >
             {tr('kontakt.faqTitle')}
           </h2>
@@ -721,7 +721,7 @@ export default function Kontakt() {
                 transition={{ duration: 0.5, delay: i * 0.05, ease: EASE }}
               >
                 {w}
-                {i < titleWords.length - 1 ? ' ' : ''}
+                {i < titleWords.length - 1 ? ' ' : ''}
               </motion.span>
             ))}
           </h1>
