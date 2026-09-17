@@ -16,12 +16,18 @@ export interface Aktuelno {
 
 export const AKTUELNOSTI: Aktuelno[] = [
   {
+    date: '2026-09-16',
+    tag: 'najava',
+    title: 'Nove cijene od 1. oktobra',
+    text: 'Tri pune godine naše cijene su bile iste: kratko 8€, srednje 10€, dugo 12€. U tom periodu mnogi su cijene mijenjali i tri puta - mi smo birali da ostanemo pristupačni što duže. Da bismo i dalje rasli i bili još bolji za vaše mališane, od 1. oktobra cijene su: kratko 9€, srednje 11€, dugo 13€. Porodicama sa više djece i dalje izlazimo u susret: paketi, poklon vaučeri i kartica Veseli Grašak sa 15% popusta ostaju na snazi. Hvala na povjerenju koje nas čini Graškom. 💚',
+    pin: true,
+  },
+  {
     date: '2026-09-15',
     tag: 'najava',
     title: 'Novi sajt je tu! 🌱',
     text: 'Nakon mjeseci rada, Grašak ima novi, brži i ljepši sajt - na 4 jezika, sa online zakazivanjem preko WhatsApp-a, poklon vaučerima i galerijom osmjeha. Šetajte, uživajte i javite nam utiske!',
     image: '/mural.jpg',
-    pin: true,
   },
   {
     date: '2026-09-10',
