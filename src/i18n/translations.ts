@@ -1269,7 +1269,7 @@ const tr: Dict = {
     v1l2: '12 ay geçerli',
     v1b: 'En popüler',
     v2t: 'İlk saç kesimi',
-    v2l1: 'Saç kesimi + hatıра saç tutamı',
+    v2l1: 'Saç kesimi + hatıra saç tutamı',
     v2l2: 'Fotoğraf ve isme özel diploma',
     v2l3: 'AZETA BIO kozmetik (0m+)',
     v2b: 'Minikler için',
