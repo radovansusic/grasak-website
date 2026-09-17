@@ -18,7 +18,7 @@ export default function BookingForm() {
 
   const onSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // honeypot: ako je nevidljivo polje popunjeno, bot je — tiho odbaci
+    // honeypot: ako je nevidljivo polje popunjeno, bot je - tiho odbaci
     const data = new FormData(e.currentTarget)
     if (data.get('website')) return
     const lines = [
@@ -32,7 +32,7 @@ export default function BookingForm() {
       '- poslato preko sajta grasaksalon',
     ]
     const msg = lines.join('\n')
-    // automatski email salonu (bez klika korisnika) — FormSubmit, prva poruka traži aktivaciju
+    // automatski email salonu (bez klika korisnika) - FormSubmit, prva poruka traži aktivaciju
     void sendBookingEmail({
       Roditelj: String(data.get('parentName') || '-'),
       Telefon: String(data.get('phone') || '-'),
@@ -115,7 +115,7 @@ export default function BookingForm() {
           </motion.div>
         ) : (
           <motion.form key="form" exit={{ opacity: 0 }} onSubmit={onSubmit} className="space-y-4">
-            {/* honeypot anti-spam polje — nevidljivo ljudima */}
+            {/* honeypot anti-spam polje - nevidljivo ljudima */}
             <input
               type="text"
               name="website"

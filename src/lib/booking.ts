@@ -7,7 +7,7 @@ export async function sendBookingEmail(fields: Record<string, string>): Promise<
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({
-        _subject: '🌱 Rezervacija sa sajta — Grašak',
+        _subject: '🌱 Rezervacija sa sajta - Grašak',
         _template: 'table',
         _captcha: 'false',
         _replyto: fields['Telefon'] || '',
@@ -15,6 +15,6 @@ export async function sendBookingEmail(fields: Record<string, string>): Promise<
       }),
     })
   } catch {
-    /* mreža nije dostupna — WhatsApp dugme ostaje kao rezervni kanal */
+    /* mreža nije dostupna - WhatsApp dugme ostaje kao rezervni kanal */
   }
 }
