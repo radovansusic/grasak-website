@@ -33,7 +33,7 @@ function HeroTitle() {
             transition={{ duration: 0.5, ease: 'easeOut', delay: 0.1 + i * 0.05 }}
           >
             {word}
-            {i < words.length - 1 ? ' ' : ''}
+            {i < words.length - 1 ? ' ' : ''}
           </motion.span>
         </span>
       ))}
@@ -44,14 +44,14 @@ function HeroTitle() {
 export default function Usluge() {
   const { tr } = useLang()
   const osnovneUsluge = [
-    { name: tr('usluge.b1name'), price: '8€', duration: '~15 min', description: tr('usluge.b1desc') },
-    { name: tr('usluge.b2name'), price: '10€', duration: '~20 min', description: tr('usluge.b2desc') },
-    { name: tr('usluge.b3name'), price: '12€', duration: '~30 min', description: tr('usluge.b3desc') },
+    { name: tr('usluge.b1name'), price: '9€', duration: '~15 min', description: tr('usluge.b1desc') },
+    { name: tr('usluge.b2name'), price: '11€', duration: '~20 min', description: tr('usluge.b2desc') },
+    { name: tr('usluge.b3name'), price: '13€', duration: '~30 min', description: tr('usluge.b3desc') },
   ]
   const paketi = [
-    { name: tr('usluge.pk1name'), price: '14€', description: tr('usluge.pk1desc') },
-    { name: tr('usluge.pk2name'), price: '19€', description: tr('usluge.pk2desc'), badge: tr('usluge.pk2badge') },
-    { name: tr('usluge.pk3name'), price: '24€', description: tr('usluge.pk3desc') },
+    { name: tr('usluge.pk1name'), price: '16€', description: tr('usluge.pk1desc') },
+    { name: tr('usluge.pk2name'), price: '22€', description: tr('usluge.pk2desc'), badge: tr('usluge.pk2badge') },
+    { name: tr('usluge.pk3name'), price: '28€', description: tr('usluge.pk3desc') },
   ]
   const dodatneUsluge = [
     { name: tr('usluge.e1name'), price: '6€', description: tr('usluge.e1desc'), image: '/spa-treatment.jpg' },

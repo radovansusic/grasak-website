@@ -53,12 +53,12 @@ export default function Home() {
   const heroWords1 = tr('home.hero1').split(' ')
   const heroWords2 = tr('home.hero2').split(' ')
   const prices = [
-    { name: tr('home.p1name'), price: '8€', duration: '~15 min', color: 'grass' as const },
-    { name: tr('home.p2name'), price: '10€', duration: '~20 min', color: 'sun' as const },
-    { name: tr('home.p3name'), price: '12€', duration: '~30 min', color: 'coral' as const },
+    { name: tr('home.p1name'), price: '9€', duration: '~15 min', color: 'grass' as const },
+    { name: tr('home.p2name'), price: '11€', duration: '~20 min', color: 'sun' as const },
+    { name: tr('home.p3name'), price: '13€', duration: '~30 min', color: 'coral' as const },
     {
       name: tr('home.p4name'),
-      price: '14€',
+      price: '16€',
       duration: '~30 min',
       note: tr('home.p4note'),
       color: 'sky' as const,
