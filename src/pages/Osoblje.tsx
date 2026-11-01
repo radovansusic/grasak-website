@@ -8,18 +8,21 @@ import PodesavanjaPanel from '@/components/osoblje/PodesavanjaPanel'
 import { API_URL, isoDatum } from '@/lib/zakazivanje'
 import {
   osoblje,
-  type DanOsoblje, type Izvjestaj, type KonfigOsoblje, type OsobaDan, type Profil, type TerminOsoblje,
+  type DanOsoblje, type Pristup, type Izvjestaj, type KonfigOsoblje, type OsobaDan, type Profil, type TerminOsoblje,
 } from '@/lib/osoblje'
 
-const PIN_KLJUC = 'grasak-osoblje-pin'
+const PRISTUP_KLJUC = 'grasak-osoblje'
 const DANI = ['nedjelja', 'ponedjeljak', 'utorak', 'srijeda', 'četvrtak', 'petak', 'subota']
 const inputCls = 'w-full rounded-xl border-2 border-grass-tint bg-white px-3 py-2.5 text-ink outline-none focus:border-grass'
 
-function citajPin(): string {
-  try { return localStorage.getItem(PIN_KLJUC) || '' } catch { return '' }
+function citajPristup(): Pristup | null {
+  try {
+    const p = JSON.parse(localStorage.getItem(PRISTUP_KLJUC) || 'null')
+    return p && p.ime && p.sifra ? p : null
+  } catch { return null }
 }
-function pisiPin(pin: string) {
-  try { if (pin) localStorage.setItem(PIN_KLJUC, pin); else localStorage.removeItem(PIN_KLJUC) } catch { /* privatni režim */ }
+function pisiPristup(p: Pristup | null) {
+  try { if (p) localStorage.setItem(PRISTUP_KLJUC, JSON.stringify(p)); else localStorage.removeItem(PRISTUP_KLJUC) } catch { /* privatni režim */ }
 }
 function pomjeri(iso: string, n: number): string {
   const [g, m, d] = iso.split('-').map(Number)
@@ -33,7 +36,7 @@ function lijepDatum(iso: string): string {
 
 /** Stranica za osoblje: grasaksalon.me/osoblje. Instalira se kao posebna aplikacija "Grašak osoblje". */
 export default function Osoblje() {
-  const [pin, setPin] = useState(citajPin)
+  const [pristup, setPristup] = useState<Pristup | null>(citajPristup)
   const [profil, setProfil] = useState<Profil | null>(null)
   const [konfig, setKonfig] = useState<KonfigOsoblje | null>(null)
   const [greska, setGreska] = useState('')
@@ -51,36 +54,36 @@ export default function Osoblje() {
     return () => { if (stari) link?.setAttribute('href', stari); if (dodat) robots?.remove() }
   }, [])
 
-  const prijavi = useCallback((p: string, jeAktivno: () => boolean = () => true) =>
+  const prijavi = useCallback((p: Pristup, jeAktivno: () => boolean = () => true) =>
     osoblje<{ osoba: Profil; konfig: KonfigOsoblje }>('prijava', p)
       .then((r) => {
         if (!jeAktivno()) return
-        if (!r.ok) { setGreska(r.poruka || 'Prijava nije uspjela.'); pisiPin(''); setPin(''); return }
-        pisiPin(p); setPin(p); setProfil(r.osoba); setKonfig(r.konfig)
+        if (!r.ok) { setGreska(r.poruka || 'Prijava nije uspjela.'); pisiPristup(null); setPristup(null); return }
+        pisiPristup(p); setPristup(p); setProfil(r.osoba); setKonfig(r.konfig)
       })
       .catch(() => { if (jeAktivno()) setGreska('Nema veze sa serverom. Provjerite internet.') }), [])
 
-  // zapamćen PIN na ovom telefonu: prijava bez kucanja
+  // zapamćena prijava na ovom telefonu: ulaz bez kucanja
   useEffect(() => {
-    if (!pin || profil || !API_URL) return
+    if (!pristup || profil || !API_URL) return
     let aktivno = true
-    void prijavi(pin, () => aktivno)
+    void prijavi(pristup, () => aktivno)
     return () => { aktivno = false }
-  }, [pin, profil, prijavi])
+  }, [pristup, profil, prijavi])
 
-  const odjava = () => { pisiPin(''); setPin(''); setProfil(null); setKonfig(null); setTab('dan') }
+  const odjava = () => { pisiPristup(null); setPristup(null); setProfil(null); setKonfig(null); setTab('dan') }
 
   if (!API_URL) {
     return <Okvir><p className="rounded-2xl bg-white p-6 text-ink">Panel još nije povezan s Google tabelom (nedostaje VITE_ZAKAZIVANJE_API).</p></Okvir>
   }
-  if (!profil || !konfig) {
-    return <Okvir><Prijava cekam={!!pin && !greska} greska={greska} onPrijava={(p) => { setGreska(''); return prijavi(p) }} /></Okvir>
+  if (!profil || !konfig || !pristup) {
+    return <Okvir><Prijava cekam={!!pristup && !greska} greska={greska} onPrijava={(p) => { setGreska(''); return prijavi(p) }} /></Okvir>
   }
   const admin = profil.uloga !== 'frizer'
   const vlasnik = profil.uloga === 'vlasnik'
   // poslije izmjene podešavanja: nova lista frizera, usluga i lokacija za pregled dana
   const osvjeziKonfig = () => {
-    osoblje<{ konfig: KonfigOsoblje }>('prijava', pin).then((r) => { if (r.ok) setKonfig(r.konfig) }).catch(() => {})
+    osoblje<{ konfig: KonfigOsoblje }>('prijava', pristup).then((r) => { if (r.ok) setKonfig(r.konfig) }).catch(() => {})
   }
   return (
     <Okvir
@@ -98,9 +101,9 @@ export default function Osoblje() {
           {vlasnik && <Tab aktivan={tab === 'podesavanja'} onClick={() => setTab('podesavanja')}><Settings className="h-4 w-4" /> Podešavanja</Tab>}
         </div>
       )}
-      {tab === 'dan' || !admin ? <DanPanel pin={pin} konfig={konfig} profil={profil} />
-        : tab === 'izvjestaj' ? <IzvjestajPanel pin={pin} konfig={konfig} />
-          : vlasnik ? <PodesavanjaPanel pin={pin} onSacuvano={osvjeziKonfig} onOdjava={odjava} /> : null}
+      {tab === 'dan' || !admin ? <DanPanel pristup={pristup} konfig={konfig} profil={profil} />
+        : tab === 'izvjestaj' ? <IzvjestajPanel pristup={pristup} konfig={konfig} />
+          : vlasnik ? <PodesavanjaPanel pristup={pristup} onSacuvano={osvjeziKonfig} onOdjava={odjava} /> : null}
     </Okvir>
   )
 }
@@ -132,25 +135,28 @@ function Tab({ aktivan, onClick, children }: { aktivan: boolean; onClick: () => 
   )
 }
 
-function Prijava({ onPrijava, greska, cekam }: { onPrijava: (pin: string) => Promise<void>; greska: string; cekam: boolean }) {
-  const [unos, setUnos] = useState('')
+function Prijava({ onPrijava, greska, cekam }: { onPrijava: (p: Pristup) => Promise<void>; greska: string; cekam: boolean }) {
+  const [ime, setIme] = useState('')
+  const [sifra, setSifra] = useState('')
   const [salje, setSalje] = useState(false)
   const posalji = async (e: FormEvent) => {
     e.preventDefault()
     setSalje(true)
-    await onPrijava(unos.trim())
+    await onPrijava({ ime: ime.trim(), sifra: sifra.trim() })
     setSalje(false)
   }
+  const polje = 'mt-3 w-full rounded-2xl border-2 border-grass-tint px-4 py-3 text-lg text-ink outline-none focus:border-grass'
   return (
     <form onSubmit={posalji} className="mx-auto mt-10 max-w-sm rounded-3xl bg-white p-6 text-center shadow-xl shadow-ink/10">
       <img src="/brand/grasak-logo-zuta.svg" alt="Grašak" className="mx-auto h-28 w-28" />
       <h1 className="mt-3 font-display text-2xl font-extrabold text-ink">Prijava za osoblje</h1>
-      <p className="mt-1 text-sm text-ink/60">Upišite svoj PIN (6 do 8 cifara).</p>
-      <input value={unos} onChange={(e) => setUnos(e.target.value.replace(/\D/g, ''))} inputMode="numeric" autoComplete="one-time-code"
-        type="password" maxLength={8} placeholder="PIN" autoFocus
-        className="mt-4 w-full rounded-2xl border-2 border-grass-tint px-4 py-3 text-center text-2xl tracking-[0.5em] text-ink outline-none focus:border-grass" />
+      <p className="mt-1 text-sm text-ink/60">Ime i lična šifra.</p>
+      <input name="ime" value={ime} onChange={(e) => setIme(e.target.value)} autoComplete="username" placeholder="Ime (npr. Nikola)"
+        autoCapitalize="words" autoFocus className={polje} />
+      <input name="sifra" value={sifra} onChange={(e) => setSifra(e.target.value)} type="password" autoComplete="current-password"
+        maxLength={40} placeholder="Šifra" className={polje} />
       {greska && <p className="mt-3 rounded-xl bg-coral/10 p-2 text-sm text-ink">{greska}</p>}
-      <button disabled={unos.length < 6 || salje || cekam}
+      <button disabled={!ime.trim() || sifra.trim().length < 8 || salje || cekam}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-grass py-3 font-bold text-white disabled:opacity-50">
         {(salje || cekam) && <Loader2 className="h-5 w-5 animate-spin" />} Uđi
       </button>
@@ -162,7 +168,7 @@ function Prijava({ onPrijava, greska, cekam }: { onPrijava: (pin: string) => Pro
 
 type Izbor = { tip: 'novi'; osoba: string; vrijeme: string } | { tip: 'termin'; osoba: string; termin: TerminOsoblje }
 
-function DanPanel({ pin, konfig, profil }: { pin: string; konfig: KonfigOsoblje; profil: Profil }) {
+function DanPanel({ pristup, konfig, profil }: { pristup: Pristup; konfig: KonfigOsoblje; profil: Profil }) {
   const [lokId, setLokId] = useState(konfig.lokacije[0]?.id || '')
   const [datum, setDatum] = useState(() => isoDatum(new Date()))
   const [dan, setDan] = useState<DanOsoblje | null>(null)
@@ -177,7 +183,7 @@ function DanPanel({ pin, konfig, profil }: { pin: string; konfig: KonfigOsoblje;
     let aktivno = true
     const ucitaj = () => {
       setUcitava(true)
-      osoblje<{ dan: DanOsoblje }>('dan', pin, { lok: lokId, datum })
+      osoblje<{ dan: DanOsoblje }>('dan', pristup, { lok: lokId, datum })
         .then((r) => { if (!aktivno) return; if (r.ok) { setDan(r.dan); setPoruka('') } else setPoruka(r.poruka || 'Greška') })
         .catch(() => { if (aktivno) setPoruka('Nema veze sa serverom.') })
         .finally(() => { if (aktivno) setUcitava(false) })
@@ -185,7 +191,7 @@ function DanPanel({ pin, konfig, profil }: { pin: string; konfig: KonfigOsoblje;
     ucitaj()
     const t = setInterval(() => { if (document.visibilityState === 'visible') ucitaj() }, 60000)
     return () => { aktivno = false; clearInterval(t) }
-  }, [pin, lokId, datum, osvjezi])
+  }, [pristup, lokId, datum, osvjezi])
 
   const prikaz = dan && dan.datum === datum && dan.lokacija === lokId ? dan : null
   const vremena = useMemo(() => {
@@ -269,11 +275,11 @@ function DanPanel({ pin, konfig, profil }: { pin: string; konfig: KonfigOsoblje;
       )}
 
       {izbor?.tip === 'novi' && (
-        <NoviTermin pin={pin} konfig={konfig} lokId={lokId} datum={datum} osoba={izbor.osoba} vrijeme={izbor.vrijeme}
+        <NoviTermin pristup={pristup} konfig={konfig} lokId={lokId} datum={datum} osoba={izbor.osoba} vrijeme={izbor.vrijeme}
           onZatvori={() => setIzbor(null)} onGotovo={gotovo} />
       )}
       {izbor?.tip === 'termin' && (
-        <DetaljiTermina pin={pin} osoba={izbor.osoba} t={izbor.termin} onZatvori={() => setIzbor(null)} onGotovo={gotovo} />
+        <DetaljiTermina pristup={pristup} osoba={izbor.osoba} t={izbor.termin} onZatvori={() => setIzbor(null)} onGotovo={gotovo} />
       )}
     </div>
   )
@@ -352,8 +358,8 @@ function Prozor({ naslov, onZatvori, children }: { naslov: string; onZatvori: ()
   )
 }
 
-function NoviTermin({ pin, konfig, lokId, datum, osoba, vrijeme, onZatvori, onGotovo }: {
-  pin: string; konfig: KonfigOsoblje; lokId: string; datum: string; osoba: string; vrijeme: string
+function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, onZatvori, onGotovo }: {
+  pristup: Pristup; konfig: KonfigOsoblje; lokId: string; datum: string; osoba: string; vrijeme: string
   onZatvori: () => void; onGotovo: (t: string) => void
 }) {
   const [usluga, setUsluga] = useState(konfig.usluge[0]?.id || '')
@@ -364,7 +370,7 @@ function NoviTermin({ pin, konfig, lokId, datum, osoba, vrijeme, onZatvori, onGo
     const f = new FormData(e.currentTarget)
     setSalje(true); setGreska('')
     try {
-      const r = await osoblje('zakazi', pin, {
+      const r = await osoblje('zakazi', pristup, {
         lok: lokId, osoba, usluga, datum, vrijeme,
         dijete: f.get('dijete'), telefon: f.get('telefon'), roditelj: f.get('roditelj'), napomena: f.get('napomena'),
       })
@@ -401,8 +407,8 @@ function NoviTermin({ pin, konfig, lokId, datum, osoba, vrijeme, onZatvori, onGo
   )
 }
 
-function DetaljiTermina({ pin, osoba, t, onZatvori, onGotovo }: {
-  pin: string; osoba: string; t: TerminOsoblje; onZatvori: () => void; onGotovo: (t: string) => void
+function DetaljiTermina({ pristup, osoba, t, onZatvori, onGotovo }: {
+  pristup: Pristup; osoba: string; t: TerminOsoblje; onZatvori: () => void; onGotovo: (t: string) => void
 }) {
   const [radi, setRadi] = useState('')
   const [greska, setGreska] = useState('')
@@ -410,7 +416,7 @@ function DetaljiTermina({ pin, osoba, t, onZatvori, onGotovo }: {
   const akcija = async (ime: string, podaci: Record<string, unknown>) => {
     setRadi(ime); setGreska('')
     try {
-      const r = await osoblje(ime, pin, { id: t.id, ...podaci })
+      const r = await osoblje(ime, pristup, { id: t.id, ...podaci })
       if (r.ok) onGotovo(r.poruka || 'Sačuvano.')
       else setGreska(r.poruka || 'Nije uspjelo.')
     } catch {
@@ -479,7 +485,7 @@ function periodi() {
   ]
 }
 
-function IzvjestajPanel({ pin, konfig }: { pin: string; konfig: KonfigOsoblje }) {
+function IzvjestajPanel({ pristup, konfig }: { pristup: Pristup; konfig: KonfigOsoblje }) {
   const p = useMemo(() => periodi(), [])
   const [od, setOd] = useState(p[1].od)
   const [doD, setDoD] = useState(p[1].do)
@@ -493,7 +499,7 @@ function IzvjestajPanel({ pin, konfig }: { pin: string; konfig: KonfigOsoblje })
 
   useEffect(() => {
     let aktivno = true
-    osoblje<{ izvjestaj: Izvjestaj }>('izvjestaj', pin, { od, do: doD, lok })
+    osoblje<{ izvjestaj: Izvjestaj }>('izvjestaj', pristup, { od, do: doD, lok })
       .then((r) => {
         if (!aktivno) return
         if (r.ok) setIz(r.izvjestaj)
@@ -501,7 +507,7 @@ function IzvjestajPanel({ pin, konfig }: { pin: string; konfig: KonfigOsoblje })
       })
       .catch(() => { if (aktivno) setStanje({ kljuc, greska: 'Nema veze sa serverom.' }) })
     return () => { aktivno = false }
-  }, [pin, od, doD, lok, kljuc])
+  }, [pristup, od, doD, lok, kljuc])
 
   const csv = () => {
     if (!iz) return

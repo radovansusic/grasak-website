@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Check, Loader2, Plus, Save, Trash2 } from 'lucide-react'
-import { osoblje, type OsobaPod, type Podesavanja, type Uloga } from '@/lib/osoblje'
+import { osoblje, type OsobaPod, type Podesavanja, type Pristup, type Uloga } from '@/lib/osoblje'
 
 const DANI = ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned']
 const TRAJANJA = [30, 60, 90, 120]
@@ -15,15 +15,15 @@ function oznaci(p: Podesavanja): Podesavanja {
     lokacije: p.lokacije.map((l) => ({ ...l, dani: [...l.dani, '', '', '', '', '', '', ''].slice(0, 7), postojeca: true })),
     frizeri: p.frizeri.map((f) => ({ ...f, postojeci: true })),
     usluge: p.usluge.map((u) => ({ ...u, postojeca: true })),
-    osoblje: p.osoblje.map((o) => ({ ...o, pin: '' })),
+    osoblje: p.osoblje.map((o) => ({ ...o, sifra: '' })),
     praznici: (p.praznici || []).map((x) => ({ ...x, postojeci: true })),
     neradniDani: p.neradniDani || [],
   }
 }
 
 /** Podešavanja salona iz aplikacije, samo za vlasnika. Upisuje se u istu Google tabelu. */
-export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
-  pin: string; onSacuvano: () => void; onOdjava: () => void
+export default function PodesavanjaPanel({ pristup, onSacuvano, onOdjava }: {
+  pristup: Pristup; onSacuvano: () => void; onOdjava: () => void
 }) {
   const [s, setS] = useState<Podesavanja | null>(null)
   const [greskaUcitavanja, setGreskaUcitavanja] = useState('')
@@ -34,11 +34,11 @@ export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
 
   useEffect(() => {
     let aktivno = true
-    osoblje<{ podesavanja: Podesavanja }>('podesavanja', pin)
+    osoblje<{ podesavanja: Podesavanja }>('podesavanja', pristup)
       .then((r) => { if (!aktivno) return; if (r.ok) setS(oznaci(r.podesavanja)); else setGreskaUcitavanja(r.poruka || 'Greška') })
       .catch(() => { if (aktivno) setGreskaUcitavanja('Nema veze sa serverom.') })
     return () => { aktivno = false }
-  }, [pin, verzija])
+  }, [pristup, verzija])
 
   if (greskaUcitavanja) return <p className="rounded-xl bg-coral/10 p-3 text-ink">{greskaUcitavanja}</p>
   if (!s) return <p className="flex items-center gap-2 p-4 text-ink/60"><Loader2 className="h-5 w-5 animate-spin" /> Učitavam podešavanja...</p>
@@ -49,10 +49,10 @@ export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
   const sacuvaj = async () => {
     setSalje(true); setGreske([]); setInfo('')
     try {
-      const r = await osoblje<{ greske?: string[]; odjava?: boolean }>('sacuvaj_podesavanja', pin, { podesavanja: s })
+      const r = await osoblje<{ greske?: string[]; odjava?: boolean }>('sacuvaj_podesavanja', pristup, { podesavanja: s })
       if (!r.ok) { setGreske(r.greske?.length ? r.greske : [r.poruka || 'Nije sačuvano.']); return }
       setInfo(r.poruka || 'Sačuvano.')
-      if (r.odjava) { window.alert('Vaš PIN je promijenjen. Prijavite se novim PIN-om.'); onOdjava(); return }
+      if (r.odjava) { window.alert('Vaša šifra ili ime su promijenjeni. Prijavite se ponovo.'); onOdjava(); return }
       onSacuvano()
       setVerzija((x) => x + 1)
     } catch {
@@ -171,7 +171,7 @@ export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
             </div>
           )
         })}
-        <p className="text-xs text-ink/50">Frizer koji više ne radi: isključite prekidač (termini i izvještaji ostaju). Da bi frizer ulazio u panel, dodajte ga i u Osoblje s PIN-om.</p>
+        <p className="text-xs text-ink/50">Frizer koji više ne radi: isključite prekidač (termini i izvještaji ostaju). Da bi frizer ulazio u panel, dodajte ga i u Osoblje sa šifrom.</p>
       </Sekcija>
 
       <Sekcija naslov="Usluge" dodaj={() => promijeni({ usluge: [...s.usluge, { naziv: '', trajanje: 30, aktivna: true }] })} dodajTekst="Dodaj uslugu">
@@ -194,10 +194,10 @@ export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
         })}
       </Sekcija>
 
-      <Sekcija naslov="Osoblje i PIN-ovi" dodaj={() => promijeni({ osoblje: [...s.osoblje, { red: null, ime: '', uloga: 'frizer', lokacija: naziviLok[0] || '', imaPin: false, pin: '', email: '', aktivan: true }] })} dodajTekst="Dodaj osobu">
+      <Sekcija naslov="Osoblje i šifre" dodaj={() => promijeni({ osoblje: [...s.osoblje, { red: null, ime: '', uloga: 'frizer', lokacija: naziviLok[0] || '', imaSifru: false, sifra: '', email: '', aktivan: true }] })} dodajTekst="Dodaj osobu">
         {s.osoblje.map((o, i) => {
           const izmijeni = (n: Partial<OsobaPod>) => promijeni({ osoblje: s.osoblje.map((x, j) => (j === i ? { ...x, ...n } : x)) })
-          const bezPina = !o.imaPin && !o.pin
+          const bezSifre = !o.imaSifru && !o.sifra
           return (
             <div key={i} className="rounded-2xl border-2 border-grass-tint p-3">
               <div className="grid gap-2 sm:grid-cols-3">
@@ -210,9 +210,9 @@ export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
                 <Polje oznaka="Lokacija">
                   <Izbor vrijednost={o.lokacija} opcije={naziviLok} prazno="Sve lokacije" onChange={(v) => izmijeni({ lokacija: v })} disabled={o.uloga === 'vlasnik'} />
                 </Polje>
-                <Polje oznaka={o.imaPin ? 'Novi PIN (prazno = ostaje stari)' : 'PIN (6-8 cifara)'}>
-                  <input className={inp} type="password" inputMode="numeric" autoComplete="new-password" maxLength={8} value={o.pin || ''}
-                    placeholder={o.imaPin ? '••••••' : '6 cifara'} onChange={(e) => izmijeni({ pin: e.target.value.replace(/\D/g, '') })} />
+                <Polje oznaka={o.imaSifru ? 'Nova šifra (prazno = ostaje stara)' : 'Šifra (8+ znakova, slova i brojevi)'}>
+                  <input className={inp} type="password" autoComplete="new-password" maxLength={40} value={o.sifra || ''}
+                    placeholder={o.imaSifru ? '••••••••' : 'npr. 8 znakova'} onChange={(e) => izmijeni({ sifra: e.target.value })} />
                 </Polje>
                 <Polje oznaka="Email (sedmični izvještaj)"><input className={inp} type="email" value={o.email} onChange={(e) => izmijeni({ email: e.target.value })} /></Polje>
                 <div className="flex items-end gap-2 pb-2">
@@ -220,11 +220,11 @@ export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
                   {o.red === null && <Ukloni onClick={() => promijeni({ osoblje: s.osoblje.filter((_, j) => j !== i) })} />}
                 </div>
               </div>
-              {bezPina && o.aktivan && <p className="mt-1 text-xs text-coral">Bez PIN-a: ne može u panel dok ne upišete PIN.</p>}
+              {bezSifre && o.aktivan && <p className="mt-1 text-xs text-coral">Bez šifre: ne može u panel dok ne upišete šifru.</p>}
             </div>
           )
         })}
-        <p className="text-xs text-ink/50">Frizer vidi dan i upisuje termine. Admin vidi i izvještaje. Vlasnik vidi sve i mijenja podešavanja. Svako ima svoj PIN od 6 do 8 cifara; posle 10 pogrešnih pokušaja prijava se zaključa na 15 minuta, a vlasnik dobija email.</p>
+        <p className="text-xs text-ink/50">Frizer vidi dan i upisuje termine. Admin vidi i izvještaje. Vlasnik vidi sve i mijenja podešavanja. Prijava je ime + lična šifra (najmanje 8 znakova, slova i brojevi); posle 10 pogrešnih pokušaja prijava se zaključa na 15 minuta, a vlasnik dobija email.</p>
       </Sekcija>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-grass-tint bg-white/95 p-3 backdrop-blur print:hidden">

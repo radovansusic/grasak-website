@@ -1,4 +1,4 @@
-/** Panel za osoblje - klijent za Apps Script (akcije osoblje_*). PIN ide samo u tijelu POST zahtjeva. */
+/** Panel za osoblje - klijent za Apps Script (akcije osoblje_*). Ime i šifra idu samo u tijelu POST zahtjeva. */
 import { API_URL, type Usluga } from './zakazivanje'
 
 export type Uloga = 'vlasnik' | 'admin' | 'frizer'
@@ -35,11 +35,14 @@ export interface Izvjestaj {
 
 type Odgovor<T> = T & { ok: boolean; poruka?: string }
 
-export async function osoblje<T = object>(akcija: string, pin: string, podaci: Record<string, unknown> = {}): Promise<Odgovor<T>> {
+/** Prijava u panel: ime iz lista Osoblje + lična šifra. */
+export interface Pristup { ime: string; sifra: string }
+
+export async function osoblje<T = object>(akcija: string, pristup: Pristup, podaci: Record<string, unknown> = {}): Promise<Odgovor<T>> {
   const r = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ akcija: 'osoblje_' + akcija, pin, ...podaci }),
+    body: JSON.stringify({ akcija: 'osoblje_' + akcija, ime: pristup.ime, sifra: pristup.sifra, ...podaci }),
   })
   return r.json()
 }
@@ -49,7 +52,7 @@ export interface LokacijaPod { naziv: string; adresa: string; telefon: string; d
 export interface FrizerPod { ime: string; lokacija: string; aktivan: boolean; postojeci?: boolean }
 export interface UslugaPod { naziv: string; trajanje: number; aktivna: boolean; postojeca?: boolean }
 export interface OsobaPod {
-  red: number | null; ime: string; uloga: Uloga; lokacija: string; imaPin: boolean; pin?: string; email: string; aktivan: boolean
+  red: number | null; ime: string; uloga: Uloga; lokacija: string; imaSifru: boolean; sifra?: string; email: string; aktivan: boolean
 }
 export interface PraznikPod { naziv: string; datum: string; dana: number; neradni: boolean; postojeci?: boolean }
 export interface NeradniDanPod { datum: string; razlog: string; lokacija: string }

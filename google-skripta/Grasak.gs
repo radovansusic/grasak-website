@@ -334,8 +334,8 @@ function bezDijakritika(s) {
  * List "Usluge":   Usluga | Trajanje (min) | Aktivna (DA/NE)
  * List "Praznici": Praznik | Datum (dan.mjesec.) | Dana | Neradni (DA/NE) - svake godine; unaprijed upisani državni praznici CG
  * List "Neradni dani": Datum | Razlog | Lokacija (prazno = sve) - dani koje vlasnik proglasi neradnim
- * List "Osoblje":  Ime | Uloga (vlasnik/admin/frizer) | Lokacija (prazno = sve) | PIN | Email | Aktivan
- *   PIN je lična šifra za panel grasaksalon.me/osoblje (6 do 8 cifara, svako svoju).
+ * List "Osoblje":  Ime | Uloga (vlasnik/admin/frizer) | Lokacija (prazno = sve) | Šifra | Email | Aktivan
+ *   Prijava u panel grasaksalon.me/osoblje: ime + šifra (najmanje 8 znakova, slova i brojevi).
  *
  * Nova lokacija = novi red u "Lokacije". Novi frizer = novi red u "Frizeri".
  * Promjena se vidi u aplikaciji odmah, bez ponovnog objavljivanja.
@@ -376,9 +376,9 @@ function kreirajListovePodesavanja_() {
     [LIST_VAUCERI]: [ZAGLAVLJE_VAUCERI],
     [LIST_PRAZNICI]: [['Praznik', 'Datum (dan.mjesec.)', 'Dana', 'Neradni']].concat(ZAKONSKI_PRAZNICI),
     [LIST_NERADNI]: [['Datum', 'Razlog', 'Lokacija']],
-    [LIST_OSOBLJE]: [['Ime', 'Uloga', 'Lokacija', 'PIN', 'Email', 'Aktivan'],
-                     ['Kristina', 'vlasnik', '', 'UPISATI PIN', 'grasaksalon@gmail.com', 'DA'],
-                     ['Nikola', 'frizer', 'Grašak Podgorica', 'UPISATI PIN', '', 'DA']],
+    [LIST_OSOBLJE]: [['Ime', 'Uloga', 'Lokacija', 'Šifra', 'Email', 'Aktivan'],
+                     ['Kristina', 'vlasnik', '', 'UPISATI ŠIFRU', 'grasaksalon@gmail.com', 'DA'],
+                     ['Nikola', 'frizer', 'Grašak Podgorica', 'UPISATI ŠIFRU', '', 'DA']],
   };
   Object.keys(primjeri).forEach(ime => {
     if (ss.getSheetByName(ime)) return; // postojeće podešavanje se ne dira
@@ -428,7 +428,7 @@ function provjeriPodesavanja() {
   linije.push('', 'Usluge: ' + p.usluge.map(u => u.naziv + ' ' + u.trajanje + ' min').join(', '));
   linije.push('', 'Osoblje (panel grasaksalon.me/osoblje): ' + (os.osoblje.map(o => o.ime + ' - ' + o.uloga +
     (o.lokacijaId ? ', ' + o.lokacijaNaziv : ', sve lokacije')).join('; ') || 'NIKO'));
-  if (os.bezPina.length) linije.push('Bez PIN-a (ne mogu u panel): ' + os.bezPina.join(', '));
+  if (os.bezPina.length) linije.push('Bez šifre (ne mogu u panel): ' + os.bezPina.join(', '));
   const danas = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');
   const lok0 = p.lokacije[0] ? p.lokacije[0].naziv : '';
   const sl = neradniUPeriodu(danas, dodajDane(danas, 365), nr.praznici, nr.posebni, lok0);
@@ -479,7 +479,7 @@ function sastaviPodesavanja(lokRedovi, frizRedovi, uslRedovi) {
 
 /** Osoblje za panel. Uloge: vlasnik (sve + izvještaji), admin (sve + izvještaji), frizer (dan i upis termina). */
 function sastaviOsoblje(redovi, lokacije) {
-  const greske = [], osoblje = [], pinovi = {}, bezPina = [];
+  const greske = [], osoblje = [], imena = {}, bezPina = [];
   redovi.forEach((r, i) => {
     const ime = String(r[0] || '').trim();
     if (!ime || String(r[5]).trim().toUpperCase() === 'NE') return;
@@ -492,12 +492,14 @@ function sastaviOsoblje(redovi, lokacije) {
       if (!l) { greske.push(red + 'lokacija "' + r[2] + '" ne postoji u listu Lokacije'); return; }
       lokacijaId = l.id; lokacijaNaziv = l.naziv;
     }
-    const pin = String(r[3] == null ? '' : r[3]).trim();
-    if (!/\d/.test(pin)) { bezPina.push(ime); return; } // prazno ili "UPISATI PIN": nema pristup panelu
-    if (!/^\d{6,8}$/.test(pin)) { greske.push(red + 'PIN mora imati 6 do 8 cifara'); return; }
-    if (pinovi[pin]) { greske.push(red + 'isti PIN kao ' + pinovi[pin] + ' - svako mora imati svoj'); return; }
-    pinovi[pin] = ime;
-    osoblje.push({ ime: ime, uloga: uloga, lokacijaId: lokacijaId, lokacijaNaziv: lokacijaNaziv, pin: pin,
+    const sifra = String(r[3] == null ? '' : r[3]).trim();
+    if (!sifra || /^UPISATI/i.test(sifra)) { bezPina.push(ime); return; } // nema šifru: nema pristup panelu
+    const greskaSifre = provjeriSifru(sifra);
+    if (greskaSifre) { greske.push(red + greskaSifre); return; }
+    const kljuc = ime.toLowerCase();
+    if (imena[kljuc]) { greske.push(red + 'isto ime kao u redu ' + imena[kljuc] + ' - za prijavu imena moraju biti različita'); return; }
+    imena[kljuc] = i + 2;
+    osoblje.push({ ime: ime, uloga: uloga, lokacijaId: lokacijaId, lokacijaNaziv: lokacijaNaziv, sifra: sifra,
                    email: String(r[4] || '').trim() });
   });
   return { osoblje: osoblje, greske: greske, bezPina: bezPina };
@@ -578,6 +580,15 @@ function neradniUPeriodu(od, do_, praznici, posebni, lokNaziv) {
     if ((!x.lokacija || x.lokacija === lokNaziv) && x.datum >= od && x.datum <= do_) rez[x.datum] = x.razlog;
   });
   return rez;
+}
+
+/** Pravila za šifru panela; vraća opis greške ili '' kad je ispravna. */
+function provjeriSifru(s) {
+  if (s.length < 8) return 'šifra mora imati najmanje 8 znakova';
+  if (s.length > 40) return 'šifra može imati najviše 40 znakova';
+  if (!/[A-Za-zČĆŠŽĐčćšžđ]/.test(s) || !/\d/.test(s)) return 'šifra mora imati i slova i brojeve';
+  if (/^[=+\-@]/.test(s)) return 'šifra ne smije počinjati znakom = + - @';
+  return '';
 }
 
 /** "9-19" -> ['09:00','19:00']; "ne radi"/prazno -> null; neispravno -> undefined */
@@ -817,20 +828,20 @@ function generisiSlotove(radno, korak, trajanje, zauzeti, najranije) {
 
 
 /**
- * Grašak - panel za osoblje (grasaksalon.me/osoblje). Prijava ličnim PIN-om iz lista "Osoblje".
+ * Grašak - panel za osoblje (grasaksalon.me/osoblje). Prijava: ime + šifra iz lista "Osoblje".
  *
  * vlasnik (Kristina): sve lokacije, pregled dana, upis termina, statusi, izvještaji, sedmični email.
  * admin:              isto, za sve lokacije ili samo svoju (kolona Lokacija).
  * frizer:             pregled dana svoje lokacije, upis termina kad neko zove, nije došao / otkazano, napomena.
  *
- * Sve akcije idu preko POST-a (PIN se nikad ne šalje u adresi).
+ * Sve akcije idu preko POST-a (šifra se nikad ne šalje u adresi).
  */
 
-const PIN_MAX_GRESAKA = 10;   // pogrešnih PIN-ova u 15 minuta, za sve zajedno - zaštita od pogađanja
+const PIN_MAX_GRESAKA = 10;   // pogrešnih prijava u 15 minuta, za sve zajedno - zaštita od pogađanja
 
 function osobljeAkcija_(z) {
   const p = ucitajPodesavanja();
-  const o = prijava_(z.pin, p.lokacije);
+  const o = prijava_(z.ime, z.sifra, p.lokacije);
   switch (z.akcija) {
     case 'osoblje_prijava':
       return { ok: true, osoba: { ime: o.ime, uloga: o.uloga }, konfig: konfigZaOsoblje_(o, p) };
@@ -861,27 +872,28 @@ function pisanje_(fn) {
   try { return fn(); } finally { lock.releaseLock(); }
 }
 
-function prijava_(pin, lokacije) {
+function prijava_(ime, sifra, lokacije) {
   const cache = CacheService.getScriptCache();
   const greske = Number(cache.get('pin_greske') || 0);
   if (greske >= PIN_MAX_GRESAKA) throw new Error('Previše pogrešnih pokušaja. Sačekajte 15 minuta.');
-  const o = ucitajOsoblje(lokacije).osoblje.find(x => x.pin === String(pin || '').trim());
+  const i = String(ime || '').trim().toLowerCase(), s = String(sifra || '').trim();
+  const o = i && s ? ucitajOsoblje(lokacije).osoblje.find(x => x.ime.toLowerCase() === i && x.sifra === s) : null;
   if (!o) {
     cache.put('pin_greske', String(greske + 1), 900);
     if (greske + 1 === PIN_MAX_GRESAKA) upozoriVlasnika_(lokacije);
     Utilities.sleep(1000);
-    throw new Error('Pogrešan PIN.');
+    throw new Error('Pogrešno ime ili šifra.');
   }
   return o;
 }
 
-/** Email vlasniku kad neko više puta pogriješi PIN (moguće pogađanje). */
+/** Email vlasniku kad neko više puta pogriješi šifru (moguće pogađanje). */
 function upozoriVlasnika_(lokacije) {
   try {
     ucitajOsoblje(lokacije).osoblje.filter(x => x.uloga === 'vlasnik' && /@/.test(x.email)).forEach(x => {
       MailApp.sendEmail(x.email, 'Grašak: zaključana prijava u panel',
-        'U posljednjih 15 minuta upisano je ' + PIN_MAX_GRESAKA + ' pogrešnih PIN-ova u panel za osoblje (grasaksalon.me/osoblje). ' +
-        'Prijava je zaključana 15 minuta. Ako to niste bili vi ili vaše osoblje, promijenite PIN-ove u Podešavanjima.');
+        'U posljednjih 15 minuta bilo je ' + PIN_MAX_GRESAKA + ' pogrešnih prijava u panel za osoblje (grasaksalon.me/osoblje). ' +
+        'Prijava je zaključana 15 minuta. Ako to niste bili vi ili vaše osoblje, promijenite šifre u Podešavanjima.');
     });
   } catch (e) { console.log('Upozorenje nije poslato: ' + e); }
 }
@@ -1031,7 +1043,7 @@ function upisiList_(ime, redovi, kolona, tekstKolone) {
   if (redovi.length) sh.getRange(2, 1, redovi.length, kolona).setValues(redovi);
 }
 
-/** Podešavanja kako su upisana u tabeli; PIN-ovi se ne šalju, samo da li postoje. */
+/** Podešavanja kako su upisana u tabeli; šifre se ne šalju, samo da li postoje. */
 function citajPodesavanjaZaEkran_() {
   const t = v => (v == null ? '' : String(v)).trim();
   const da = v => t(v).toUpperCase() !== 'NE';
@@ -1045,13 +1057,13 @@ function citajPodesavanjaZaEkran_() {
     }),
     neradniDani: citajList_(LIST_NERADNI, 3).map(r => ({ datum: parsirajDatum(r[0]) || t(r[0]), razlog: t(r[1]), lokacija: t(r[2]) })),
     osoblje: citajList_(LIST_OSOBLJE, 6).map((r, i) => ({
-      red: i, ime: t(r[0]), uloga: t(r[1]).toLowerCase(), lokacija: t(r[2]), imaPin: /^\d{6,8}$/.test(t(r[3])),
+      red: i, ime: t(r[0]), uloga: t(r[1]).toLowerCase(), lokacija: t(r[2]), imaSifru: !!t(r[3]) && !/^UPISATI/i.test(t(r[3])) && !provjeriSifru(t(r[3])),
       email: t(r[4]), aktivan: da(r[5]),
     })),
   };
 }
 
-/** Provjeri sve kao "Provjeri podesavanja", pa upiši u tabelu. Prazan PIN = ostaje stari. */
+/** Provjeri sve kao "Provjeri podesavanja", pa upiši u tabelu. Prazna šifra = ostaje stara. */
 function sacuvajPodesavanja_(o, s) {
   if (!s || typeof s !== 'object') return { ok: false, poruka: 'Neispravni podaci.' };
   const t = (v, n) => cistTekst(v, n, true);                                          // bez formula u tabeli
@@ -1065,8 +1077,8 @@ function sacuvajPodesavanja_(o, s) {
   const prz = niz(s.praznici).map(x => [t(x.naziv, 60), t(x.datum, 10), Number(x.dana) === 2 ? 2 : 1, x.neradni === false ? 'NE' : 'DA']).filter(r => r[0]);
   const nrd = niz(s.neradniDani).map(x => [t(x.datum, 12), t(x.razlog, 80), t(x.lokacija, 60)]).filter(r => r[0]);
   const osb = niz(s.osoblje).map(x => {
-    const stariPin = Number.isInteger(x.red) && stari[x.red] ? t(stari[x.red][3], 8) : '';
-    return [t(x.ime, 40), t(x.uloga, 10).toLowerCase(), t(x.lokacija, 60), t(x.pin, 8) || stariPin,
+    const staraSifra = Number.isInteger(x.red) && stari[x.red] ? String(stari[x.red][3] == null ? '' : stari[x.red][3]).trim() : '';
+    return [t(x.ime, 40), t(x.uloga, 10).toLowerCase(), t(x.lokacija, 60), String(x.sifra || '').trim().slice(0, 40) || staraSifra,
             t(x.email, 80), x.aktivan === false ? 'NE' : 'DA'];
   }).filter(r => r[0]);
 
@@ -1076,7 +1088,7 @@ function sacuvajPodesavanja_(o, s) {
   const greske = p.greske.concat(os.greske, nr.greske);
   if (!p.lokacije.length) greske.push('Mora postojati bar jedna lokacija.');
   if (!p.usluge.length) greske.push('Mora postojati bar jedna aktivna usluga.');
-  if (!os.osoblje.some(x => x.uloga === 'vlasnik')) greske.push('Mora ostati bar jedan aktivan vlasnik s PIN-om, inače niko ne može u podešavanja.');
+  if (!os.osoblje.some(x => x.uloga === 'vlasnik')) greske.push('Mora ostati bar jedan aktivan vlasnik sa šifrom, inače niko ne može u podešavanja.');
   if (greske.length) return { ok: false, poruka: 'Nije sačuvano. Ispravite:', greske: greske };
 
   upisiList_(LIST_LOK, lok, 10, 'C:J');
@@ -1088,8 +1100,8 @@ function sacuvajPodesavanja_(o, s) {
   return {
     ok: true,
     poruka: 'Sačuvano. Sajt i panel već rade s novim podešavanjima.' +
-      (os.bezPina.length ? ' Bez PIN-a (ne mogu u panel): ' + os.bezPina.join(', ') + '.' : ''),
-    odjava: !os.osoblje.some(x => x.pin === o.pin),
+      (os.bezPina.length ? ' Bez šifre (ne mogu u panel): ' + os.bezPina.join(', ') + '.' : ''),
+    odjava: !os.osoblje.some(x => x.ime === o.ime && x.sifra === o.sifra),
   };
 }
 
