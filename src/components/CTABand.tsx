@@ -40,7 +40,7 @@ export default function CTABand({ title, sub }: Props) {
             </motion.a>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
               <Link
-                to="/kontakt"
+                to="/zakazi"
                 className="block rounded-full bg-sun px-7 py-3.5 font-bold text-ink shadow-lg hover:shadow-xl"
               >
                 {tr('nav.book')}

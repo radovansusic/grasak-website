@@ -139,7 +139,7 @@ export default function Home() {
             >
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
                 <Link
-                  to="/kontakt"
+                  to="/zakazi"
                   className="block rounded-full bg-grass px-8 py-4 font-bold text-white shadow-lg shadow-grass/30 hover:bg-grass-deep"
                 >
                   {tr('home.book')}

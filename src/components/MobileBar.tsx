@@ -33,7 +33,7 @@ export default function MobileBar() {
             <Phone className="h-4 w-4" /> 069 371 111
           </a>
           <Link
-            to="/kontakt"
+            to="/zakazi"
             className="flex flex-1 items-center justify-center gap-2 rounded-full bg-grass px-4 py-3 text-sm font-bold text-white"
           >
             <CalendarCheck className="h-4 w-4" /> {tr('nav.book')}

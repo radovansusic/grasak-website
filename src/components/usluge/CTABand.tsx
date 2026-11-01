@@ -35,7 +35,7 @@ export default function CTABand() {
           </p>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} className="mt-8 inline-block">
             <Link
-              to="/kontakt"
+              to="/zakazi"
               className="inline-flex items-center gap-2 rounded-full bg-[#FFC93C] px-8 py-4 text-lg font-bold text-[#22302A] shadow-lg transition-shadow hover:shadow-xl"
               style={{ fontFamily: "'Nunito', sans-serif" }}
             >

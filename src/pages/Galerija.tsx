@@ -430,7 +430,7 @@ function CTABand() {
           <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }}>
               <Link
-                to="/kontakt"
+                to="/zakazi"
                 className="inline-flex items-center gap-2 rounded-full bg-[#FFC93C] px-8 py-4 text-base font-bold text-[#22302A] shadow-lg transition-shadow hover:shadow-xl"
                 style={{ fontFamily: bodyFont }}
               >

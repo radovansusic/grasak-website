@@ -185,7 +185,7 @@ export default function Usluge() {
             </ul>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} className="mt-8 inline-block">
               <Link
-                to="/kontakt"
+                to="/zakazi"
                 className="inline-flex items-center gap-2 rounded-full bg-[#4CAF50] px-7 py-3.5 text-[16px] font-bold text-white shadow-lg shadow-[#4CAF50]/30 transition-colors hover:bg-[#2E7D32]"
               >
                 <Sparkles className="h-5 w-5" />
@@ -294,7 +294,7 @@ export default function Usluge() {
             </ul>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.96 }} className="mt-8 inline-block">
               <Link
-                to="/kontakt"
+                to="/zakazi"
                 className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-[16px] font-bold text-[#2E7D32] shadow-lg transition-shadow hover:shadow-xl"
               >
                 {tr('usluge.cardCta')}

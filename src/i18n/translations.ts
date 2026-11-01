@@ -5,6 +5,28 @@ export interface Dict {
 }
 
 const cnr: Dict = {
+  zakazi: {
+    title: 'Zakaži termin',
+    sub: 'Izaberi frizera, dan i slobodan termin. Potvrda stiže SMS-om.',
+    location: 'Lokacija',
+    stylist: 'Frizer',
+    service: 'Usluga',
+    day: 'Dan',
+    time: 'Termin',
+    details: 'Podaci',
+    today: 'danas',
+    pickFirst: 'Izaberi uslugu i dan, pa vidiš slobodne termine.',
+    loading: 'Učitavam...',
+    noSlots: 'Nema slobodnih termina za taj dan. Probaj drugi dan.',
+    legend: 'Precrtano = zauzeto. Termini su na pola sata.',
+    child: 'Ime djeteta',
+    parent: 'Ime roditelja',
+    submit: 'Zakaži u',
+    okTitle: 'Termin je zakazan!',
+    okSms: 'Potvrda stiže SMS-om. Vidimo se u Grašku!',
+    again: 'Zakaži još jedan termin',
+    offline: 'Online zakazivanje trenutno nije dostupno. Pozovite 069 371 111 ili pišite na WhatsApp.',
+  },
   nav: {
     home: 'Početna',
     usluge: 'Usluge & Cijene',
@@ -397,6 +419,28 @@ const cnr: Dict = {
 }
 
 const en: Dict = {
+  zakazi: {
+    title: 'Book an appointment',
+    sub: 'Pick a stylist, a day and a free slot. Confirmation arrives by SMS.',
+    location: 'Location',
+    stylist: 'Stylist',
+    service: 'Service',
+    day: 'Day',
+    time: 'Time',
+    details: 'Details',
+    today: 'today',
+    pickFirst: 'Pick a service and a day to see free slots.',
+    loading: 'Loading...',
+    noSlots: 'No free slots that day. Try another day.',
+    legend: 'Crossed out = taken. Slots are every 30 minutes.',
+    child: "Child's name",
+    parent: "Parent's name",
+    submit: 'Book at',
+    okTitle: 'Appointment booked!',
+    okSms: 'Confirmation arrives by SMS. See you at Grašak!',
+    again: 'Book another appointment',
+    offline: 'Online booking is unavailable right now. Call 069 371 111 or message us on WhatsApp.',
+  },
   nav: {
     home: 'Home',
     usluge: 'Services & Prices',

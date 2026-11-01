@@ -11,6 +11,7 @@ export default function Footer() {
     { to: '/usluge', label: tr('nav.usluge') },
     { to: '/o-nama', label: tr('nav.onama') },
     { to: '/galerija', label: tr('nav.galerija') },
+    { to: '/zakazi', label: tr('nav.book') },
     { to: '/kontakt', label: tr('nav.kontakt') },
   ]
   return (

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Phone } from 'lucide-react'
+import { Menu, X, Phone, CalendarCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLang } from '@/i18n/LanguageContext'
 import type { Lang } from '@/i18n/translations'
@@ -116,7 +116,7 @@ export default function Navbar() {
             <Phone className="h-4 w-4" /> 069 371 111
           </a>
           <Link
-            to="/kontakt"
+            to="/zakazi"
             className="shrink-0 whitespace-nowrap rounded-full bg-grass px-5 py-2 text-sm font-bold text-white shadow-md shadow-grass/30 transition-transform hover:scale-105 hover:bg-grass-deep"
           >
             {tr('nav.book')}
@@ -186,6 +186,13 @@ export default function Navbar() {
                 >
                   <Phone className="h-5 w-5" /> 069 371 111
                 </a>
+                <Link
+                  to="/zakazi"
+                  onClick={() => setOpen(false)}
+                  className="mt-3 flex items-center gap-2 rounded-full bg-grass px-6 py-3 font-bold text-white"
+                >
+                  <CalendarCheck className="h-5 w-5" /> {tr('nav.book')}
+                </Link>
               </motion.li>
             </ul>
           </motion.div>
