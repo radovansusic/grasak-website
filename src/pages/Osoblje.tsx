@@ -5,6 +5,7 @@ import {
   MessageSquarePlus, Phone, Plus, Printer, RefreshCw, Settings, UserX, X,
 } from 'lucide-react'
 import PodesavanjaPanel from '@/components/osoblje/PodesavanjaPanel'
+import Zvono from '@/components/osoblje/Obavjestenja'
 import { API_URL, isoDatum } from '@/lib/zakazivanje'
 import {
   osoblje,
@@ -41,6 +42,8 @@ export default function Osoblje() {
   const [konfig, setKonfig] = useState<KonfigOsoblje | null>(null)
   const [greska, setGreska] = useState('')
   const [tab, setTab] = useState<'dan' | 'izvjestaj' | 'podesavanja'>('dan')
+  const [signal, setSignal] = useState(0)          // novo obavještenje -> osvježi pregled dana
+  const [fokus, setFokus] = useState<string>('')   // tap na obavještenje -> taj dan
 
   useEffect(() => {
     document.title = 'Grašak panel'
@@ -88,9 +91,12 @@ export default function Osoblje() {
   return (
     <Okvir
       desno={
-        <button onClick={odjava} className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold">
-          <LogOut className="h-4 w-4" /> Odjava
-        </button>
+        <div className="flex items-center gap-2">
+          <Zvono pristup={pristup} onNovo={() => setSignal((x) => x + 1)} onOtvoriDan={(d) => { setTab('dan'); setFokus(d + '#' + Date.now()) }} />
+          <button onClick={odjava} className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold">
+            <LogOut className="h-4 w-4" /> Odjava
+          </button>
+        </div>
       }
       podnaslov={`${profil.ime} · ${profil.uloga}`}
     >
@@ -101,7 +107,7 @@ export default function Osoblje() {
           {vlasnik && <Tab aktivan={tab === 'podesavanja'} onClick={() => setTab('podesavanja')}><Settings className="h-4 w-4" /> Podešavanja</Tab>}
         </div>
       )}
-      {tab === 'dan' || !admin ? <DanPanel pristup={pristup} konfig={konfig} profil={profil} />
+      {tab === 'dan' || !admin ? <DanPanel key={fokus || 'dan'} pristup={pristup} konfig={konfig} profil={profil} signal={signal} pocetniDatum={fokus.split('#')[0]} />
         : tab === 'izvjestaj' ? <IzvjestajPanel pristup={pristup} konfig={konfig} />
           : vlasnik ? <PodesavanjaPanel pristup={pristup} onSacuvano={osvjeziKonfig} onOdjava={odjava} /> : null}
     </Okvir>
@@ -168,9 +174,11 @@ function Prijava({ onPrijava, greska, cekam }: { onPrijava: (p: Pristup) => Prom
 
 type Izbor = { tip: 'novi'; osoba: string; vrijeme: string } | { tip: 'termin'; osoba: string; termin: TerminOsoblje }
 
-function DanPanel({ pristup, konfig, profil }: { pristup: Pristup; konfig: KonfigOsoblje; profil: Profil }) {
+function DanPanel({ pristup, konfig, profil, signal, pocetniDatum }: {
+  pristup: Pristup; konfig: KonfigOsoblje; profil: Profil; signal: number; pocetniDatum?: string
+}) {
   const [lokId, setLokId] = useState(konfig.lokacije[0]?.id || '')
-  const [datum, setDatum] = useState(() => isoDatum(new Date()))
+  const [datum, setDatum] = useState(() => pocetniDatum || isoDatum(new Date()))
   const [dan, setDan] = useState<DanOsoblje | null>(null)
   const [ucitava, setUcitava] = useState(false)
   const [poruka, setPoruka] = useState('')   // greška učitavanja
@@ -191,7 +199,7 @@ function DanPanel({ pristup, konfig, profil }: { pristup: Pristup; konfig: Konfi
     ucitaj()
     const t = setInterval(() => { if (document.visibilityState === 'visible') ucitaj() }, 60000)
     return () => { aktivno = false; clearInterval(t) }
-  }, [pristup, lokId, datum, osvjezi])
+  }, [pristup, lokId, datum, osvjezi, signal])
 
   const prikaz = dan && dan.datum === datum && dan.lokacija === lokId ? dan : null
   const vremena = useMemo(() => {

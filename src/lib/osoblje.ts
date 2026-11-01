@@ -60,3 +60,12 @@ export interface Podesavanja {
   lokacije: LokacijaPod[]; frizeri: FrizerPod[]; usluge: UslugaPod[]; osoblje: OsobaPod[]
   praznici: PraznikPod[]; neradniDani: NeradniDanPod[]
 }
+
+/* ---- obavještenja u panelu ---- */
+export interface Obavjestenje {
+  kad: string            // ms od 1970, jedinstveno i rastuće
+  tip: 'novi' | 'otkazan'
+  lokacija: string; frizer: string; datum: string; vrijeme: string; usluga: string; dijete: string
+  izvor: 'sajt' | 'panel' | 'kalendar' | string
+  ko: string
+}

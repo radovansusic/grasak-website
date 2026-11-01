@@ -153,6 +153,13 @@ function sinhronizujBezZakljucavanja_() {
     potvrdiAkoTreba_(ev, lokPoFrizeru, tz);
     const red = redZaDogadjaj_(ev, lokPoFrizeru, tz);
     if (!red) return;
+    // termin upisan direktno u Google kalendar: obavještenje samo za svjež (ne za stare termine)
+    if (!ev.getTag('obav')) {
+      if (ev.getDateCreated() > new Date(Date.now() - 2 * 3600e3) && ev.getStartTime() > new Date()) {
+        zapisiObavjestenje_('novi', red[KOL['Frizer']], red[KOL['Datum']], red[KOL['Vrijeme']], red[KOL['Usluga']], red[KOL['Dijete']], 'kalendar', '');
+      }
+      ev.setTag('obav', 'da');
+    }
     vidjeni[red[0]] = true;
     if (red[0] in indeks) redovi[indeks[red[0]]] = red;
     else { indeks[red[0]] = redovi.length; redovi.push(red); }
@@ -163,6 +170,11 @@ function sinhronizujBezZakljucavanja_() {
     if (!vidjeni[r[0]] && d >= danas && r[KOL['Status']] !== 'otkazan') {
       r[KOL['Status']] = 'otkazan';
       r[KOL['Azurirano']] = sadaTekst_();
+      // obrisan direktno iz kalendara: obavještenje ako termin tek predstoji
+      const v = vrijemeTekst(r[KOL['Vrijeme']], tz);
+      if (Utilities.parseDate(d + ' ' + v, tz, 'yyyy-MM-dd HH:mm') > new Date()) {
+        zapisiObavjestenje_('otkazan', r[KOL['Frizer']], d, v, r[KOL['Usluga']], r[KOL['Dijete']], 'kalendar', '');
+      }
     }
   });
 
@@ -175,6 +187,33 @@ function datumTekst(v, tz) {
 
 function vrijemeTekst(v, tz) {
   return v instanceof Date ? Utilities.formatDate(v, tz, 'HH:mm') : String(v || '');
+}
+
+/* ---------- obavještenja u panelu ---------- */
+
+const LIST_OBAVJESTENJA = 'Obavjestenja';
+const ZAGLAVLJE_OBAV = ['Kad', 'Tip', 'Lokacija', 'Frizer', 'Datum', 'Vrijeme', 'Usluga', 'Dijete', 'Izvor', 'Ko'];
+const MAX_OBAV = 1000;   // čuva se posljednjih 1000 obavještenja
+
+/** Novi ili otkazan termin -> red u listu "Obavjestenja"; panel ga prikazuje pod zvoncem. */
+function zapisiObavjestenje_(tip, frizer, datum, vrijeme, usluga, dijete, izvor, ko) {
+  try {
+    const ss = tabela_();
+    let sh = ss.getSheetByName(LIST_OBAVJESTENJA);
+    if (!sh) {
+      sh = ss.insertSheet(LIST_OBAVJESTENJA);
+      sh.getRange('A:J').setNumberFormat('@');
+      sh.appendRow(ZAGLAVLJE_OBAV);
+      sh.setFrozenRows(1);
+    }
+    const lok = lokPoFrizeru_()[String(frizer || '').toLowerCase()] || {};
+    const zadnji = sh.getLastRow() > 1 ? Number(sh.getRange(sh.getLastRow(), 1).getValue()) || 0 : 0;
+    const kad = Math.max(Date.now(), zadnji + 1); // jedinstveno i rastuće, panel pamti posljednje viđeno
+    sh.appendRow([String(kad), tip, lok.naziv || '', frizer || '', datum || '', vrijeme || '', usluga || '', dijete || '', izvor || '', ko || '']);
+    if (sh.getLastRow() > MAX_OBAV + 200) sh.deleteRows(2, sh.getLastRow() - 1 - MAX_OBAV);
+  } catch (e) {
+    console.log('Obavještenje nije zapisano: ' + e);
+  }
 }
 
 /* ---------- podsjetnici ---------- */
@@ -777,6 +816,8 @@ function zakazi_(z) {
   });
 
   if (posaljiSms(telefon, tekstPotvrde(z.datum, z.vrijeme, z.osoba, lok.telefon))) ev.setTag('potvrda', 'poslat');
+  zapisiObavjestenje_('novi', z.osoba, z.datum, z.vrijeme, u.naziv, dijete, 'sajt', roditelj);
+  ev.setTag('obav', 'da');
   upisiTermin_(ev);
   return { ok: true, poruka: 'Termin je zakazan. Potvrda stiže SMS-om.' };
 }
@@ -853,6 +894,8 @@ function osobljeAkcija_(z) {
       return pisanje_(() => promijeniStatus_(o, p, z.id, z.status));
     case 'osoblje_napomena':
       return pisanje_(() => dopisiNapomenu_(o, p, z.id, z.tekst));
+    case 'osoblje_obavjestenja':
+      return { ok: true, obavjestenja: obavjestenjaZa_(o, p, z.posle), sada: String(Date.now()) };
     case 'osoblje_izvjestaj':
       if (o.uloga === 'frizer') return { ok: false, poruka: 'Izvještaji su za vlasnika i administratore.' };
       return { ok: true, izvjestaj: izvjestajZaPeriod_(o, p, z.od, z.do, z.lok) };
@@ -958,6 +1001,20 @@ function danPregled_(o, p, lokId, datum) {
   return { datum: datum, lokacija: lok.id, radno: radno, neradni: neradni, osobe: osobe };
 }
 
+/* ---------- obavještenja (zvonce u panelu) ---------- */
+
+/**
+ * Posljednja obavještenja za prijavljenu osobu (najnovija prva, najviše 40), novija od "posle" (ms).
+ * Frizer: samo svoji termini. Admin/vlasnik: dozvoljene lokacije. Bez obavještenja o sopstvenim izmjenama.
+ */
+function obavjestenjaZa_(o, p, posle) {
+  const sh = tabela_().getSheetByName(LIST_OBAVJESTENJA);
+  if (!sh || sh.getLastRow() < 2) return [];
+  const n = Math.min(400, sh.getLastRow() - 1);
+  const redovi = sh.getRange(sh.getLastRow() - n + 1, 1, n, ZAGLAVLJE_OBAV.length).getValues();
+  return filtrirajObavjestenja(redovi, o, dozvoljeneLokacije_(o, p).map(l => l.naziv), Number(posle) || 0);
+}
+
 /* ---------- upis, status, napomena ---------- */
 
 function zakaziOsoblje_(o, p, z) {
@@ -985,6 +1042,8 @@ function zakaziOsoblje_(o, p, z) {
         '\nIzvor: telefon - ' + o.ime,
     });
   potvrdiAkoTreba_(ev, lokPoFrizeru_(), tz);
+  zapisiObavjestenje_('novi', z.osoba, z.datum, z.vrijeme, u.naziv, dijete, 'panel', o.ime);
+  ev.setTag('obav', 'da');
   upisiTermin_(ev);
   return { ok: true, poruka: 'Upisano: ' + z.vrijeme + ', ' + z.osoba + ', ' + dijete + '.' };
 }
@@ -1007,6 +1066,9 @@ function promijeniStatus_(o, p, id, status) {
     red[KOL['Status']] = 'otkazan';
     red[KOL['Napomena']] = (red[KOL['Napomena']] ? red[KOL['Napomena']] + ' | ' : '') + 'otkazao: ' + o.ime;
     upisiRed_(red);
+    if (ev.getStartTime() > new Date()) {
+      zapisiObavjestenje_('otkazan', red[KOL['Frizer']], red[KOL['Datum']], red[KOL['Vrijeme']], red[KOL['Usluga']], red[KOL['Dijete']], 'panel', o.ime);
+    }
     ev.deleteEvent(); // termin se oslobađa za sajt i za kalendar
     return { ok: true, poruka: 'Termin je otkazan, vrijeme je ponovo slobodno.' };
   }
@@ -1176,6 +1238,16 @@ function posaljiSedmicniIzvjestaj() {
 }
 
 /* ---------- čiste funkcije (testirane) ---------- */
+
+function filtrirajObavjestenja(redovi, o, lokacije, posle) {
+  const ja = String(o.ime).toLowerCase();
+  return redovi.map(r => ({
+    kad: String(r[0]), tip: String(r[1]), lokacija: String(r[2]), frizer: String(r[3]), datum: String(r[4]),
+    vrijeme: String(r[5]), usluga: String(r[6]), dijete: String(r[7]), izvor: String(r[8]), ko: String(r[9]),
+  })).filter(x => Number(x.kad) > posle && x.ko.toLowerCase() !== ja &&
+    (o.uloga === 'frizer' ? x.frizer.toLowerCase() === ja : (!x.lokacija || lokacije.indexOf(x.lokacija) >= 0)))
+    .sort((a, b) => Number(b.kad) - Number(a.kad)).slice(0, 40);
+}
 
 function danUSedmici(iso) {
   const [g, m, d] = String(iso).split('-').map(Number);
