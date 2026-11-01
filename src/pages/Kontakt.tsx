@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/accordion'
 import { useLang } from '@/i18n/LanguageContext'
 import { sendBookingEmail } from '@/lib/booking'
+import OnlineZakazivanje from '@/components/OnlineZakazivanje'
+import { API_URL } from '@/lib/zakazivanje'
 
 const GRASS = '#4CAF50'
 const GRASS_DEEP = '#2E7D32'
@@ -85,6 +87,13 @@ function ConfettiBurst() {
       ))}
     </div>
   )
+}
+
+/** Sa podešenim API-jem: online zakazivanje u kalendar. Poklon vaučer i rezervni režim: stara forma. */
+function ZakazivanjeKartica() {
+  const [searchParams] = useSearchParams()
+  if (API_URL && searchParams.get('vaucer') !== '1') return <OnlineZakazivanje />
+  return <BookingFormCard />
 }
 
 function BookingFormCard() {
@@ -741,7 +750,7 @@ export default function Kontakt() {
       <section className="bg-white py-20 md:py-24">
         <div className="mx-auto grid max-w-[1200px] gap-10 px-6 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <BookingFormCard />
+            <ZakazivanjeKartica />
           </div>
           <div className="lg:col-span-2">
             <InfoCards />

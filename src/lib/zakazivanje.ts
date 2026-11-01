@@ -28,8 +28,10 @@ export interface Zahtjev {
   datum: string
   vrijeme: string
   dijete: string
+  uzrast: string
   roditelj: string
   telefon: string
+  napomena: string
 }
 
 async function get<T>(params: Record<string, string>): Promise<T> {
