@@ -16,6 +16,7 @@
 
 const CFG = {
   SALON: 'Grasak',             // bez dijakritika - SMS ostaje 160 znakova
+  TZ: 'Europe/Podgorica',      // vremenska zona salona, ne zavisi od podešavanja projekta
   TEL_SALONA: '069 371 111',   // rezervni broj; inače se koristi Telefon iz lista Lokacije
   KALENDAR_ID: 'primary',      // kalendar naloga grasaksalon@gmail.com (vlasnik: Kristina)
   DANA_UNAPRIJED: 30,
@@ -52,8 +53,8 @@ function postavi() {
 
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('sinhronizuj').timeBased().everyHours(1).create();
-  ScriptApp.newTrigger('posaljiPodsjetnike').timeBased().everyDays(1).atHour(CFG.SAT_PODSJETNIKA).create();
-  ScriptApp.newTrigger('posaljiSedmicniIzvjestaj').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
+  ScriptApp.newTrigger('posaljiPodsjetnike').timeBased().everyDays(1).atHour(CFG.SAT_PODSJETNIKA).inTimezone(CFG.TZ).create();
+  ScriptApp.newTrigger('posaljiSedmicniIzvjestaj').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).inTimezone(CFG.TZ).create();
   sinhronizuj();
 }
 
@@ -62,7 +63,7 @@ function kal_() {
 }
 
 function sadaTekst_() {
-  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
+  return Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd HH:mm');
 }
 
 /* ---------- kalendar -> tabela ---------- */
@@ -110,7 +111,7 @@ function upisiRed_(red) {
 }
 
 function upisiTermin_(ev) {
-  const red = redZaDogadjaj_(ev, lokPoFrizeru_(), Session.getScriptTimeZone());
+  const red = redZaDogadjaj_(ev, lokPoFrizeru_(), CFG.TZ);
   if (red) upisiRed_(red);
 }
 
@@ -135,7 +136,7 @@ function sinhronizuj() {
 
 /** Kalendar od danas do +30 dana -> tabela, jednim upisom. Termini koji su nestali iz kalendara = otkazani. */
 function sinhronizujBezZakljucavanja_() {
-  const tz = Session.getScriptTimeZone();
+  const tz = CFG.TZ;
   const danas = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
   const od = Utilities.parseDate(danas + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
   const do_ = new Date(od.getTime() + (CFG.DANA_UNAPRIJED + 1) * 864e5);
@@ -179,9 +180,10 @@ function vrijemeTekst(v, tz) {
 /* ---------- podsjetnici ---------- */
 
 function posaljiPodsjetnike() {
-  const tz = Session.getScriptTimeZone();
-  const sjutra = new Date(); sjutra.setDate(sjutra.getDate() + 1); sjutra.setHours(0, 0, 0, 0);
-  const prekosjutra = new Date(sjutra.getTime() + 864e5);
+  const tz = CFG.TZ;
+  const sjutraIso = dodajDane(Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd'), 1);
+  const sjutra = Utilities.parseDate(sjutraIso + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
+  const prekosjutra = Utilities.parseDate(dodajDane(sjutraIso, 1) + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
   const lokPoFrizeru = lokPoFrizeru_();
 
   kal_().getEvents(sjutra, prekosjutra).forEach(ev => {
@@ -299,6 +301,8 @@ function bezDijakritika(s) {
  *   radno vrijeme se piše kratko: 9-19, 9:30-14, ili "ne radi"
  * List "Frizeri":  Frizer | Lokacija | Aktivan (DA/NE)
  * List "Usluge":   Usluga | Trajanje (min) | Aktivna (DA/NE)
+ * List "Praznici": Praznik | Datum (dan.mjesec.) | Dana | Neradni (DA/NE) - svake godine; unaprijed upisani državni praznici CG
+ * List "Neradni dani": Datum | Razlog | Lokacija (prazno = sve) - dani koje vlasnik proglasi neradnim
  * List "Osoblje":  Ime | Uloga (vlasnik/admin/frizer) | Lokacija (prazno = sve) | PIN | Email | Aktivan
  *   PIN je lična šifra za panel grasaksalon.me/osoblje (najmanje 4 cifre, svako svoju).
  *
@@ -309,6 +313,16 @@ function bezDijakritika(s) {
 const LIST_LOK = 'Lokacije', LIST_FRIZ = 'Frizeri', LIST_USL = 'Usluge';
 const LIST_VAUCERI = 'Vauceri';
 const LIST_OSOBLJE = 'Osoblje';
+const LIST_PRAZNICI = 'Praznici', LIST_NERADNI = 'Neradni dani';
+// Zakon o državnim i drugim praznicima (CG): državni praznici se praznuju dva dana.
+// Ako dan praznika padne u nedjelju, neradan je i prvi naredni dan (prvi dan u nedjelju -> dva naredna dana).
+const ZAKONSKI_PRAZNICI = [
+  ['Nova godina', '01.01.', 2, 'DA'],
+  ['Praznik rada', '01.05.', 2, 'DA'],
+  ['Dan nezavisnosti', '21.05.', 2, 'DA'],
+  ['Dan državnosti', '13.07.', 2, 'DA'],
+  ['Njegošev dan', '13.11.', 2, 'DA'],
+];
 const ULOGE = ['vlasnik', 'admin', 'frizer'];
 const ZAGLAVLJE_VAUCERI = ['Datum', 'Vaucer', 'Dijete', 'Kupac', 'Telefon', 'Napomena', 'Status'];
 
@@ -329,6 +343,8 @@ function kreirajListovePodesavanja_() {
     [LIST_USL]: [['Usluga', 'Trajanje (min)', 'Aktivna'],
                  ['Šišanje', 30, 'DA'], ['Prvo šišanje + diploma', 30, 'DA'], ['Svečana frizura', 60, 'DA']],
     [LIST_VAUCERI]: [ZAGLAVLJE_VAUCERI],
+    [LIST_PRAZNICI]: [['Praznik', 'Datum (dan.mjesec.)', 'Dana', 'Neradni']].concat(ZAKONSKI_PRAZNICI),
+    [LIST_NERADNI]: [['Datum', 'Razlog', 'Lokacija']],
     [LIST_OSOBLJE]: [['Ime', 'Uloga', 'Lokacija', 'PIN', 'Email', 'Aktivan'],
                      ['Kristina', 'vlasnik', '', 'UPISATI PIN', 'grasaksalon@gmail.com', 'DA'],
                      ['Nikola', 'frizer', 'Grašak Podgorica', 'UPISATI PIN', '', 'DA']],
@@ -341,6 +357,8 @@ function kreirajListovePodesavanja_() {
     if (ime === LIST_LOK) sh.getRange('C:J').setNumberFormat('@');
     if (ime === LIST_OSOBLJE) sh.getRange('D:D').setNumberFormat('@');
     if (ime === LIST_VAUCERI) sh.getRange('A:G').setNumberFormat('@');
+    if (ime === LIST_PRAZNICI) sh.getRange('B:B').setNumberFormat('@');
+    if (ime === LIST_NERADNI) sh.getRange('A:A').setNumberFormat('@');
     sh.getRange(1, 1, v.length, v[0].length).setValues(v);
     sh.getRange(1, 1, 1, v[0].length).setFontWeight('bold').setBackground('#e7f5e4');
     sh.setFrozenRows(1);
@@ -354,6 +372,14 @@ function ucitajPodesavanja() {
   return sastaviPodesavanja(citaj(LIST_LOK), citaj(LIST_FRIZ), citaj(LIST_USL));
 }
 
+/** Praznici i posebni neradni dani; bez lista "Praznici" važe zakonski. */
+function ucitajNeradne(lokacije) {
+  const ss = tabela_();
+  const pr = ss.getSheetByName(LIST_PRAZNICI), nr = ss.getSheetByName(LIST_NERADNI);
+  return sastaviNeradne(pr ? pr.getDataRange().getValues().slice(1) : ZAKONSKI_PRAZNICI,
+    nr ? nr.getDataRange().getValues().slice(1) : [], lokacije || ucitajPodesavanja().lokacije);
+}
+
 function ucitajOsoblje(lokacije) {
   const sh = tabela_().getSheetByName(LIST_OSOBLJE);
   return sastaviOsoblje(sh ? sh.getDataRange().getValues().slice(1) : [], lokacije || ucitajPodesavanja().lokacije);
@@ -363,7 +389,8 @@ function ucitajOsoblje(lokacije) {
 function provjeriPodesavanja() {
   const p = ucitajPodesavanja();
   const os = ucitajOsoblje(p.lokacije);
-  p.greske = p.greske.concat(os.greske);
+  const nr = ucitajNeradne(p.lokacije);
+  p.greske = p.greske.concat(os.greske, nr.greske);
   const dani = ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub'];
   const linije = p.lokacije.map(l => '• ' + l.naziv + ': ' + (l.osobe.join(', ') || 'NEMA FRIZERA') + ' | ' +
     [1, 2, 3, 4, 5, 6, 0].map(d => dani[d] + ' ' + (l.radno[d] ? l.radno[d].join('-') : 'ne radi')).join(', '));
@@ -371,6 +398,11 @@ function provjeriPodesavanja() {
   linije.push('', 'Osoblje (panel grasaksalon.me/osoblje): ' + (os.osoblje.map(o => o.ime + ' - ' + o.uloga +
     (o.lokacijaId ? ', ' + o.lokacijaNaziv : ', sve lokacije')).join('; ') || 'NIKO'));
   if (os.bezPina.length) linije.push('Bez PIN-a (ne mogu u panel): ' + os.bezPina.join(', '));
+  const danas = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');
+  const lok0 = p.lokacije[0] ? p.lokacije[0].naziv : '';
+  const sl = neradniUPeriodu(danas, dodajDane(danas, 365), nr.praznici, nr.posebni, lok0);
+  linije.push('', 'Neradni dani u narednih godinu dana: ' +
+    (Object.keys(sl).sort().map(d => d.slice(8, 10) + '.' + d.slice(5, 7) + '. ' + sl[d]).join(', ') || 'nema'));
   if (p.greske.length) linije.push('', 'ISPRAVITI:', ...p.greske.map(g => '• ' + g));
   SpreadsheetApp.getUi().alert(p.greske.length ? 'Podešavanja - ima grešaka' : 'Podešavanja su ispravna', linije.join('\n'), SpreadsheetApp.getUi().ButtonSet.OK);
 }
@@ -438,6 +470,83 @@ function sastaviOsoblje(redovi, lokacije) {
                    email: String(r[4] || '').trim() });
   });
   return { osoblje: osoblje, greske: greske, bezPina: bezPina };
+}
+
+/** Redovi listova Praznici i Neradni dani -> provjereni podaci. */
+function sastaviNeradne(prazniciRedovi, posebniRedovi, lokacije) {
+  const greske = [], praznici = [], posebni = [];
+  prazniciRedovi.forEach((r, i) => {
+    const naziv = String(r[0] || '').trim();
+    if (!naziv) return;
+    const dm = parsirajDanMjesec(r[1]);
+    if (!dm) { greske.push('Praznici, red ' + (i + 2) + ' (' + naziv + '): datum piši kao 13.07.'); return; }
+    const dana = Number(r[2]) === 2 ? 2 : 1;
+    praznici.push({ naziv: naziv, dan: dm[0], mjesec: dm[1], dana: dana, neradni: String(r[3]).trim().toUpperCase() !== 'NE' });
+  });
+  posebniRedovi.forEach((r, i) => {
+    const v = r[0];
+    if (v === '' || v == null) return;
+    const datum = parsirajDatum(v);
+    if (!datum) { greske.push('Neradni dani, red ' + (i + 2) + ': datum "' + v + '" piši kao 24.12.2026'); return; }
+    let lokacija = String(r[2] || '').trim();
+    if (lokacija) {
+      const l = lokacije.find(x => x.id === napraviId(lokacija));
+      if (!l) { greske.push('Neradni dani, red ' + (i + 2) + ': lokacija "' + lokacija + '" ne postoji'); return; }
+      lokacija = l.naziv;
+    }
+    posebni.push({ datum: datum, razlog: String(r[1] || '').trim() || 'Neradni dan', lokacija: lokacija });
+  });
+  return { praznici: praznici, posebni: posebni, greske: greske };
+}
+
+/** "13.07." / "13.7" -> ['13','07'] */
+function parsirajDanMjesec(v) {
+  if (v instanceof Date) return [Utilities.formatDate(v, CFG.TZ, 'dd'), Utilities.formatDate(v, CFG.TZ, 'MM')];
+  const m = String(v == null ? '' : v).trim().match(/^(\d{1,2})\.\s*(\d{1,2})\.?$/);
+  if (!m) return null;
+  const d = Number(m[1]), mj = Number(m[2]);
+  if (mj < 1 || mj > 12 || d < 1 || d > 31) return null;
+  return [String(d).padStart(2, '0'), String(mj).padStart(2, '0')];
+}
+
+/** "24.12.2026" / "2026-12-24" / Date -> "2026-12-24" */
+function parsirajDatum(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, CFG.TZ, 'yyyy-MM-dd');
+  const s = String(v).trim();
+  let g, mj, d, m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) { g = +m[1]; mj = +m[2]; d = +m[3]; } else {
+    m = s.match(/^(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})\.?$/);
+    if (!m) return null;
+    g = +m[3]; mj = +m[2]; d = +m[1];
+  }
+  const x = new Date(Date.UTC(g, mj - 1, d));
+  if (x.getUTCFullYear() !== g || x.getUTCMonth() !== mj - 1 || x.getUTCDate() !== d) return null; // npr. 31.02.
+  return g + '-' + String(mj).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+
+/**
+ * Neradni dani u periodu za lokaciju: { 'yyyy-MM-dd': 'naziv' }.
+ * Praznik u nedjelju: neradan je i prvi dan poslije praznika (zakon CG).
+ */
+function neradniUPeriodu(od, do_, praznici, posebni, lokNaziv) {
+  const rez = {};
+  const g1 = Number(od.slice(0, 4)), g2 = Number(do_.slice(0, 4));
+  praznici.forEach(p => {
+    if (!p.neradni) return;
+    for (let g = g1 - 1; g <= g2; g++) {
+      const prvi = g + '-' + p.mjesec + '-' + p.dan;
+      const dani = [];
+      for (let i = 0; i < p.dana; i++) dani.push(dodajDane(prvi, i));
+      if (dani.some(d => danUSedmici(d) === 0)) dani.push(dodajDane(dani[dani.length - 1], 1));
+      dani.forEach((d, i) => {
+        if (d >= od && d <= do_ && !rez[d]) rez[d] = p.naziv + (i >= p.dana ? ' (prenesen)' : '');
+      });
+    }
+  });
+  posebni.forEach(x => {
+    if ((!x.lokacija || x.lokacija === lokNaziv) && x.datum >= od && x.datum <= do_) rez[x.datum] = x.razlog;
+  });
+  return rez;
 }
 
 /** "9-19" -> ['09:00','19:00']; "ne radi"/prazno -> null; neispravno -> undefined */
@@ -527,11 +636,15 @@ function json_(o) {
 
 function javnaKonfig_() {
   const p = ucitajPodesavanja();
+  const nr = ucitajNeradne(p.lokacije);
+  const danas = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');
+  const zadnji = dodajDane(danas, APP.DANA_UNAPRIJED);
   return {
     naziv: APP.NAZIV, osoba: APP.OSOBA, korak: APP.KORAK_MIN, danaUnaprijed: APP.DANA_UNAPRIJED,
     usluge: p.usluge,
     lokacije: p.lokacije.filter(l => l.osobe.length)
-      .map(l => ({ id: l.id, naziv: l.naziv, adresa: l.adresa, osobe: l.osobe, radno: l.radno })),
+      .map(l => ({ id: l.id, naziv: l.naziv, adresa: l.adresa, osobe: l.osobe, radno: l.radno,
+                   neradni: neradniUPeriodu(danas, zadnji, nr.praznici, nr.posebni, l.naziv) })),
   };
 }
 
@@ -549,9 +662,9 @@ function usluga_(id) {
 
 /** Zauzeti intervali osobe za dan, u minutama od ponoći. */
 function zauzeto_(lok, osoba, datum) {
-  const tz = Session.getScriptTimeZone();
+  const tz = CFG.TZ;
   const od = Utilities.parseDate(datum + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
-  const do_ = new Date(od.getTime() + 864e5);
+  const do_ = Utilities.parseDate(dodajDane(datum, 1) + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
   const rez = [];
   kal_().getEvents(od, do_).forEach(ev => {
     const n = rastaviNaslov(ev.getTitle());
@@ -569,13 +682,15 @@ function slotoviZaDan_(lokId, osoba, uslugaId, datum) {
   if (lok.osobe.indexOf(osoba) < 0) throw new Error('Nepoznat ' + APP.OSOBA.toLowerCase());
   if (!/^\d{4}-\d{2}-\d{2}$/.test(datum || '')) throw new Error('Neispravan datum');
   const u = usluga_(uslugaId);
-  const tz = Session.getScriptTimeZone();
+  const tz = CFG.TZ;
   const dan = Number(Utilities.formatDate(Utilities.parseDate(datum, tz, 'yyyy-MM-dd'), tz, 'u')) % 7;
   const sada = new Date();
   const danas = Utilities.formatDate(sada, tz, 'yyyy-MM-dd');
   const sadaMin = Number(Utilities.formatDate(sada, tz, 'H')) * 60 + Number(Utilities.formatDate(sada, tz, 'm'));
   const zadnji = Utilities.formatDate(new Date(sada.getTime() + APP.DANA_UNAPRIJED * 864e5), tz, 'yyyy-MM-dd');
   if (datum < danas || datum > zadnji) return [];
+  const nr = ucitajNeradne();
+  if (neradniUPeriodu(datum, datum, nr.praznici, nr.posebni, lok.naziv)[datum]) return [];
   const najranije = datum === danas ? sadaMin + APP.MIN_UNAPRIJED_MIN : -1;
   return generisiSlotove(lok.radno[dan], APP.KORAK_MIN, u.trajanje, zauzeto_(lok, osoba, datum), najranije);
 }
@@ -595,7 +710,7 @@ function zakazi_(z) {
   const slot = slotoviZaDan_(z.lok, z.osoba, z.usluga, z.datum).find(s => s.vrijeme === z.vrijeme);
   if (!slot || !slot.slobodno) return { ok: false, poruka: 'Termin je upravo zauzet. Izaberite drugi.' };
 
-  const tz = Session.getScriptTimeZone();
+  const tz = CFG.TZ;
   const pocetak = Utilities.parseDate(z.datum + ' ' + z.vrijeme, tz, 'yyyy-MM-dd HH:mm');
   const kraj = new Date(pocetak.getTime() + u.trajanje * 60000);
   const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + ' (' + dijete + ')', pocetak, kraj, {
@@ -742,10 +857,12 @@ function cist_(v, n) {
 function danPregled_(o, p, lokId, datum) {
   const lok = dozvoljenaLok_(o, p, lokId);
   provjeriDatum_(datum);
-  const tz = Session.getScriptTimeZone();
+  const tz = CFG.TZ;
   const od = Utilities.parseDate(datum + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
-  const dogadjaji = kal_().getEvents(od, new Date(od.getTime() + 864e5));
-  const radno = lok.radno[danUSedmici(datum)] || null;
+  const dogadjaji = kal_().getEvents(od, Utilities.parseDate(dodajDane(datum, 1) + ' 00:00', tz, 'yyyy-MM-dd HH:mm'));
+  const nr = ucitajNeradne(p.lokacije);
+  const neradni = neradniUPeriodu(datum, datum, nr.praznici, nr.posebni, lok.naziv)[datum] || '';
+  const radno = neradni ? null : lok.radno[danUSedmici(datum)] || null;
 
   const osobe = lok.osobe.map(ime => {
     const termini = [], blokade = [];
@@ -766,7 +883,7 @@ function danPregled_(o, p, lokId, datum) {
     });
     return Object.assign({ ime: ime }, rasporedDana(radno, APP.KORAK_MIN, termini, blokade));
   });
-  return { datum: datum, lokacija: lok.id, radno: radno, osobe: osobe };
+  return { datum: datum, lokacija: lok.id, radno: radno, neradni: neradni, osobe: osobe };
 }
 
 /* ---------- upis, status, napomena ---------- */
@@ -787,7 +904,7 @@ function zakaziOsoblje_(o, p, z) {
   if (zauzeto_(lok, z.osoba, z.datum).some(([a, b]) => s < b && k > a)) {
     return { ok: false, poruka: 'Termin je u međuvremenu zauzet. Osvježite pregled.' };
   }
-  const tz = Session.getScriptTimeZone();
+  const tz = CFG.TZ;
   const pocetak = Utilities.parseDate(z.datum + ' ' + z.vrijeme, tz, 'yyyy-MM-dd HH:mm');
   const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + ' (' + dijete + ')', pocetak,
     new Date(pocetak.getTime() + u.trajanje * 60000), {
@@ -814,7 +931,7 @@ function promijeniStatus_(o, p, id, status) {
   if (STATUSI.indexOf(status) < 0) return { ok: false, poruka: 'Nepoznat status.' };
   const ev = terminZaIzmjenu_(o, p, id);
   if (status === 'otkazan') {
-    const red = redZaDogadjaj_(ev, lokPoFrizeru_(), Session.getScriptTimeZone());
+    const red = redZaDogadjaj_(ev, lokPoFrizeru_(), CFG.TZ);
     red[KOL['Status']] = 'otkazan';
     red[KOL['Napomena']] = (red[KOL['Napomena']] ? red[KOL['Napomena']] + ' | ' : '') + 'otkazao: ' + o.ime;
     upisiRed_(red);
@@ -862,6 +979,11 @@ function citajPodesavanjaZaEkran_() {
     lokacije: citajList_(LIST_LOK, 10).map(r => ({ naziv: t(r[0]), adresa: t(r[1]), telefon: t(r[2]), dani: r.slice(3, 10).map(t) })),
     frizeri: citajList_(LIST_FRIZ, 3).map(r => ({ ime: t(r[0]), lokacija: t(r[1]), aktivan: da(r[2]) })),
     usluge: citajList_(LIST_USL, 3).map(r => ({ naziv: t(r[0]), trajanje: Number(r[1]) || 30, aktivna: da(r[2]) })),
+    praznici: (tabela_().getSheetByName(LIST_PRAZNICI) ? citajList_(LIST_PRAZNICI, 4) : ZAKONSKI_PRAZNICI).map(r => {
+      const dm = parsirajDanMjesec(r[1]);
+      return { naziv: t(r[0]), datum: dm ? dm[0] + '.' + dm[1] + '.' : t(r[1]), dana: Number(r[2]) === 2 ? 2 : 1, neradni: da(r[3]) };
+    }),
+    neradniDani: citajList_(LIST_NERADNI, 3).map(r => ({ datum: parsirajDatum(r[0]) || t(r[0]), razlog: t(r[1]), lokacija: t(r[2]) })),
     osoblje: citajList_(LIST_OSOBLJE, 6).map((r, i) => ({
       red: i, ime: t(r[0]), uloga: t(r[1]).toLowerCase(), lokacija: t(r[2]), imaPin: /^\d{4,8}$/.test(t(r[3])),
       email: t(r[4]), aktivan: da(r[5]),
@@ -879,6 +1001,8 @@ function sacuvajPodesavanja_(o, s) {
     .concat(niz(l.dani).concat(['', '', '', '', '', '', '']).slice(0, 7).map(d => t(d, 20)))).filter(r => r[0]);
   const friz = niz(s.frizeri).map(f => [t(f.ime, 40), t(f.lokacija, 60), f.aktivan === false ? 'NE' : 'DA']).filter(r => r[0]);
   const usl = niz(s.usluge).map(u => [t(u.naziv, 60), Number(u.trajanje) || 0, u.aktivna === false ? 'NE' : 'DA']).filter(r => r[0]);
+  const prz = niz(s.praznici).map(x => [t(x.naziv, 60), t(x.datum, 10), Number(x.dana) === 2 ? 2 : 1, x.neradni === false ? 'NE' : 'DA']).filter(r => r[0]);
+  const nrd = niz(s.neradniDani).map(x => [t(x.datum, 12), t(x.razlog, 80), t(x.lokacija, 60)]).filter(r => r[0]);
   const osb = niz(s.osoblje).map(x => {
     const stariPin = Number.isInteger(x.red) && stari[x.red] ? t(stari[x.red][3], 8) : '';
     return [t(x.ime, 40), t(x.uloga, 10).toLowerCase(), t(x.lokacija, 60), t(x.pin, 8) || stariPin,
@@ -887,7 +1011,8 @@ function sacuvajPodesavanja_(o, s) {
 
   const p = sastaviPodesavanja(lok, friz, usl);
   const os = sastaviOsoblje(osb, p.lokacije);
-  const greske = p.greske.concat(os.greske);
+  const nr = sastaviNeradne(prz, nrd, p.lokacije);
+  const greske = p.greske.concat(os.greske, nr.greske);
   if (!p.lokacije.length) greske.push('Mora postojati bar jedna lokacija.');
   if (!p.usluge.length) greske.push('Mora postojati bar jedna aktivna usluga.');
   if (!os.osoblje.some(x => x.uloga === 'vlasnik')) greske.push('Mora ostati bar jedan aktivan vlasnik s PIN-om, inače niko ne može u podešavanja.');
@@ -897,6 +1022,8 @@ function sacuvajPodesavanja_(o, s) {
   upisiList_(LIST_FRIZ, friz, 3);
   upisiList_(LIST_USL, usl, 3);
   upisiList_(LIST_OSOBLJE, osb, 6, 'D:D');
+  upisiList_(LIST_PRAZNICI, prz, 4, 'B:B');
+  upisiList_(LIST_NERADNI, nrd.map(r => [parsirajDatum(r[0]), r[1], r[2]]), 3, 'A:A');
   return {
     ok: true,
     poruka: 'Sačuvano. Sajt i panel već rade s novim podešavanjima.' +
@@ -914,11 +1041,14 @@ function izvjestajZaPeriod_(o, p, od, do_, lokId) {
   let lokacije = dozvoljeneLokacije_(o, p);
   if (lokId) lokacije = [dozvoljenaLok_(o, p, lokId)];
   sinhronizuj();
-  const tz = Session.getScriptTimeZone();
+  const tz = CFG.TZ;
   const sve = lokacije.length === p.lokacije.length;
+  const nr = ucitajNeradne(p.lokacije);
+  const neradniPoLok = {};
+  lokacije.forEach(l => { neradniPoLok[l.naziv] = neradniUPeriodu(od, do_, nr.praznici, nr.posebni, l.naziv); });
   return izracunajIzvjestaj(citajTermine_(tz), lokacije, blokadeZaPeriod_(od, do_, tz), od, do_,
     Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd'), uMinute(Utilities.formatDate(new Date(), tz, 'HH:mm')),
-    APP.KORAK_MIN, sve);
+    APP.KORAK_MIN, sve, neradniPoLok);
 }
 
 function citajTermine_(tz) {
@@ -955,7 +1085,7 @@ function blokadeZaPeriod_(od, do_, tz) {
 
 /** Svakog ponedjeljka u 8h: izvještaj za prošlu sedmicu vlasniku i administratorima (kolona Email). */
 function posaljiSedmicniIzvjestaj() {
-  const tz = Session.getScriptTimeZone();
+  const tz = CFG.TZ;
   const danas = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
   const ovajPon = dodajDane(danas, -((danUSedmici(danas) + 6) % 7));
   const od = dodajDane(ovajPon, -7), do_ = dodajDane(ovajPon, -1);
@@ -1054,7 +1184,7 @@ function grupaIzvora_(izvor) {
  * redovi: [{datum, vrijeme, kraj, lokacija, frizer, usluga, telefon, izvor, status}] iz lista Termini
  * lokacije: lokacije u izvještaju; blokade: [{datum, frizer, od, do}] u minutama
  */
-function izracunajIzvjestaj(redovi, lokacije, blokade, od, do_, danas, sadaMin, korak, sveLokacije) {
+function izracunajIzvjestaj(redovi, lokacije, blokade, od, do_, danas, sadaMin, korak, sveLokacije, neradniPoLok) {
   const naziviLok = lokacije.map(l => l.naziv);
   const frizerLok = {};
   lokacije.forEach(l => l.osobe.forEach(o => { frizerLok[o.toLowerCase()] = l; }));
@@ -1087,7 +1217,7 @@ function izracunajIzvjestaj(redovi, lokacije, blokade, od, do_, danas, sadaMin, 
     const dan = danUSedmici(d);
     lokacije.forEach(l => {
       const radno = l.radno[dan];
-      if (!radno) return;
+      if (!radno || (neradniPoLok && neradniPoLok[l.naziv] && neradniPoLok[l.naziv][d])) return;
       const rs = uMinute(radno[0]), rk = uMinute(radno[1]);
       l.osobe.forEach(o => {
         const b = blokade.filter(x => x.datum === d && x.frizer.toLowerCase() === o.toLowerCase()).map(x => [x.od, x.do]);
