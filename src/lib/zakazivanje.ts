@@ -3,7 +3,7 @@
  *  Može se pregaziti Vercel env varijablom VITE_ZAKAZIVANJE_API (npr. za probnu kopiju skripte). */
 
 const GRASAK_APPS_SCRIPT =
-  'https://script.google.com/macros/s/AKfycbwMCZOQN_8af5Ew3k6kWDa9z2s8PRc2zxr1dFUt_KZRap_JinC2B2DyBPlTYqNJTMMX/exec'
+  'https://script.google.com/macros/s/AKfycbw86uqZoTFYmuhVpayyU7YjvfCev3KQr99Xsrq31E8m9IveeXLG9_8wBewUZr3HvnBd/exec'
 
 export const API_URL: string = import.meta.env.VITE_ZAKAZIVANJE_API || GRASAK_APPS_SCRIPT
 
