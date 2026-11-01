@@ -34,22 +34,22 @@ const FILTERS: { key: CategoryKey; labelKey: string }[] = [
 ]
 
 const ITEMS: { src: string; categoryKey: Exclude<CategoryKey, 'all'>; captionKey: string }[] = [
-  { src: '/real-salon.jpg', categoryKey: 'salon', captionKey: 'galerija.cap1' },
-  { src: '/real-oprema.jpg', categoryKey: 'salon', captionKey: 'galerija.cap2' },
-  { src: '/mural.jpg', categoryKey: 'fun', captionKey: 'galerija.cap3' },
-  { src: '/real-zadovoljni.jpg', categoryKey: 'hair', captionKey: 'galerija.cap4' },
-  { src: '/real-tri_za_ustedu.jpg', categoryKey: 'hair', captionKey: 'galerija.cap5' },
-  { src: '/real-prvo_sisanje.jpg', categoryKey: 'first', captionKey: 'galerija.cap6' },
-  { src: '/real-nikola.jpg', categoryKey: 'salon', captionKey: 'galerija.cap7' },
-  { src: '/real-recepcija.jpg', categoryKey: 'salon', captionKey: 'galerija.cap7b' },
-  { src: '/gallery-1.jpg', categoryKey: 'hair', captionKey: 'galerija.cap8' },
-  { src: '/gallery-2.jpg', categoryKey: 'hair', captionKey: 'galerija.cap9' },
-  { src: '/gallery-3.jpg', categoryKey: 'salon', captionKey: 'galerija.cap10' },
-  { src: '/gallery-4.jpg', categoryKey: 'salon', captionKey: 'galerija.cap11' },
-  { src: '/gallery-5.jpg', categoryKey: 'first', captionKey: 'galerija.cap12' },
-  { src: '/gallery-6.jpg', categoryKey: 'fun', captionKey: 'galerija.cap13' },
-  { src: '/gallery-7.jpg', categoryKey: 'fun', captionKey: 'galerija.cap14' },
-  { src: '/gallery-8.jpg', categoryKey: 'hair', captionKey: 'galerija.cap15' },
+  { src: '/images/salon.jpg', categoryKey: 'salon', captionKey: 'galerija.cap1' },
+  { src: '/images/oprema.jpg', categoryKey: 'salon', captionKey: 'galerija.cap2' },
+  { src: '/images/fb_cover.jpg', categoryKey: 'fun', captionKey: 'galerija.cap3' },
+  { src: '/images/zadovoljni.jpg', categoryKey: 'hair', captionKey: 'galerija.cap4' },
+  { src: '/images/tri_za_ustedu.jpg', categoryKey: 'hair', captionKey: 'galerija.cap5' },
+  { src: '/images/prvo_sisanje.jpg', categoryKey: 'first', captionKey: 'galerija.cap6' },
+  { src: '/images/nikola.jpg', categoryKey: 'salon', captionKey: 'galerija.cap7' },
+  { src: '/images/salon.jpg', categoryKey: 'salon', captionKey: 'galerija.cap7b' },
+  { src: '/images/salon.jpg', categoryKey: 'hair', captionKey: 'galerija.cap8' },
+  { src: '/images/zadovoljni.jpg', categoryKey: 'hair', captionKey: 'galerija.cap9' },
+  { src: '/images/prvo_sisanje.jpg', categoryKey: 'salon', captionKey: 'galerija.cap10' },
+  { src: '/images/nikola.jpg', categoryKey: 'salon', captionKey: 'galerija.cap11' },
+  { src: '/images/oprema.jpg', categoryKey: 'first', captionKey: 'galerija.cap12' },
+  { src: '/images/tri_za_ustedu.jpg', categoryKey: 'fun', captionKey: 'galerija.cap13' },
+  { src: '/images/lojaliti.jpg', categoryKey: 'fun', captionKey: 'galerija.cap14' },
+  { src: '/images/fb_cover.jpg', categoryKey: 'hair', captionKey: 'galerija.cap15' },
 ]
 
 const CATEGORY_LABEL: Record<Exclude<CategoryKey, 'all'>, string> = {

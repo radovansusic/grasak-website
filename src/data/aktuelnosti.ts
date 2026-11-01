@@ -2,7 +2,7 @@
 // Kako dodati novu objavu: dopišite novi objekat NA VRH niza (najnovije prvo).
 //   tag: 'akcija' | 'najava' | 'dogadjaj' | 'zanimljivost'
 //   pin: true  -> istaknuta objava (velika kartica na vrhu)
-//   image: opciono, npr. '/mural.jpg'
+//   image: opciono, npr. '/images/fb_cover.jpg'
 // Deploy: git commit + push -> Vercel sam objavi za ~2 minuta.
 
 export interface Aktuelno {
@@ -27,7 +27,7 @@ export const AKTUELNOSTI: Aktuelno[] = [
     tag: 'najava',
     title: 'Novi sajt je tu! 🌱',
     text: 'Nakon mjeseci rada, Grašak ima novi, brži i ljepši sajt - na 4 jezika, sa online zakazivanjem preko WhatsApp-a, poklon vaučerima i galerijom osmjeha. Šetajte, uživajte i javite nam utiske!',
-    image: '/mural.jpg',
+    image: '/images/fb_cover.jpg',
   },
   {
     date: '2026-09-10',

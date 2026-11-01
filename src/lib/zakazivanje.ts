@@ -50,6 +50,13 @@ export const ucitajKonfig = () => get<Konfig>({ akcija: 'konfig' })
 export const ucitajSlotove = (lok: string, osoba: string, usluga: string, datum: string) =>
   get<{ slotovi: Slot[] }>({ akcija: 'slotovi', lok, osoba, usluga, datum }).then((r) => r.slotovi)
 
+/** Termini za narednih N dana jednim pozivom: { 'yyyy-MM-dd': Slot[] } (brže od poziva po danu). */
+export const ucitajPeriod = (lok: string, osoba: string, usluga: string, dana: number) =>
+  get<{ dani: Record<string, Slot[]> }>({ akcija: 'slotovi_period', lok, osoba, usluga, dana: String(dana) }).then((r) => {
+    if (!r.dani) throw new Error('bez perioda')
+    return r.dani
+  })
+
 export async function zakazi(z: Zahtjev): Promise<{ ok: boolean; poruka: string }> {
   // text/plain izbjegava CORS preflight prema Apps Script-u
   const r = await fetch(API_URL, {

@@ -74,6 +74,7 @@ function postaviSifruDijalog() {
   if (greska) { ui.alert('Nije sačuvano: ' + greska + '.'); return; }
 
   const ss = tabela_();
+  obrisiKes_();
   if (!ss.getSheetByName(LIST_OSOBLJE)) kreirajListovePodesavanja_();
   const sh = ss.getSheetByName(LIST_OSOBLJE);
   sh.getRange('D:D').setNumberFormat('@');
@@ -87,6 +88,7 @@ function postaviSifruDijalog() {
     if (r3.getSelectedButton() !== ui.Button.OK) return;
     sh.appendRow([ime, r3.getResponseText().trim().toLowerCase() || 'frizer', '', sifra, '', 'DA']);
   }
+  obrisiKes_();
   const os = ucitajOsoblje();
   const osoba = os.osoblje.find(x => x.ime.toLowerCase() === ime.toLowerCase());
   ui.alert(osoba
@@ -450,6 +452,7 @@ function tabela_() {
 }
 
 function kreirajListovePodesavanja_() {
+  obrisiKes_();
   const ss = SpreadsheetApp.getActive();
   PropertiesService.getScriptProperties().setProperty('SHEET_ID', ss.getId());
   const primjeri = {
@@ -484,27 +487,65 @@ function kreirajListovePodesavanja_() {
   });
 }
 
+/* ---------- keš podešavanja (brži sajt i panel) ---------- */
+
+const KES_KLJUCEVI = ['pod_podesavanja', 'pod_neradni', 'pod_osoblje'];
+const KES_SEKUNDI = 600;
+let MEMO_ = {};
+
+/** Vrijednost iz memorije ovog poziva ili iz keša (10 min); inače se čita tabela. */
+function kesiraj_(kljuc, fn) {
+  if (MEMO_[kljuc]) return MEMO_[kljuc];
+  const c = CacheService.getScriptCache();
+  const s = c.get(kljuc);
+  if (s) { try { return (MEMO_[kljuc] = JSON.parse(s)); } catch (e) { /* oštećen keš */ } }
+  const v = fn();
+  try { c.put(kljuc, JSON.stringify(v), KES_SEKUNDI); } catch (e) { /* prevelik za keš */ }
+  return (MEMO_[kljuc] = v);
+}
+
+/** Poslije svake izmjene podešavanja (panel, meni ili ručno u tabeli). */
+function obrisiKes_() {
+  MEMO_ = {};
+  try { CacheService.getScriptCache().removeAll(KES_KLJUCEVI); } catch (e) { /* nema keša */ }
+}
+
+/** Ručna izmjena listova s podešavanjima briše keš, pa sajt odmah vidi promjenu. */
+function onEdit(e) {
+  try {
+    const ime = e && e.range ? e.range.getSheet().getName() : '';
+    if ([LIST_LOK, LIST_FRIZ, LIST_USL, LIST_OSOBLJE, LIST_PRAZNICI, LIST_NERADNI].indexOf(ime) >= 0) obrisiKes_();
+  } catch (err) { /* ništa */ }
+}
+
 function ucitajPodesavanja() {
-  const ss = tabela_();
-  const citaj = ime => { const sh = ss.getSheetByName(ime); return sh ? sh.getDataRange().getValues().slice(1) : []; };
-  return sastaviPodesavanja(citaj(LIST_LOK), citaj(LIST_FRIZ), citaj(LIST_USL));
+  return kesiraj_('pod_podesavanja', () => {
+    const ss = tabela_();
+    const citaj = ime => { const sh = ss.getSheetByName(ime); return sh ? sh.getDataRange().getValues().slice(1) : []; };
+    return sastaviPodesavanja(citaj(LIST_LOK), citaj(LIST_FRIZ), citaj(LIST_USL));
+  });
 }
 
 /** Praznici i posebni neradni dani; bez lista "Praznici" važe zakonski. */
 function ucitajNeradne(lokacije) {
-  const ss = tabela_();
-  const pr = ss.getSheetByName(LIST_PRAZNICI), nr = ss.getSheetByName(LIST_NERADNI);
-  return sastaviNeradne(pr ? pr.getDataRange().getValues().slice(1) : ZAKONSKI_PRAZNICI,
-    nr ? nr.getDataRange().getValues().slice(1) : [], lokacije || ucitajPodesavanja().lokacije);
+  return kesiraj_('pod_neradni', () => {
+    const ss = tabela_();
+    const pr = ss.getSheetByName(LIST_PRAZNICI), nr = ss.getSheetByName(LIST_NERADNI);
+    return sastaviNeradne(pr ? pr.getDataRange().getValues().slice(1) : ZAKONSKI_PRAZNICI,
+      nr ? nr.getDataRange().getValues().slice(1) : [], lokacije || ucitajPodesavanja().lokacije);
+  });
 }
 
 function ucitajOsoblje(lokacije) {
-  const sh = tabela_().getSheetByName(LIST_OSOBLJE);
-  return sastaviOsoblje(sh ? sh.getDataRange().getValues().slice(1) : [], lokacije || ucitajPodesavanja().lokacije);
+  return kesiraj_('pod_osoblje', () => {
+    const sh = tabela_().getSheetByName(LIST_OSOBLJE);
+    return sastaviOsoblje(sh ? sh.getDataRange().getValues().slice(1) : [], lokacije || ucitajPodesavanja().lokacije);
+  });
 }
 
 /** Meni: Kristina provjeri da li je sve ispravno upisano. */
 function provjeriPodesavanja() {
+  obrisiKes_();
   const naziv = tabela_().getName();
   const p = ucitajPodesavanja();
   const os = ucitajOsoblje(p.lokacije);
@@ -726,10 +767,12 @@ const APP = {
 /* ---------- HTTP ---------- */
 
 function doGet(e) {
+  MEMO_ = {};
   const p = e.parameter || {};
   try {
     if (p.akcija === 'konfig') return json_(javnaKonfig_());
     if (p.akcija === 'slotovi') return json_({ slotovi: slotoviZaDan_(p.lok, p.osoba, p.usluga, p.datum) });
+    if (p.akcija === 'slotovi_period') return json_({ dani: slotoviPeriod_(p.lok, p.osoba, p.usluga, Number(p.dana) || 14) });
     return json_({ greska: 'Nepoznata akcija' });
   } catch (err) {
     return json_({ greska: String(err.message || err) });
@@ -737,6 +780,7 @@ function doGet(e) {
 }
 
 function doPost(e) {
+  MEMO_ = {};
   let z;
   try { z = JSON.parse(e.postData.contents); } catch (err) { return json_({ ok: false, poruka: 'Neispravan zahtjev' }); }
   if (String(z.akcija || '').indexOf('osoblje_') === 0) {
@@ -836,6 +880,47 @@ function slotoviZaDan_(lokId, osoba, uslugaId, datum) {
   if (neradniUPeriodu(datum, datum, nr.praznici, nr.posebni, lok.naziv)[datum]) return [];
   const najranije = datum === danas ? sadaMin + APP.MIN_UNAPRIJED_MIN : -1;
   return generisiSlotove(lok.radno[dan], APP.KORAK_MIN, u.trajanje, zauzeto_(lok, osoba, datum), najranije);
+}
+
+/**
+ * Slobodni termini za narednih N dana jednim čitanjem kalendara: { 'yyyy-MM-dd': [{vrijeme, slobodno}] }.
+ * Sajt ih učita odjednom, pa se dani mijenjaju bez čekanja.
+ */
+function slotoviPeriod_(lokId, osoba, uslugaId, dana) {
+  const lok = lokacija_(lokId);
+  if (lok.osobe.indexOf(osoba) < 0) throw new Error('Nepoznat ' + APP.OSOBA.toLowerCase());
+  const u = usluga_(uslugaId);
+  const tz = CFG.TZ;
+  const sada = new Date();
+  const danas = Utilities.formatDate(sada, tz, 'yyyy-MM-dd');
+  const sadaMin = uMinute(Utilities.formatDate(sada, tz, 'HH:mm'));
+  const n = Math.min(Math.max(1, dana), APP.DANA_UNAPRIJED + 1);
+  const krajIso = dodajDane(danas, n);
+  const nr = ucitajNeradne();
+  const neradni = neradniUPeriodu(danas, krajIso, nr.praznici, nr.posebni, lok.naziv);
+  const pocetak = Utilities.parseDate(danas + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
+  const kraj = Utilities.parseDate(krajIso + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
+
+  const zauzetoPoDanu = {};
+  kal_().getEvents(pocetak, kraj).forEach(ev => {
+    const t = rastaviNaslov(ev.getTitle());
+    if (!t || t.frizer.toLowerCase() !== osoba.toLowerCase()) return;
+    for (let d = Utilities.formatDate(ev.getStartTime() < pocetak ? pocetak : ev.getStartTime(), tz, 'yyyy-MM-dd'); d < krajIso; d = dodajDane(d, 1)) {
+      const ponoc = Utilities.parseDate(d + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
+      if (ev.getEndTime() <= ponoc) break;
+      const s = Math.max(0, Math.round((ev.getStartTime() - ponoc) / 60000));
+      const k = Math.min(1440, Math.round((ev.getEndTime() - ponoc) / 60000));
+      if (k > s) (zauzetoPoDanu[d] = zauzetoPoDanu[d] || []).push([s, k]);
+    }
+  });
+
+  const rez = {};
+  for (let d = danas; d < krajIso; d = dodajDane(d, 1)) {
+    if (neradni[d]) { rez[d] = []; continue; }
+    rez[d] = generisiSlotove(lok.radno[danUSedmici(d)], APP.KORAK_MIN, u.trajanje, zauzetoPoDanu[d] || [],
+      d === danas ? sadaMin + APP.MIN_UNAPRIJED_MIN : -1);
+  }
+  return rez;
 }
 
 function zakazi_(z) {
@@ -1202,12 +1287,14 @@ function sacuvajPodesavanja_(o, s) {
   if (!os.osoblje.some(x => x.uloga === 'vlasnik')) greske.push('Mora ostati bar jedan aktivan vlasnik sa šifrom, inače niko ne može u podešavanja.');
   if (greske.length) return { ok: false, poruka: 'Nije sačuvano. Ispravite:', greske: greske };
 
+  obrisiKes_();
   upisiList_(LIST_LOK, lok, 10, 'C:J');
   upisiList_(LIST_FRIZ, friz, 3);
   upisiList_(LIST_USL, usl, 3);
   upisiList_(LIST_OSOBLJE, osb, 6, 'D:D');
   upisiList_(LIST_PRAZNICI, prz, 4, 'B:B');
   upisiList_(LIST_NERADNI, nrd.map(r => [parsirajDatum(r[0]), r[1], r[2]]), 3, 'A:A');
+  obrisiKes_();
   return {
     ok: true,
     poruka: 'Sačuvano. Sajt i panel već rade s novim podešavanjima.' +

@@ -54,9 +54,9 @@ export default function Usluge() {
     { name: tr('usluge.pk3name'), price: '28€', description: tr('usluge.pk3desc') },
   ]
   const dodatneUsluge = [
-    { name: tr('usluge.e1name'), price: '6€', description: tr('usluge.e1desc'), image: '/spa-treatment.jpg' },
-    { name: tr('usluge.e2name'), price: '7€', description: tr('usluge.e2desc'), image: '/feniranje.jpg' },
-    { name: tr('usluge.e3name'), price: '3–6€', description: tr('usluge.e3desc'), image: '/pribor.jpg' },
+    { name: tr('usluge.e1name'), price: '6€', description: tr('usluge.e1desc'), image: '/images/oprema.jpg' },
+    { name: tr('usluge.e2name'), price: '7€', description: tr('usluge.e2desc'), image: '/images/nikola.jpg' },
+    { name: tr('usluge.e3name'), price: '3–6€', description: tr('usluge.e3desc'), image: '/images/oprema.jpg' },
   ]
   const prvoSisanjeBullets = [tr('usluge.fb1'), tr('usluge.fb2'), tr('usluge.fb3'), tr('usluge.fb4')]
   const karticaBullets = [tr('usluge.cb1'), tr('usluge.cb2'), tr('usluge.cb3')]
@@ -145,7 +145,7 @@ export default function Usluge() {
           >
             <div className="absolute -bottom-3 -right-3 h-full w-full rounded-[32px] bg-[#FFC93C]" aria-hidden />
             <img
-              src="/first-haircut.jpg"
+              src="/images/prvo_sisanje.jpg"
               alt={tr('usluge.firstImgAlt')}
               className="relative w-full rounded-[32px] object-cover shadow-lg"
               loading="lazy"
@@ -249,7 +249,7 @@ export default function Usluge() {
             transition={{ type: 'spring', stiffness: 120, damping: 14 }}
           >
             <img
-              src="/card-veseli.jpg"
+              src="/images/zadovoljni.jpg"
               alt={tr('usluge.cardAlt')}
               className="w-full rounded-3xl shadow-2xl shadow-black/30"
               loading="lazy"

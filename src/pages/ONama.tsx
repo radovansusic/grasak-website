@@ -306,7 +306,7 @@ function Story() {
         >
           <div className="absolute -bottom-4 -right-4 h-full w-full rounded-[32px] bg-[#FF7A59]" aria-hidden />
           <img
-            src="/real-salon.jpg"
+            src="/images/salon.jpg"
             alt={tr('onama.storyImgAlt')}
             className="relative w-full rounded-[32px] object-cover shadow-xl"
           />
@@ -373,9 +373,9 @@ function Values() {
 function Ambience() {
   const { tr } = useLang()
   const ambienceRows = [
-    { image: '/about-salon.jpg', alt: tr('onama.a1alt'), title: tr('onama.a1t'), text: tr('onama.a1x'), accent: '#4CAF50' },
-    { image: '/gallery-3.jpg', alt: tr('onama.a2alt'), title: tr('onama.a2t'), text: tr('onama.a2x'), accent: '#FF7A59' },
-    { image: '/gallery-4.jpg', alt: tr('onama.a3alt'), title: tr('onama.a3t'), text: tr('onama.a3x'), accent: '#7ED6F2' },
+    { image: '/images/salon.jpg', alt: tr('onama.a1alt'), title: tr('onama.a1t'), text: tr('onama.a1x'), accent: '#4CAF50' },
+    { image: '/images/prvo_sisanje.jpg', alt: tr('onama.a2alt'), title: tr('onama.a2t'), text: tr('onama.a2x'), accent: '#FF7A59' },
+    { image: '/images/nikola.jpg', alt: tr('onama.a3alt'), title: tr('onama.a3t'), text: tr('onama.a3x'), accent: '#7ED6F2' },
   ]
   return (
     <section className="bg-white px-4 py-20 md:py-28">

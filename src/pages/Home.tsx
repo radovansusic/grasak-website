@@ -188,7 +188,7 @@ export default function Home() {
           >
             <div className="absolute -inset-2 translate-x-4 translate-y-4 rounded-[32px] bg-coral/80" />
             <img
-              src="/hero-kid.jpg"
+              src="/images/zadovoljni.jpg"
               alt={tr('home.heroImgAlt')}
               className="relative aspect-[6/7] w-full rounded-[32px] object-cover shadow-xl"
             />
@@ -275,9 +275,9 @@ export default function Home() {
       <section className="bg-white px-6 py-16">
         <div className="mx-auto grid max-w-[1200px] gap-5 sm:grid-cols-3">
           {[
-            { src: '/real-salon.jpg', alt: 'Salon Grašak uživo' },
-            { src: '/real-zadovoljni.jpg', alt: 'Zadovoljni mališani u salonu' },
-            { src: '/real-tri_za_ustedu.jpg', alt: 'Prije i poslije šišanja' },
+            { src: '/images/salon.jpg', alt: 'Salon Grašak uživo' },
+            { src: '/images/zadovoljni.jpg', alt: 'Zadovoljni mališani u salonu' },
+            { src: '/images/tri_za_ustedu.jpg', alt: 'Prije i poslije šišanja' },
           ].map((img, i) => (
             <motion.div
               key={img.src}
@@ -370,7 +370,7 @@ export default function Home() {
             transition={{ duration: 0.7, ease: easeOut }}
             className="relative mx-auto w-full max-w-[520px]"
           >
-            <img src="/card-veseli.jpg" alt={tr('home.cardAlt')} className="w-full rounded-3xl shadow-2xl" />
+            <img src="/images/zadovoljni.jpg" alt={tr('home.cardAlt')} className="w-full rounded-3xl shadow-2xl" />
             <motion.span
               animate={{ scale: [1, 1.08, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}

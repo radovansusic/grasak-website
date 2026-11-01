@@ -47,7 +47,7 @@ function VoucherCard({
     >
       {/* watermark logo */}
       <img
-        src="/logo-footer.png"
+        src="/brand/grasak-logo-bijela.svg"
         alt=""
         aria-hidden
         className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 opacity-15"
@@ -101,7 +101,7 @@ export default function Vaucer() {
     <section className="relative overflow-hidden px-6 py-20 md:py-28" style={{ backgroundColor: TEAL }}>
       {/* watermark */}
       <img
-        src="/logo-footer.png"
+        src="/brand/grasak-logo-bijela.svg"
         alt=""
         aria-hidden
         className="pointer-events-none absolute left-1/2 top-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 opacity-[0.06]"

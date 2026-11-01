@@ -10,10 +10,10 @@ gsap.registerPlugin(ScrollTrigger, useGSAP)
 export default function VisitStory() {
   const { tr, lang } = useLang()
   const steps = [
-    { title: tr('visit.s1t'), text: tr('visit.s1x'), icon: Car, color: 'bg-grass', image: '/step1d.jpg' },
-    { title: tr('visit.s2t'), text: tr('visit.s2x'), icon: Palette, color: 'bg-sun', image: '/step2d.jpg' },
-    { title: tr('visit.s3t'), text: tr('visit.s3x'), icon: Scissors, color: 'bg-coral', image: '/step3d.jpg' },
-    { title: tr('visit.s4t'), text: tr('visit.s4x'), icon: Smile, color: 'bg-sky', image: '/first-haircut.jpg' },
+    { title: tr('visit.s1t'), text: tr('visit.s1x'), icon: Car, color: 'bg-grass', image: '/images/prvo_sisanje.jpg' },
+    { title: tr('visit.s2t'), text: tr('visit.s2x'), icon: Palette, color: 'bg-sun', image: '/images/nikola.jpg' },
+    { title: tr('visit.s3t'), text: tr('visit.s3x'), icon: Scissors, color: 'bg-coral', image: '/images/zadovoljni.jpg' },
+    { title: tr('visit.s4t'), text: tr('visit.s4x'), icon: Smile, color: 'bg-sky', image: '/images/prvo_sisanje.jpg' },
   ]
   const root = useRef<HTMLDivElement>(null)
 

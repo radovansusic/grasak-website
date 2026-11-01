@@ -29,7 +29,7 @@ export default function Footer() {
       >
         <div>
           <span className="flex items-center gap-3">
-            <img src="/logo-footer.png" alt="Grašak" className="h-14 w-auto rounded-xl ring-2 ring-white/20" />
+            <img src="/brand/grasak-logo-bijela.svg" alt="Grašak" className="h-14 w-auto rounded-xl ring-2 ring-white/20" />
             <span className="font-display text-2xl font-bold text-white">GRAŠAK</span>
           </span>
           <p className="mt-4 text-sm leading-relaxed">

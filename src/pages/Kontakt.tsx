@@ -765,9 +765,9 @@ export default function Kontakt() {
       <section className="bg-white pb-20">
         <div className="mx-auto grid max-w-[1200px] gap-5 px-6 sm:grid-cols-3">
           {[
-            { src: '/real-salon.jpg', alt: 'Enterijer salona Grašak' },
-            { src: '/mural.jpg', alt: 'Mural graška sa malim gostom' },
-            { src: '/real-nikola.jpg', alt: 'Frizer Nikola u akciji' },
+            { src: '/images/salon.jpg', alt: 'Enterijer salona Grašak' },
+            { src: '/images/fb_cover.jpg', alt: 'Mural graška sa malim gostom' },
+            { src: '/images/nikola.jpg', alt: 'Frizer Nikola u akciji' },
           ].map((img, i) => (
             <motion.img
               key={img.src}

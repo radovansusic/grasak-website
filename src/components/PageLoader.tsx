@@ -37,7 +37,7 @@ export default function PageLoader() {
           aria-hidden="true"
         >
           <motion.img
-            src="/logo.png"
+            src="/brand/grasak-logo-zuta.svg"
             alt=""
             initial={{ rotate: 0, scale: 0.85, opacity: 0 }}
             animate={{ rotate: 360, scale: 1, opacity: 1 }}

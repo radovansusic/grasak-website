@@ -5,7 +5,7 @@ import { CalendarCheck, Loader2, PartyPopper } from 'lucide-react'
 import { useLang } from '@/i18n/LanguageContext'
 import { sendBookingEmail } from '@/lib/booking'
 import {
-  isoDatum, ucitajKonfig, ucitajSlotove, zakazi,
+  isoDatum, ucitajKonfig, ucitajPeriod, ucitajSlotove, zakazi,
   type Konfig, type Lokacija, type Slot, type Usluga,
 } from '@/lib/zakazivanje'
 
@@ -57,20 +57,36 @@ export default function OnlineZakazivanje() {
       .catch(() => setGreska(tr('zakazi.offline')))
   }, [tr])
 
-  // termini se učitavaju za izabranu kombinaciju; promjena izbora poništava izabrano vrijeme
+  // termini za 3 sedmice stižu jednim pozivom čim su izabrani frizer i usluga; dani se onda mijenjaju odmah
+  const kljucPeriod = lok && osoba && usluga ? [lok.id, osoba, usluga.id].join('|') : ''
+  const [period, setPeriod] = useState<{ kljuc: string; dani: Record<string, Slot[]> } | null>(null)
+  const [bezPerioda, setBezPerioda] = useState(false) // starija verzija Google skripte: termini po danu
+  const daniPeriod = period && period.kljuc === kljucPeriod ? period.dani : null
+
+  useEffect(() => {
+    if (!kljucPeriod || bezPerioda) return
+    let aktivno = true
+    const [l, o, u] = kljucPeriod.split('|')
+    ucitajPeriod(l, o, u, 21)
+      .then((d) => { if (aktivno) setPeriod({ kljuc: kljucPeriod, dani: d }) })
+      .catch(() => { if (aktivno) setBezPerioda(true) })
+    return () => { aktivno = false }
+  }, [kljucPeriod, osvjezenje, bezPerioda])
+
+  // promjena izbora poništava izabrano vrijeme
   const kljuc = lok && osoba && usluga && datum ? [lok.id, osoba, usluga.id, datum].join('|') : ''
-  const slotovi = rez && rez.kljuc === kljuc ? rez.slotovi : null
+  const slotovi = daniPeriod ? (datum ? daniPeriod[datum] ?? [] : null) : rez && rez.kljuc === kljuc ? rez.slotovi : null
   const vrijeme = izbor.kljuc === kljuc ? izbor.vrijeme : ''
 
   useEffect(() => {
-    if (!kljuc) return
+    if (!kljuc || !bezPerioda) return
     let aktivno = true
     const [l, o, u, d] = kljuc.split('|')
     ucitajSlotove(l, o, u, d)
       .then((s) => { if (aktivno) setRez({ kljuc, slotovi: s }) })
       .catch(() => { if (aktivno) setRez({ kljuc, slotovi: [] }) })
     return () => { aktivno = false }
-  }, [kljuc, osvjezenje])
+  }, [kljuc, osvjezenje, bezPerioda])
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -95,6 +111,7 @@ export default function OnlineZakazivanje() {
         })
         setUspjeh(`${d}.${m}. u ${vrijeme}, ${osoba}`)
         window.scrollTo({ top: 0, behavior: 'smooth' })
+        setOsvjezenje((x) => x + 1) // zauzeti termin nestaje i za sljedeće zakazivanje
       } else {
         setPoruka(r.poruka)
         setIzbor({ kljuc: '', vrijeme: '' })
@@ -168,14 +185,15 @@ export default function OnlineZakazivanje() {
           {dani.map((d, i) => {
             const iso = isoDatum(d)
             const praznik = lok?.neradni?.[iso]
-            const radi = !!lok?.radno[String(d.getDay())] && !praznik
+            const popunjeno = !!daniPeriod && !praznik && !!lok?.radno[String(d.getDay())] && !(daniPeriod[iso] || []).some((s) => s.slobodno)
+            const radi = !!lok?.radno[String(d.getDay())] && !praznik && !popunjeno
             return (
               <button key={iso} type="button" disabled={!radi} onClick={() => setDatum(iso)} title={praznik || undefined}
                 className={'w-16 shrink-0 rounded-2xl border-2 py-2 text-center transition-colors disabled:opacity-30 ' +
                   (datum === iso ? 'border-grass bg-grass-tint' : 'border-grass-tint bg-white')}>
                 <span className="block text-xs text-ink/60">{i === 0 ? tr('zakazi.today') : DANI[d.getDay()]}</span>
                 <span className="block font-display text-xl font-extrabold text-ink">{d.getDate()}</span>
-                <span className="block truncate px-1 text-xs text-ink/60">{praznik ? tr('zakazi.holiday') : `${d.getMonth() + 1}.`}</span>
+                <span className="block truncate px-1 text-xs text-ink/60">{praznik ? tr('zakazi.holiday') : popunjeno ? tr('zakazi.full') : `${d.getMonth() + 1}.`}</span>
               </button>
             )
           })}
