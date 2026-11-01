@@ -7,10 +7,12 @@ import Galerija from './pages/Galerija'
 import Kontakt from './pages/Kontakt'
 import Zakazi from './pages/Zakazi'
 import VaucerNarudzba from './pages/VaucerNarudzba'
+import Osoblje from './pages/Osoblje'
 
 export default function App() {
   return (
     <Routes>
+      <Route path="osoblje" element={<Osoblje />} />
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="usluge" element={<Usluge />} />
