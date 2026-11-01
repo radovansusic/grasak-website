@@ -153,13 +153,6 @@ function sinhronizujBezZakljucavanja_() {
     potvrdiAkoTreba_(ev, lokPoFrizeru, tz);
     const red = redZaDogadjaj_(ev, lokPoFrizeru, tz);
     if (!red) return;
-    // termin upisan direktno u Google kalendar: SMS frizeru samo ako je svjež (ne za stare termine)
-    if (!ev.getTag('frizer')) {
-      if (ev.getDateCreated() > new Date(Date.now() - 2 * 3600e3) && ev.getStartTime() > new Date()) {
-        obavijestiFrizera_('novi', red[KOL['Frizer']], red[KOL['Datum']], red[KOL['Vrijeme']], red[KOL['Usluga']], red[KOL['Dijete']], red[KOL['Telefon']]);
-      }
-      ev.setTag('frizer', 'obavijesten');
-    }
     vidjeni[red[0]] = true;
     if (red[0] in indeks) redovi[indeks[red[0]]] = red;
     else { indeks[red[0]] = redovi.length; redovi.push(red); }
@@ -170,11 +163,6 @@ function sinhronizujBezZakljucavanja_() {
     if (!vidjeni[r[0]] && d >= danas && r[KOL['Status']] !== 'otkazan') {
       r[KOL['Status']] = 'otkazan';
       r[KOL['Azurirano']] = sadaTekst_();
-      // obrisan direktno iz kalendara: frizer dobija SMS ako termin tek predstoji
-      const pocetak = Utilities.parseDate(d + ' ' + vrijemeTekst(r[KOL['Vrijeme']], tz), tz, 'yyyy-MM-dd HH:mm');
-      if (pocetak > new Date()) {
-        obavijestiFrizera_('otkazan', r[KOL['Frizer']], d, vrijemeTekst(r[KOL['Vrijeme']], tz), r[KOL['Usluga']], r[KOL['Dijete']], '');
-      }
     }
   });
 
@@ -187,15 +175,6 @@ function datumTekst(v, tz) {
 
 function vrijemeTekst(v, tz) {
   return v instanceof Date ? Utilities.formatDate(v, tz, 'HH:mm') : String(v || '');
-}
-
-/* ---------- SMS frizeru ---------- */
-
-/** Novi ili otkazan termin: SMS frizeru na broj iz lista Frizeri ("Telefon za SMS"). Prazan broj = bez SMS-a. */
-function obavijestiFrizera_(vrsta, frizer, datum, vrijeme, usluga, dijete, telefonRoditelja) {
-  const tel = (ucitajPodesavanja().telefoniFrizera || {})[String(frizer || '').toLowerCase()];
-  if (!tel) return false;
-  return posaljiSms(tel, tekstZaFrizera(vrsta, datum, vrijeme, usluga, dijete, telefonRoditelja));
 }
 
 /* ---------- podsjetnici ---------- */
@@ -283,15 +262,6 @@ function tekstPotvrde(datum, vrijeme, frizer, tel) {
     bezDijakritika(frizer) + '. Otkazivanje: ' + (tel || CFG.TEL_SALONA);
 }
 
-/** SMS frizeru, do 160 znakova, bez kvačica: "Grasak: novi termin 05.11. u 15:30 - Sisanje, Luka P., tel +382..." */
-function tekstZaFrizera(vrsta, datum, vrijeme, usluga, dijete, telefonRoditelja) {
-  const [g, m, d] = String(datum).split('-');
-  let s = CFG.SALON + ': ' + (vrsta === 'otkazan' ? 'OTKAZAN termin ' : 'novi termin ') + d + '.' + m + '. u ' + vrijeme +
-    ' - ' + bezDijakritika(usluga) + (dijete ? ', ' + bezDijakritika(dijete) : '');
-  if (vrsta !== 'otkazan' && telefonRoditelja) s += ', tel ' + telefonRoditelja;
-  return s.slice(0, 160);
-}
-
 function tekstPodsjetnika(vrijeme, frizer, tel) {
   return CFG.SALON + ': podsjetnik - sjutra u ' + vrijeme + ' kod ' + bezDijakritika(frizer) +
     '. Radujemo se! Otkazivanje: ' + (tel || CFG.TEL_SALONA);
@@ -360,7 +330,7 @@ function bezDijakritika(s) {
  *
  * List "Lokacije": Lokacija | Adresa | Telefon | Pon | Uto | Sri | Čet | Pet | Sub | Ned
  *   radno vrijeme se piše kratko: 9-19, 9:30-14, ili "ne radi"
- * List "Frizeri":  Frizer | Lokacija | Aktivan (DA/NE) | Telefon za SMS (novi i otkazani termini; prazno = bez SMS-a)
+ * List "Frizeri":  Frizer | Lokacija | Aktivan (DA/NE)
  * List "Usluge":   Usluga | Trajanje (min) | Aktivna (DA/NE)
  * List "Praznici": Praznik | Datum (dan.mjesec.) | Dana | Neradni (DA/NE) - svake godine; unaprijed upisani državni praznici CG
  * List "Neradni dani": Datum | Razlog | Lokacija (prazno = sve) - dani koje vlasnik proglasi neradnim
@@ -399,7 +369,7 @@ function kreirajListovePodesavanja_() {
     [LIST_LOK]: [['Lokacija', 'Adresa', 'Telefon', 'Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'],
                  ['Grašak Podgorica', 'Branka Deletića bb, Lamela A, New City', '069 371 111',
                   'ne radi', '15-21', '15-21', '15-21', '15-21', '11-21', '11-21']],
-    [LIST_FRIZ]: [['Frizer', 'Lokacija', 'Aktivan', 'Telefon za SMS'],
+    [LIST_FRIZ]: [['Frizer', 'Lokacija', 'Aktivan'],
                   ['Nikola', 'Grašak Podgorica', 'DA']],
     [LIST_USL]: [['Usluga', 'Trajanje (min)', 'Aktivna'],
                  ['Šišanje', 30, 'DA'], ['Prvo šišanje + diploma', 30, 'DA'], ['Svečana frizura', 60, 'DA']],
@@ -416,7 +386,6 @@ function kreirajListovePodesavanja_() {
     const v = primjeri[ime];
     // obični tekst: inače Sheets "9-19" pretvori u datum, a telefonu obriše nulu
     if (ime === LIST_LOK) sh.getRange('C:J').setNumberFormat('@');
-    if (ime === LIST_FRIZ) sh.getRange('D:D').setNumberFormat('@');
     if (ime === LIST_OSOBLJE) sh.getRange('D:D').setNumberFormat('@');
     if (ime === LIST_VAUCERI) sh.getRange('A:G').setNumberFormat('@');
     if (ime === LIST_PRAZNICI) sh.getRange('B:B').setNumberFormat('@');
@@ -472,7 +441,7 @@ function provjeriPodesavanja() {
 /* ---------- čiste funkcije (testirane) ---------- */
 
 function sastaviPodesavanja(lokRedovi, frizRedovi, uslRedovi) {
-  const greske = [], telefoniFrizera = {};
+  const greske = [];
   const da = v => String(v).trim().toUpperCase() !== 'NE';
   const lokacije = [];
   lokRedovi.forEach((r, i) => {
@@ -496,12 +465,6 @@ function sastaviPodesavanja(lokRedovi, frizRedovi, uslRedovi) {
     if (!lok) { greske.push('Frizeri, red ' + (i + 2) + ': lokacija "' + r[1] + '" ne postoji u listu Lokacije'); return; }
     if (lokacije.some(l => l.osobe.indexOf(ime) >= 0)) { greske.push('Frizeri, red ' + (i + 2) + ': ' + ime + ' je već upisan - imena moraju biti različita'); return; }
     lok.osobe.push(ime);
-    const tel = String(r[3] == null ? '' : r[3]).trim();
-    if (tel) {
-      const n = normalizujTelefon(tel);
-      if (n.replace(/\D/g, '').length < 10) greske.push('Frizeri, red ' + (i + 2) + ': telefon za SMS "' + tel + '" nije ispravan');
-      else telefoniFrizera[ime.toLowerCase()] = n;
-    }
   });
   const usluge = [];
   uslRedovi.forEach((r, i) => {
@@ -511,7 +474,7 @@ function sastaviPodesavanja(lokRedovi, frizRedovi, uslRedovi) {
     if (!(t >= 30 && t % 30 === 0)) { greske.push('Usluge, red ' + (i + 2) + ': trajanje mora biti 30, 60, 90...'); return; }
     usluge.push({ id: napraviId(naziv), naziv: naziv, trajanje: t });
   });
-  return { lokacije: lokacije, usluge: usluge, telefoniFrizera: telefoniFrizera, greske: greske };
+  return { lokacije: lokacije, usluge: usluge, greske: greske };
 }
 
 /** Osoblje za panel. Uloge: vlasnik (sve + izvještaji), admin (sve + izvještaji), frizer (dan i upis termina). */
@@ -814,8 +777,6 @@ function zakazi_(z) {
   });
 
   if (posaljiSms(telefon, tekstPotvrde(z.datum, z.vrijeme, z.osoba, lok.telefon))) ev.setTag('potvrda', 'poslat');
-  obavijestiFrizera_('novi', z.osoba, z.datum, z.vrijeme, u.naziv, dijete, telefon);
-  ev.setTag('frizer', 'obavijesten');
   upisiTermin_(ev);
   return { ok: true, poruka: 'Termin je zakazan. Potvrda stiže SMS-om.' };
 }
@@ -1024,9 +985,6 @@ function zakaziOsoblje_(o, p, z) {
         '\nIzvor: telefon - ' + o.ime,
     });
   potvrdiAkoTreba_(ev, lokPoFrizeru_(), tz);
-  // frizer dobija SMS kad mu termin upiše neko drugi (ne kad upisuje sam sebi)
-  if (o.ime.toLowerCase() !== String(z.osoba).toLowerCase()) obavijestiFrizera_('novi', z.osoba, z.datum, z.vrijeme, u.naziv, dijete, telefon);
-  ev.setTag('frizer', 'obavijesten');
   upisiTermin_(ev);
   return { ok: true, poruka: 'Upisano: ' + z.vrijeme + ', ' + z.osoba + ', ' + dijete + '.' };
 }
@@ -1049,10 +1007,6 @@ function promijeniStatus_(o, p, id, status) {
     red[KOL['Status']] = 'otkazan';
     red[KOL['Napomena']] = (red[KOL['Napomena']] ? red[KOL['Napomena']] + ' | ' : '') + 'otkazao: ' + o.ime;
     upisiRed_(red);
-    const frizer = red[KOL['Frizer']];
-    if (ev.getStartTime() > new Date() && o.ime.toLowerCase() !== String(frizer).toLowerCase()) {
-      obavijestiFrizera_('otkazan', frizer, red[KOL['Datum']], red[KOL['Vrijeme']], red[KOL['Usluga']], red[KOL['Dijete']], '');
-    }
     ev.deleteEvent(); // termin se oslobađa za sajt i za kalendar
     return { ok: true, poruka: 'Termin je otkazan, vrijeme je ponovo slobodno.' };
   }
@@ -1095,7 +1049,7 @@ function citajPodesavanjaZaEkran_() {
   const da = v => t(v).toUpperCase() !== 'NE';
   return {
     lokacije: citajList_(LIST_LOK, 10).map(r => ({ naziv: t(r[0]), adresa: t(r[1]), telefon: t(r[2]), dani: r.slice(3, 10).map(t) })),
-    frizeri: citajList_(LIST_FRIZ, 4).map(r => ({ ime: t(r[0]), lokacija: t(r[1]), aktivan: da(r[2]), telefon: t(r[3]) })),
+    frizeri: citajList_(LIST_FRIZ, 3).map(r => ({ ime: t(r[0]), lokacija: t(r[1]), aktivan: da(r[2]) })),
     usluge: citajList_(LIST_USL, 3).map(r => ({ naziv: t(r[0]), trajanje: Number(r[1]) || 30, aktivna: da(r[2]) })),
     praznici: (tabela_().getSheetByName(LIST_PRAZNICI) ? citajList_(LIST_PRAZNICI, 4) : ZAKONSKI_PRAZNICI).map(r => {
       const dm = parsirajDanMjesec(r[1]);
@@ -1118,7 +1072,7 @@ function sacuvajPodesavanja_(o, s) {
   const stari = citajList_(LIST_OSOBLJE, 6);
   const lok = niz(s.lokacije).map(l => [t(l.naziv, 60), t(l.adresa, 120), tel(l.telefon, 30)]
     .concat(niz(l.dani).concat(['', '', '', '', '', '', '']).slice(0, 7).map(d => t(d, 20)))).filter(r => r[0]);
-  const friz = niz(s.frizeri).map(f => [t(f.ime, 40), t(f.lokacija, 60), f.aktivan === false ? 'NE' : 'DA', tel(f.telefon, 30)]).filter(r => r[0]);
+  const friz = niz(s.frizeri).map(f => [t(f.ime, 40), t(f.lokacija, 60), f.aktivan === false ? 'NE' : 'DA']).filter(r => r[0]);
   const usl = niz(s.usluge).map(u => [t(u.naziv, 60), Number(u.trajanje) || 0, u.aktivna === false ? 'NE' : 'DA']).filter(r => r[0]);
   const prz = niz(s.praznici).map(x => [t(x.naziv, 60), t(x.datum, 10), Number(x.dana) === 2 ? 2 : 1, x.neradni === false ? 'NE' : 'DA']).filter(r => r[0]);
   const nrd = niz(s.neradniDani).map(x => [t(x.datum, 12), t(x.razlog, 80), t(x.lokacija, 60)]).filter(r => r[0]);
@@ -1138,7 +1092,7 @@ function sacuvajPodesavanja_(o, s) {
   if (greske.length) return { ok: false, poruka: 'Nije sačuvano. Ispravite:', greske: greske };
 
   upisiList_(LIST_LOK, lok, 10, 'C:J');
-  upisiList_(LIST_FRIZ, friz, 4, 'D:D');
+  upisiList_(LIST_FRIZ, friz, 3);
   upisiList_(LIST_USL, usl, 3);
   upisiList_(LIST_OSOBLJE, osb, 6, 'D:D');
   upisiList_(LIST_PRAZNICI, prz, 4, 'B:B');

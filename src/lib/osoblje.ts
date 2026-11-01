@@ -49,7 +49,7 @@ export async function osoblje<T = object>(akcija: string, pristup: Pristup, poda
 
 /* ---- podešavanja (samo vlasnik) ---- */
 export interface LokacijaPod { naziv: string; adresa: string; telefon: string; dani: string[]; postojeca?: boolean }
-export interface FrizerPod { ime: string; lokacija: string; aktivan: boolean; telefon?: string; postojeci?: boolean }
+export interface FrizerPod { ime: string; lokacija: string; aktivan: boolean; postojeci?: boolean }
 export interface UslugaPod { naziv: string; trajanje: number; aktivna: boolean; postojeca?: boolean }
 export interface OsobaPod {
   red: number | null; ime: string; uloga: Uloga; lokacija: string; imaSifru: boolean; sifra?: string; email: string; aktivan: boolean
