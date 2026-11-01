@@ -4,14 +4,14 @@ import { motion } from 'framer-motion'
 import { CalendarCheck, Loader2, PartyPopper } from 'lucide-react'
 import { useLang } from '@/i18n/LanguageContext'
 import { sendBookingEmail } from '@/lib/booking'
+import MjesecniKalendar, { type StanjeDana } from '@/components/MjesecniKalendar'
 import {
   isoDatum, ucitajKonfig, ucitajPeriod, ucitajSlotove, zakazi,
   type Konfig, type Lokacija, type Slot, type Usluga,
 } from '@/lib/zakazivanje'
 
-/** Online zakazivanje: lokacija > frizer > usluga > dan > termin (30 min) > podaci.
- *  Termin se upisuje u kalendar salona; roditelj dobija SMS, salon email. */
-const DANI = ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub']
+/** Online zakazivanje: lokacija > frizer > usluga > dan (mjesečni kalendar) > termin (30 min) > podaci.
+ *  Termin se upisuje u kalendar salona; salon dobija email i obavještenje u panelu. */
 const cip = (aktivan: boolean) =>
   'rounded-full border-2 px-5 py-2.5 font-bold transition-colors ' +
   (aktivan ? 'border-grass bg-grass text-white' : 'border-grass-tint bg-white text-ink hover:border-grass')
@@ -31,7 +31,7 @@ function Korak({ n, naslov, children }: { n: number; naslov: string; children: R
 }
 
 export default function OnlineZakazivanje() {
-  const { tr } = useLang()
+  const { tr, lang } = useLang()
   const [konfig, setKonfig] = useState<Konfig | null>(null)
   const [greska, setGreska] = useState('')
   const [lok, setLok] = useState<Lokacija | null>(null)
@@ -45,6 +45,7 @@ export default function OnlineZakazivanje() {
   const [uspjeh, setUspjeh] = useState('')
   const [poruka, setPoruka] = useState('')
   const formaRef = useRef<HTMLDivElement>(null)
+  const terminiRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     ucitajKonfig()
@@ -57,7 +58,8 @@ export default function OnlineZakazivanje() {
       .catch(() => setGreska(tr('zakazi.offline')))
   }, [tr])
 
-  // termini za 3 sedmice stižu jednim pozivom čim su izabrani frizer i usluga; dani se onda mijenjaju odmah
+  // termini za cijeli period (danas + 30 dana) stižu jednim pozivom čim su izabrani frizer i usluga; dani se onda mijenjaju odmah
+  const horizont = konfig ? konfig.danaUnaprijed + 1 : 0
   const kljucPeriod = lok && osoba && usluga ? [lok.id, osoba, usluga.id].join('|') : ''
   const [period, setPeriod] = useState<{ kljuc: string; dani: Record<string, Slot[]> } | null>(null)
   const [bezPerioda, setBezPerioda] = useState(false) // starija verzija Google skripte: termini po danu
@@ -67,11 +69,11 @@ export default function OnlineZakazivanje() {
     if (!kljucPeriod || bezPerioda) return
     let aktivno = true
     const [l, o, u] = kljucPeriod.split('|')
-    ucitajPeriod(l, o, u, 21)
+    ucitajPeriod(l, o, u, horizont)
       .then((d) => { if (aktivno) setPeriod({ kljuc: kljucPeriod, dani: d }) })
       .catch(() => { if (aktivno) setBezPerioda(true) })
     return () => { aktivno = false }
-  }, [kljucPeriod, osvjezenje, bezPerioda])
+  }, [kljucPeriod, osvjezenje, bezPerioda, horizont])
 
   // promjena izbora poništava izabrano vrijeme
   const kljuc = lok && osoba && usluga && datum ? [lok.id, osoba, usluga.id, datum].join('|') : ''
@@ -132,7 +134,7 @@ export default function OnlineZakazivanje() {
         <PartyPopper className="mx-auto h-14 w-14 text-coral" />
         <h2 className="mt-4 font-display text-3xl font-extrabold text-ink">{tr('zakazi.okTitle')}</h2>
         <p className="mt-2 text-lg text-ink/80">{uspjeh}</p>
-        <p className="mt-1 text-ink/60">{tr('zakazi.okSms')}</p>
+        <p className="mt-1 text-ink/60">{tr('zakazi.okText')}</p>
         <button onClick={() => { setUspjeh(''); setDatum(''); }} className="mt-6 rounded-full bg-grass px-6 py-3 font-bold text-white">
           {tr('zakazi.again')}
         </button>
@@ -143,9 +145,22 @@ export default function OnlineZakazivanje() {
   if (greska) return <p className="rounded-2xl bg-coral/10 p-5 text-ink">{greska}</p>
   if (!konfig) return <p className="flex items-center gap-2 text-ink/60"><Loader2 className="h-5 w-5 animate-spin" /> {tr('zakazi.loading')}</p>
 
-  const dani = Array.from({ length: Math.min(konfig.danaUnaprijed, 21) }, (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i); return d
+  const dani = Array.from({ length: horizont }, (_, i) => {
+    const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + i); return d
   })
+  const stanjeDana = (d: Date): { s: StanjeDana; opis?: string } => {
+    if (!lok) return { s: 'zatvoreno' }
+    const iso = isoDatum(d)
+    const praznik = lok.neradni?.[iso]
+    if (praznik) return { s: 'zatvoreno', opis: praznik }
+    if (!lok.radno[String(d.getDay())]) return { s: 'zatvoreno' }
+    if (!daniPeriod) return { s: 'nepoznato' }
+    return (daniPeriod[iso] || []).some((x) => x.slobodno) ? { s: 'slobodno' } : { s: 'popunjeno', opis: tr('zakazi.full') }
+  }
+  const izaberiDan = (iso: string) => {
+    setDatum(iso)
+    if (usluga) setTimeout(() => terminiRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }
   let n = 0
 
   return (
@@ -175,54 +190,44 @@ export default function OnlineZakazivanje() {
         <div className="flex flex-wrap gap-2">
           {konfig.usluge.map((u) => (
             <button key={u.id} type="button" className={cip(usluga?.id === u.id)} onClick={() => setUsluga(u)}>
-              {u.naziv}{u.trajanje > konfig.korak && ` (${u.trajanje} min)`}
+              {u.naziv}{u.trajanje > konfig.korak && <span className="block text-xs font-semibold opacity-75">{u.trajanje} min</span>}
             </button>
           ))}
         </div>
       </Korak>
       <Korak n={++n} naslov={tr('zakazi.day')}>
-        <div className="flex gap-2 overflow-x-auto pb-2">
-          {dani.map((d, i) => {
-            const iso = isoDatum(d)
-            const praznik = lok?.neradni?.[iso]
-            const popunjeno = !!daniPeriod && !praznik && !!lok?.radno[String(d.getDay())] && !(daniPeriod[iso] || []).some((s) => s.slobodno)
-            const radi = !!lok?.radno[String(d.getDay())] && !praznik && !popunjeno
-            return (
-              <button key={iso} type="button" disabled={!radi} onClick={() => setDatum(iso)} title={praznik || undefined}
-                className={'w-16 shrink-0 rounded-2xl border-2 py-2 text-center transition-colors disabled:opacity-30 ' +
-                  (datum === iso ? 'border-grass bg-grass-tint' : 'border-grass-tint bg-white')}>
-                <span className="block text-xs text-ink/60">{i === 0 ? tr('zakazi.today') : DANI[d.getDay()]}</span>
-                <span className="block font-display text-xl font-extrabold text-ink">{d.getDate()}</span>
-                <span className="block truncate px-1 text-xs text-ink/60">{praznik ? tr('zakazi.holiday') : popunjeno ? tr('zakazi.full') : `${d.getMonth() + 1}.`}</span>
-              </button>
-            )
-          })}
-        </div>
-      </Korak>
-      <Korak n={++n} naslov={tr('zakazi.time')}>
-        {!lok || !osoba || !usluga || !datum ? (
-          <p className="text-ink/60">{tr('zakazi.pickFirst')}</p>
-        ) : slotovi === null ? (
-          <p className="flex items-center gap-2 text-ink/60"><Loader2 className="h-5 w-5 animate-spin" /> {tr('zakazi.loading')}</p>
-        ) : slotovi.length === 0 ? (
-          <p className="text-ink/60">{tr('zakazi.noSlots')}</p>
-        ) : (
-          <>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-              {slotovi.map((s) => (
-                <button key={s.vrijeme} type="button" disabled={!s.slobodno}
-                  onClick={() => { setIzbor({ kljuc, vrijeme: s.vrijeme }); setTimeout(() => formaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }}
-                  className={'rounded-xl border-2 py-3 font-bold transition-colors disabled:border-transparent disabled:bg-ink/5 disabled:text-ink/30 disabled:line-through ' +
-                    (vrijeme === s.vrijeme ? 'border-grass bg-grass text-white' : 'border-grass bg-white text-ink')}>
-                  {s.vrijeme}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-sm text-ink/50">{tr('zakazi.legend')}</p>
-            {poruka && !vrijeme && <p className="mt-3 rounded-xl bg-coral/10 p-3 text-ink">{poruka}</p>}
-          </>
+        <MjesecniKalendar dani={dani} izabran={datum} stanje={stanjeDana} onIzbor={izaberiDan} en={lang === 'en'}
+          tekst={{ prev: tr('zakazi.prevMonth'), next: tr('zakazi.nextMonth'), free: tr('zakazi.legendFree'), busy: tr('zakazi.legendBusy'), today: tr('zakazi.today') }} />
+        {kljucPeriod && !daniPeriod && !bezPerioda && (
+          <p className="mt-2 flex items-center gap-2 text-sm text-ink/60"><Loader2 className="h-4 w-4 animate-spin" /> {tr('zakazi.loadingDays')}</p>
         )}
       </Korak>
+      <div ref={terminiRef} className="scroll-mt-24">
+        <Korak n={++n} naslov={tr('zakazi.time')}>
+          {!lok || !osoba || !usluga || !datum ? (
+            <p className="text-ink/60">{tr('zakazi.pickFirst')}</p>
+          ) : slotovi === null ? (
+            <p className="flex items-center gap-2 text-ink/60"><Loader2 className="h-5 w-5 animate-spin" /> {tr('zakazi.loading')}</p>
+          ) : slotovi.length === 0 ? (
+            <p className="text-ink/60">{tr('zakazi.noSlots')}</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {slotovi.map((s) => (
+                  <button key={s.vrijeme} type="button" disabled={!s.slobodno}
+                    onClick={() => { setIzbor({ kljuc, vrijeme: s.vrijeme }); setTimeout(() => formaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50) }}
+                    className={'rounded-xl border-2 py-3 font-bold transition-colors disabled:border-transparent disabled:bg-ink/5 disabled:text-ink/30 disabled:line-through ' +
+                      (vrijeme === s.vrijeme ? 'border-grass bg-grass text-white' : 'border-grass bg-white text-ink')}>
+                    {s.vrijeme}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-sm text-ink/50">{tr('zakazi.legend')}</p>
+              {poruka && !vrijeme && <p className="mt-3 rounded-xl bg-coral/10 p-3 text-ink">{poruka}</p>}
+            </>
+          )}
+        </Korak>
+      </div>
       {vrijeme && (
         <div ref={formaRef}>
           <Korak n={++n} naslov={tr('zakazi.details')}>

@@ -9,9 +9,11 @@ function kljucVidjeno(ime: string) { return 'grasak-obav-' + ime.toLowerCase() }
 function citaj(k: string): string | null { try { return localStorage.getItem(k) } catch { return null } }
 function pisi(k: string, v: string) { try { localStorage.setItem(k, v) } catch { /* privatni režim */ } }
 
+const jeDatum = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s)
+
 function kadaTermin(o: Obavjestenje): string {
+  if (!jeDatum(o.datum)) return ''
   const [g, m, d] = o.datum.split('-').map(Number)
-  if (!g) return o.datum
   return `${DANI[new Date(g, m - 1, d).getDay()]} ${d}.${m}. u ${o.vrijeme}`
 }
 function prije(kad: string): string {
@@ -31,7 +33,7 @@ function naslovObavjestenja(o: Obavjestenje): string {
   return (o.tip === 'otkazan' ? 'Otkazan termin' : 'Novi termin') + ' · ' + o.frizer
 }
 function tekstObavjestenja(o: Obavjestenje): string {
-  return `${kadaTermin(o)} · ${o.dijete || 'bez imena'} · ${o.usluga}`
+  return [kadaTermin(o), o.dijete || 'bez imena', o.usluga].filter(Boolean).join(' · ')
 }
 
 async function sistemsko(o: Obavjestenje) {
@@ -153,7 +155,7 @@ export default function Zvono({ pristup, onNovo, onOtvoriDan }: {
             <ul className="grid gap-2">
               {lista.map((o) => (
                 <li key={o.kad}>
-                  <button onClick={() => { setOtvoreno(false); onOtvoriDan(o.datum) }}
+                  <button onClick={() => { setOtvoreno(false); if (jeDatum(o.datum)) onOtvoriDan(o.datum) }}
                     className={'flex w-full items-start gap-3 rounded-2xl p-3 text-left ' + (o.tip === 'otkazan' ? 'bg-coral/10' : 'bg-grass-tint')}>
                     {o.tip === 'otkazan' ? <CalendarX className="mt-0.5 h-5 w-5 shrink-0 text-coral" /> : <CalendarPlus className="mt-0.5 h-5 w-5 shrink-0 text-grass" />}
                     <span className="min-w-0 flex-1">

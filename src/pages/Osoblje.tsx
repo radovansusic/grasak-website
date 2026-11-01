@@ -178,7 +178,7 @@ function DanPanel({ pristup, konfig, profil, signal, pocetniDatum }: {
   pristup: Pristup; konfig: KonfigOsoblje; profil: Profil; signal: number; pocetniDatum?: string
 }) {
   const [lokId, setLokId] = useState(konfig.lokacije[0]?.id || '')
-  const [datum, setDatum] = useState(() => pocetniDatum || isoDatum(new Date()))
+  const [datum, setDatum] = useState(() => (/^\d{4}-\d{2}-\d{2}$/.test(pocetniDatum || '') ? pocetniDatum! : isoDatum(new Date())))
   const [dan, setDan] = useState<DanOsoblje | null>(null)
   const [ucitava, setUcitava] = useState(false)
   const [poruka, setPoruka] = useState('')   // greška učitavanja
@@ -403,7 +403,7 @@ function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, onZatvori, 
           ))}
         </div>
         <input name="dijete" required maxLength={60} placeholder="Ime djeteta *" className={inputCls} autoFocus />
-        <input name="telefon" type="tel" inputMode="tel" placeholder="Telefon roditelja (za SMS potvrdu)" className={inputCls} />
+        <input name="telefon" type="tel" inputMode="tel" placeholder="Telefon roditelja" className={inputCls} />
         <input name="roditelj" maxLength={60} placeholder="Ime roditelja" className={inputCls} />
         <textarea name="napomena" maxLength={300} rows={2} placeholder="Napomena / dodatak" className={inputCls} />
         {greska && <p className="rounded-xl bg-coral/10 p-2 text-sm text-ink">{greska}</p>}

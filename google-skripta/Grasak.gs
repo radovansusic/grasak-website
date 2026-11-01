@@ -52,6 +52,8 @@ function postavi() {
   sh.getRange('A:Q').setNumberFormat('@'); // tekst: datumi, vremena i +382 brojevi ostaju kako su upisani
   sh.getRange(1, 1, 1, ZAGLAVLJE.length).setValues([ZAGLAVLJE]).setFontWeight('bold').setBackground('#e7f5e4');
   sh.setFrozenRows(1);
+  const ob = ss.getSheetByName(LIST_OBAVJESTENJA);
+  if (ob) ob.getRange('A:J').setNumberFormat('@'); // datum i vrijeme ostaju tekst, ne postaju datum
 
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('sinhronizuj').timeBased().everyHours(1).create();
@@ -1158,7 +1160,9 @@ function obavjestenjaZa_(o, p, posle) {
   const sh = tabela_().getSheetByName(LIST_OBAVJESTENJA);
   if (!sh || sh.getLastRow() < 2) return [];
   const n = Math.min(400, sh.getLastRow() - 1);
-  const redovi = sh.getRange(sh.getLastRow() - n + 1, 1, n, ZAGLAVLJE_OBAV.length).getValues();
+  // ćelija koju je Sheets pretvorio u datum/vrijeme vraća se kao 'yyyy-MM-dd' i 'HH:mm'
+  const redovi = sh.getRange(sh.getLastRow() - n + 1, 1, n, ZAGLAVLJE_OBAV.length).getValues()
+    .map(r => { r[4] = datumTekst(r[4], CFG.TZ); r[5] = vrijemeTekst(r[5], CFG.TZ); return r; });
   return filtrirajObavjestenja(redovi, o, dozvoljeneLokacije_(o, p).map(l => l.naziv), Number(posle) || 0);
 }
 

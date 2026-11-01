@@ -82,7 +82,7 @@ export default function PodesavanjaPanel({ pristup, onSacuvano, onOdjava }: {
                   <input className={inp} value={l.naziv} disabled={l.postojeca} onChange={(e) => preimenuj(e.target.value)} placeholder="npr. Grašak Podgorica" />
                 </Polje>
                 <Polje oznaka="Adresa"><input className={inp} value={l.adresa} onChange={(e) => izmijeni({ adresa: e.target.value })} /></Polje>
-                <Polje oznaka="Telefon (za SMS)"><input className={inp} value={l.telefon} onChange={(e) => izmijeni({ telefon: e.target.value })} inputMode="tel" /></Polje>
+                <Polje oznaka="Telefon lokacije"><input className={inp} value={l.telefon} onChange={(e) => izmijeni({ telefon: e.target.value })} inputMode="tel" /></Polje>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
                 {DANI.map((dan, k) => {
