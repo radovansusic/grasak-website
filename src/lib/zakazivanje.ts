@@ -11,6 +11,7 @@ export interface Lokacija {
   adresa: string
   osobe: string[]
   radno: Record<string, [string, string] | null>
+  neradni?: Record<string, string>   // 'yyyy-MM-dd' -> praznik ili razlog
 }
 export interface Konfig {
   naziv: string

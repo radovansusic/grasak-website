@@ -21,7 +21,7 @@ export interface OsobaDan {
   termini: TerminOsoblje[]
   popunjeno: { zauzeto: number; kapacitet: number; procenat: number }
 }
-export interface DanOsoblje { datum: string; lokacija: string; radno: [string, string] | null; osobe: OsobaDan[] }
+export interface DanOsoblje { datum: string; lokacija: string; radno: [string, string] | null; neradni?: string; osobe: OsobaDan[] }
 export interface Brojke { termini: number; dosli: number; predstoji: number; nijeDosao: number; otkazano: number; zauzeto: number; kapacitet: number; popunjenost: number }
 export interface Izvjestaj {
   od: string; do: string; naslov: string
@@ -42,4 +42,18 @@ export async function osoblje<T = object>(akcija: string, pin: string, podaci: R
     body: JSON.stringify({ akcija: 'osoblje_' + akcija, pin, ...podaci }),
   })
   return r.json()
+}
+
+/* ---- podešavanja (samo vlasnik) ---- */
+export interface LokacijaPod { naziv: string; adresa: string; telefon: string; dani: string[]; postojeca?: boolean }
+export interface FrizerPod { ime: string; lokacija: string; aktivan: boolean; postojeci?: boolean }
+export interface UslugaPod { naziv: string; trajanje: number; aktivna: boolean; postojeca?: boolean }
+export interface OsobaPod {
+  red: number | null; ime: string; uloga: Uloga; lokacija: string; imaPin: boolean; pin?: string; email: string; aktivan: boolean
+}
+export interface PraznikPod { naziv: string; datum: string; dana: number; neradni: boolean; postojeci?: boolean }
+export interface NeradniDanPod { datum: string; razlog: string; lokacija: string }
+export interface Podesavanja {
+  lokacije: LokacijaPod[]; frizeri: FrizerPod[]; usluge: UslugaPod[]; osoblje: OsobaPod[]
+  praznici: PraznikPod[]; neradniDani: NeradniDanPod[]
 }

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   BarChart3, Ban, CalendarDays, Check, ChevronLeft, ChevronRight, Download, Loader2, LogOut,
-  MessageSquarePlus, Phone, Plus, Printer, RefreshCw, UserX, X,
+  MessageSquarePlus, Phone, Plus, Printer, RefreshCw, Settings, UserX, X,
 } from 'lucide-react'
+import PodesavanjaPanel from '@/components/osoblje/PodesavanjaPanel'
 import { API_URL, isoDatum } from '@/lib/zakazivanje'
 import {
   osoblje,
@@ -36,7 +37,7 @@ export default function Osoblje() {
   const [profil, setProfil] = useState<Profil | null>(null)
   const [konfig, setKonfig] = useState<KonfigOsoblje | null>(null)
   const [greska, setGreska] = useState('')
-  const [tab, setTab] = useState<'dan' | 'izvjestaj'>('dan')
+  const [tab, setTab] = useState<'dan' | 'izvjestaj' | 'podesavanja'>('dan')
 
   useEffect(() => {
     document.title = 'Grašak osoblje'
@@ -76,6 +77,11 @@ export default function Osoblje() {
     return <Okvir><Prijava cekam={!!pin && !greska} greska={greska} onPrijava={(p) => { setGreska(''); return prijavi(p) }} /></Okvir>
   }
   const admin = profil.uloga !== 'frizer'
+  const vlasnik = profil.uloga === 'vlasnik'
+  // poslije izmjene podešavanja: nova lista frizera, usluga i lokacija za pregled dana
+  const osvjeziKonfig = () => {
+    osoblje<{ konfig: KonfigOsoblje }>('prijava', pin).then((r) => { if (r.ok) setKonfig(r.konfig) }).catch(() => {})
+  }
   return (
     <Okvir
       desno={
@@ -86,12 +92,15 @@ export default function Osoblje() {
       podnaslov={`${profil.ime} · ${profil.uloga}`}
     >
       {admin && (
-        <div className="mb-4 flex gap-2 print:hidden">
+        <div className="mb-4 flex flex-wrap gap-2 print:hidden">
           <Tab aktivan={tab === 'dan'} onClick={() => setTab('dan')}><CalendarDays className="h-4 w-4" /> Dan</Tab>
           <Tab aktivan={tab === 'izvjestaj'} onClick={() => setTab('izvjestaj')}><BarChart3 className="h-4 w-4" /> Izvještaj</Tab>
+          {vlasnik && <Tab aktivan={tab === 'podesavanja'} onClick={() => setTab('podesavanja')}><Settings className="h-4 w-4" /> Podešavanja</Tab>}
         </div>
       )}
-      {tab === 'dan' || !admin ? <DanPanel pin={pin} konfig={konfig} profil={profil} /> : <IzvjestajPanel pin={pin} konfig={konfig} />}
+      {tab === 'dan' || !admin ? <DanPanel pin={pin} konfig={konfig} profil={profil} />
+        : tab === 'izvjestaj' ? <IzvjestajPanel pin={pin} konfig={konfig} />
+          : vlasnik ? <PodesavanjaPanel pin={pin} onSacuvano={osvjeziKonfig} onOdjava={odjava} /> : null}
     </Okvir>
   )
 }
@@ -225,10 +234,13 @@ function DanPanel({ pin, konfig, profil }: { pin: string; konfig: KonfigOsoblje;
       {info && <p className="mb-3 flex items-center gap-2 rounded-xl bg-grass p-3 text-sm font-bold text-white shadow"><Check className="h-4 w-4" /> {info}</p>}
       {poruka && <p className="mb-3 rounded-xl bg-coral/10 p-3 text-sm text-ink shadow">{poruka}</p>}
 
+      {prikaz?.neradni && (
+        <p className="mb-3 rounded-xl bg-sun p-3 text-sm font-bold text-ink shadow">Neradni dan: {prikaz.neradni}. Sajt ne nudi termine za ovaj dan.</p>
+      )}
       {!prikaz ? (
         <p className="flex items-center gap-2 p-4 text-ink/60"><Loader2 className="h-5 w-5 animate-spin" /> Učitavam...</p>
       ) : !vremena.length ? (
-        <p className="rounded-2xl bg-white p-6 text-center text-ink/70 shadow">Salon ne radi ovog dana.</p>
+        <p className="rounded-2xl bg-white p-6 text-center text-ink/70 shadow">{prikaz.neradni ? `Neradni dan: ${prikaz.neradni}.` : 'Salon ne radi ovog dana.'}</p>
       ) : (
         <>
           <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">

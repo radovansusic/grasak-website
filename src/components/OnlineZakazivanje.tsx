@@ -167,14 +167,15 @@ export default function OnlineZakazivanje() {
         <div className="flex gap-2 overflow-x-auto pb-2">
           {dani.map((d, i) => {
             const iso = isoDatum(d)
-            const radi = !!lok?.radno[String(d.getDay())]
+            const praznik = lok?.neradni?.[iso]
+            const radi = !!lok?.radno[String(d.getDay())] && !praznik
             return (
-              <button key={iso} type="button" disabled={!radi} onClick={() => setDatum(iso)}
+              <button key={iso} type="button" disabled={!radi} onClick={() => setDatum(iso)} title={praznik || undefined}
                 className={'w-16 shrink-0 rounded-2xl border-2 py-2 text-center transition-colors disabled:opacity-30 ' +
                   (datum === iso ? 'border-grass bg-grass-tint' : 'border-grass-tint bg-white')}>
                 <span className="block text-xs text-ink/60">{i === 0 ? tr('zakazi.today') : DANI[d.getDay()]}</span>
                 <span className="block font-display text-xl font-extrabold text-ink">{d.getDate()}</span>
-                <span className="block text-xs text-ink/60">{d.getMonth() + 1}.</span>
+                <span className="block truncate px-1 text-xs text-ink/60">{praznik ? tr('zakazi.holiday') : `${d.getMonth() + 1}.`}</span>
               </button>
             )
           })}
