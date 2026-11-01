@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState } from 'react'
+import { Link, Navigate, useSearchParams } from 'react-router'
+import { motion } from 'framer-motion'
 import {
   Phone,
   Mail,
@@ -10,8 +9,8 @@ import {
   Car,
   Clock,
   ExternalLink,
-  Send,
   MessageCircle,
+  CalendarCheck,
 } from 'lucide-react'
 import {
   Accordion,
@@ -20,9 +19,6 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { useLang } from '@/i18n/LanguageContext'
-import { sendBookingEmail } from '@/lib/booking'
-import OnlineZakazivanje from '@/components/OnlineZakazivanje'
-import { API_URL } from '@/lib/zakazivanje'
 
 const GRASS = '#4CAF50'
 const GRASS_DEEP = '#2E7D32'
@@ -53,296 +49,34 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
   )
 }
 
-function ConfettiBurst() {
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 40 }, (_, i) => ({
-        id: i,
-        x: (Math.random() - 0.5) * 420,
-        y: -(Math.random() * 260 + 60),
-        rotate: Math.random() * 720 - 360,
-        size: Math.random() * 8 + 6,
-        color: [GRASS, SUN, CORAL, SKY][i % 4],
-        round: i % 3 === 0,
-        delay: Math.random() * 0.15,
-      })),
-    []
-  )
-  return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-visible">
-      {pieces.map((p) => (
-        <motion.span
-          key={p.id}
-          className="absolute"
-          style={{
-            width: p.size,
-            height: p.round ? p.size : p.size * 0.5,
-            backgroundColor: p.color,
-            borderRadius: p.round ? '50%' : 2,
-          }}
-          initial={{ x: 0, y: 0, opacity: 1, rotate: 0 }}
-          animate={{ x: p.x, y: [0, p.y, 220], opacity: [1, 1, 0], rotate: p.rotate }}
-          transition={{ duration: 1.6, delay: p.delay, ease: 'easeOut' }}
-        />
-      ))}
-    </div>
-  )
-}
-
-/** Sa podešenim API-jem: online zakazivanje u kalendar. Poklon vaučer i rezervni režim: stara forma. */
-function ZakazivanjeKartica() {
-  const [searchParams] = useSearchParams()
-  if (API_URL && searchParams.get('vaucer') !== '1') return <OnlineZakazivanje />
-  return <BookingFormCard />
-}
-
-function BookingFormCard() {
+/** Zakazivanje je na jednom mjestu (/zakazi); ovdje put do kalendara, telefon i WhatsApp. */
+function OnlineKartica() {
   const { tr } = useLang()
-  const SERVICES = [
-    tr('kontakt.s1'),
-    tr('kontakt.s2'),
-    tr('kontakt.s3'),
-    tr('kontakt.s4'),
-    tr('kontakt.s5'),
-    tr('kontakt.s6'),
-    tr('kontakt.s7'),
-    tr('kontakt.s8'),
-    tr('kontakt.s9'),
-    tr('kontakt.s10'),
-    tr('kontakt.s11'),
-  ]
-  const [submitted, setSubmitted] = useState(false)
-  const [searchParams] = useSearchParams()
-  const wantsVaucer = searchParams.get('vaucer') === '1'
-  const defaultService = wantsVaucer ? tr('kontakt.s10') : SERVICES[0]
-
-  const [waUrl, setWaUrl] = useState('')
-  const [mailUrl, setMailUrl] = useState('')
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const d = new FormData(e.currentTarget)
-    if (d.get('website')) return // honeypot anti-spam
-    const lines = [
-      'NOVA REZERVACIJA SA SAJTA',
-      `Roditelj: ${d.get('parentName') || '-'}`,
-      `Telefon: ${d.get('phone') || '-'}`,
-      `Dijete: ${d.get('childName') || '-'} (${d.get('childAge') || '-'} god.)`,
-      `Usluga: ${d.get('service') || '-'}`,
-      `Željeni datum: ${d.get('date') || '-'}`,
-      `Napomena: ${d.get('note') || '-'}`,
-      '- poslato preko sajta grasaksalon',
-    ]
-    const msg = lines.join('\n')
-    // automatski email salonu (bez klika korisnika) - FormSubmit, prva poruka traži aktivaciju
-    void sendBookingEmail({
-      Roditelj: String(d.get('parentName') || '-'),
-      Telefon: String(d.get('phone') || '-'),
-      Dijete: `${d.get('childName') || '-'} (${d.get('childAge') || '-'} god.)`,
-      Usluga: String(d.get('service') || '-'),
-      'Željeni datum': String(d.get('date') || '-'),
-      Napomena: String(d.get('note') || '-'),
-      Izvor: 'Sajt grasaksalon (online forma)',
-    })
-    const wa = 'https://wa.me/38269371111?text=' + encodeURIComponent(msg)
-    const mail =
-      'mailto:grasaksalon@gmail.com?subject=' +
-      encodeURIComponent('Rezervacija sa sajta') +
-      '&body=' +
-      encodeURIComponent(msg)
-    setWaUrl(wa)
-    setMailUrl(mail)
-    // otvaranje preko privremenog anchor-a (prolazi popup blokere pouzdanije)
-    const a = document.createElement('a')
-    a.href = wa
-    a.target = '_blank'
-    a.rel = 'noopener noreferrer'
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    setSubmitted(true)
-  }
-
-  const inputCls =
-    'w-full rounded-xl border border-[#E3EDE3] bg-white px-4 py-3 text-[15px] outline-none transition focus:ring-2 focus:ring-[#4CAF50] focus:border-[#4CAF50] placeholder:text-[#22302A]/40'
-
+  const dugme = 'inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[16px] font-bold shadow-sm transition-shadow hover:shadow-md'
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -40 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, amount: 0.2 }}
-      transition={{ duration: 0.6, ease: EASE }}
-      className="relative overflow-hidden rounded-3xl bg-white shadow-xl"
-      style={{ borderTop: `6px solid ${GRASS}` }}
-    >
-      <AnimatePresence mode="wait">
-        {submitted ? (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.92 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: EASE }}
-            className="relative flex min-h-[480px] flex-col items-center justify-center gap-4 p-10 text-center"
-          >
-            <ConfettiBurst />
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.1 }}
-            >
-              <CheckCircle2 size={72} style={{ color: GRASS }} strokeWidth={1.6} />
-            </motion.div>
-            <h3
-              className="text-3xl font-bold"
-              style={{ fontFamily: "'Baloo 2', cursive", color: INK }}
-            >
-              {tr('kontakt.thanks')}
-            </h3>
-            <p className="max-w-sm text-[17px] leading-relaxed" style={{ color: `${INK}B3` }}>
-              {tr('kontakt.thanksSub')}
-            </p>
-            <p className="max-w-sm rounded-2xl px-4 py-2.5 text-[14px] font-bold" style={{ backgroundColor: '#E9F5EA', color: GRASS_DEEP }}>
-              {tr('kontakt.waHint')}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {waUrl && (
-                <a
-                  href={waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-full bg-[#25D366] px-8 py-4 text-base font-bold text-white shadow-lg shadow-[#25D366]/30 transition hover:scale-105"
-                >
-                  <MessageCircle size={20} /> {tr('kontakt.waSend')}
-                </a>
-              )}
-              {mailUrl && (
-                <a
-                  href={mailUrl}
-                  className="flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
-                  style={{ backgroundColor: SKY, color: INK }}
-                >
-                  <Mail size={16} /> {tr('kontakt.mailSend')}
-                </a>
-              )}
-            </div>
-            <button
-              onClick={() => setSubmitted(false)}
-              className="mt-2 rounded-full px-6 py-2.5 text-sm font-bold text-white transition hover:opacity-90"
-              style={{ backgroundColor: GRASS }}
-            >
-              {tr('kontakt.newInquiry')}
-            </button>
-          </motion.div>
-        ) : (
-          <motion.form
-            key="form"
-            onSubmit={handleSubmit}
-            exit={{ opacity: 0, scale: 0.97 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-col gap-5 p-8 md:p-10"
-          >
-            {/* honeypot anti-spam - nevidljivo ljudima */}
-            <input
-              type="text"
-              name="website"
-              tabIndex={-1}
-              autoComplete="off"
-              aria-hidden="true"
-              className="pointer-events-none absolute -left-[9999px] h-0 w-0 opacity-0"
-            />
-            <h3
-              className="text-2xl font-bold md:text-[28px]"
-              style={{ fontFamily: "'Baloo 2', cursive", color: INK }}
-            >
-              {tr('kontakt.formTitle')}
-            </h3>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
-                  {tr('kontakt.nameLabel')}
-                </span>
-                <input required name="parentName" type="text" className={inputCls} placeholder={tr('kontakt.namePlaceholder')} />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
-                  Broj telefona *
-                </span>
-                <input required name="phone"
-                  type="tel"
-                  pattern="[0-9+()\s-]{6,17}"
-                  title="Unesite ispravan broj telefona (npr. 069 371 111)"
-                  className={inputCls}
-                   placeholder="069 000 000"
-                />
-              </label>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
-                  {tr('kontakt.childName')}
-                </span>
-                <input name="childName" type="text" className={inputCls} placeholder={tr('kontakt.childNamePh')} />
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
-                  {tr('kontakt.childAge')}
-                </span>
-                <input name="childAge" type="text" inputMode="numeric" className={inputCls} placeholder={tr('kontakt.childAgePh')} />
-              </label>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
-                  {tr('kontakt.serviceLabel')}
-                </span>
-                <select name="service" key={defaultService} className={inputCls} defaultValue={defaultService}>
-                  {SERVICES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex flex-col gap-1.5">
-                <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
-                  {tr('kontakt.dateLabel')}
-                </span>
-                <input name="date" type="date" min={new Date().toISOString().split('T')[0]} className={inputCls} />
-              </label>
-            </div>
-
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}99` }}>
-                Napomena
-              </span>
-              <textarea
-                name="note"
-                rows={4}
-                className={`${inputCls} resize-none`}
-                placeholder={tr('kontakt.notePlaceholder')}
-              />
-            </label>
-
-            <motion.button
-              type="submit"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.96 }}
-              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-lg font-bold text-white shadow-lg"
-              style={{ backgroundColor: GRASS, fontFamily: "'Baloo 2', cursive" }}
-            >
-              <Send size={20} />
-              {tr('kontakt.submit')}
-            </motion.button>
-
-            <p className="text-center text-sm" style={{ color: `${INK}80` }}>
-              {tr('kontakt.submitNote')}
-            </p>
-          </motion.form>
-        )}
-      </AnimatePresence>
+    <motion.div {...fadeUp} className="rounded-[32px] p-8 shadow-xl md:p-10 lg:sticky lg:top-28" style={{ backgroundColor: TINT }}>
+      <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm">
+        <CalendarCheck size={32} style={{ color: GRASS_DEEP }} />
+      </span>
+      <h2 className="mt-6 text-3xl font-extrabold md:text-4xl" style={{ fontFamily: "'Baloo 2', cursive", color: INK }}>
+        {tr('kontakt.onlineTitle')}
+      </h2>
+      <p className="mt-3 text-[17px] leading-relaxed" style={{ color: `${INK}B3` }}>{tr('kontakt.onlineText')}</p>
+      <Link to="/zakazi"
+        className="mt-6 inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-lg font-bold text-white shadow-lg transition hover:opacity-90"
+        style={{ backgroundColor: GRASS_DEEP }}>
+        <CalendarCheck size={22} /> {tr('kontakt.onlineCta')}
+      </Link>
+      <p className="mt-8 text-[13px] font-bold uppercase tracking-[0.08em]" style={{ color: `${INK}80` }}>{tr('kontakt.orCall')}</p>
+      <div className="mt-3 flex flex-wrap gap-3">
+        <a href="tel:+38269371111" className={dugme} style={{ color: INK }}>
+          <Phone size={18} style={{ color: CORAL }} /> {tr('kontakt.callBtn')} 069 371 111
+        </a>
+        <a href={'https://wa.me/38269371111?text=' + encodeURIComponent(tr('kontakt.waMsg'))} target="_blank" rel="noreferrer"
+          className={dugme} style={{ color: INK }}>
+          <MessageCircle size={18} style={{ color: '#25D366' }} /> WhatsApp
+        </a>
+      </div>
     </motion.div>
   )
 }
@@ -698,6 +432,9 @@ function CtaBand() {
 
 export default function Kontakt() {
   const { tr } = useLang()
+  const [searchParams] = useSearchParams()
+  // stari link za vaučer (/kontakt?vaucer=1) vodi na novu stranicu za vaučer
+  if (searchParams.get('vaucer') === '1') return <Navigate to="/vaucer" replace />
   const titleWords = tr('kontakt.heroTitle').split(' ')
   return (
     <main style={{ fontFamily: "'Nunito', sans-serif", color: INK }}>
@@ -750,7 +487,7 @@ export default function Kontakt() {
       <section className="bg-white py-20 md:py-24">
         <div className="mx-auto grid max-w-[1200px] gap-10 px-6 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            <ZakazivanjeKartica />
+            <OnlineKartica />
           </div>
           <div className="lg:col-span-2">
             <InfoCards />
