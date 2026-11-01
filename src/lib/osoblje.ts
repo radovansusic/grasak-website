@@ -8,12 +8,15 @@ export interface KonfigOsoblje { korak: number; usluge: Usluga[]; lokacije: Loka
 export interface TerminOsoblje {
   id: string; od: string; do: string; usluga: string; dijete: string; uzrast: string; roditelj: string
   telefon: string; napomena: string; izvor: string; status: 'zakazan' | 'nije_dosao' | 'otkazan'
+  kartica?: boolean   // kartica Veseli Grašak (15% popusta)
+  email?: string
 }
 export interface SlotOsoblje {
   vrijeme: string
   stanje: 'slobodno' | 'termin' | 'nastavak' | 'blokada' | 'van'
   termini?: number[]
   naziv?: string
+  id?: string         // pauza iz kalendara: id događaja (može se ukloniti iz panela)
 }
 export interface OsobaDan {
   ime: string
@@ -47,6 +50,21 @@ export async function osoblje<T = object>(akcija: string, pristup: Pristup, poda
   return r.json()
 }
 
+/* ---- sedmica, istorija klijenta, lista predstojećih ---- */
+export interface SedmicaOsoba {
+  ime: string; termini: number; nijeDosao: number; kartica: number; slobodno: number
+  popunjeno: { zauzeto: number; kapacitet: number; procenat: number }
+}
+export interface SedmicaDan { datum: string; neradni?: string; radno: [string, string] | null; osobe: SedmicaOsoba[] }
+export interface Sedmica { od: string; do: string; lokacija: string; dani: SedmicaDan[] }
+export interface Klijent {
+  posjete: number; zadnja: string; prva: string; nijeDosao: number; otkazano: number; predstoji: number; kartica: boolean; djeca: string[]
+}
+export interface PredstojeciTermin {
+  id: string; datum: string; vrijeme: string; kraj: string; frizer: string; lokacija: string; usluga: string; dijete: string
+  roditelj: string; telefon: string; kartica: boolean; napomena: string; status: string; izvor: string
+}
+
 /* ---- podešavanja (samo vlasnik) ---- */
 export interface LokacijaPod { naziv: string; adresa: string; telefon: string; dani: string[]; postojeca?: boolean }
 export interface FrizerPod { ime: string; lokacija: string; aktivan: boolean; postojeci?: boolean }
@@ -64,7 +82,7 @@ export interface Podesavanja {
 /* ---- obavještenja u panelu ---- */
 export interface Obavjestenje {
   kad: string            // ms od 1970, jedinstveno i rastuće
-  tip: 'novi' | 'otkazan'
+  tip: 'novi' | 'otkazan' | 'pomjeren'
   lokacija: string; frizer: string; datum: string; vrijeme: string; usluga: string; dijete: string
   izvor: 'sajt' | 'panel' | 'kalendar' | string
   ko: string

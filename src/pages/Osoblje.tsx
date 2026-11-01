@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import {
-  BarChart3, Ban, CalendarDays, Check, ChevronLeft, ChevronRight, Download, Loader2, LogOut,
-  MessageSquarePlus, Phone, Plus, Printer, RefreshCw, Settings, UserX, X,
+  BarChart3, Ban, CalendarClock, CalendarDays, CalendarRange, Check, ChevronLeft, ChevronRight, Coffee, CreditCard, Download,
+  ListChecks, Loader2, LogOut, Mail, MessageSquarePlus, Phone, Plus, Printer, RefreshCw, Settings, UserX,
 } from 'lucide-react'
 import PodesavanjaPanel from '@/components/osoblje/PodesavanjaPanel'
 import Zvono from '@/components/osoblje/Obavjestenja'
+import PomjeriTermin from '@/components/osoblje/PomjeriTermin'
+import Istorija from '@/components/osoblje/Istorija'
+import { BlokadaDetalji, PauzaForma } from '@/components/osoblje/Pauza'
+import { ListaPanel, SedmicaPanel } from '@/components/osoblje/Pregledi'
+import { Prozor, Tab } from '@/components/osoblje/zajednicko'
+import { inputCls, lijepDatum, pomjeri, proslo } from '@/components/osoblje/pomocno'
 import { API_URL, isoDatum } from '@/lib/zakazivanje'
 import {
   osoblje,
@@ -13,8 +19,6 @@ import {
 } from '@/lib/osoblje'
 
 const PRISTUP_KLJUC = 'grasak-osoblje'
-const DANI = ['nedjelja', 'ponedjeljak', 'utorak', 'srijeda', 'četvrtak', 'petak', 'subota']
-const inputCls = 'w-full rounded-xl border-2 border-grass-tint bg-white px-3 py-2.5 text-ink outline-none focus:border-grass'
 
 function citajPristup(): Pristup | null {
   try {
@@ -25,15 +29,6 @@ function citajPristup(): Pristup | null {
 function pisiPristup(p: Pristup | null) {
   try { if (p) localStorage.setItem(PRISTUP_KLJUC, JSON.stringify(p)); else localStorage.removeItem(PRISTUP_KLJUC) } catch { /* privatni režim */ }
 }
-function pomjeri(iso: string, n: number): string {
-  const [g, m, d] = iso.split('-').map(Number)
-  return isoDatum(new Date(g, m - 1, d + n))
-}
-function lijepDatum(iso: string): string {
-  const [g, m, d] = iso.split('-').map(Number)
-  const dt = new Date(g, m - 1, d)
-  return `${DANI[dt.getDay()]}, ${d}.${m}.`
-}
 
 /** Admin panel salona: grasaksalon.me/panel. Instalira se kao posebna aplikacija "Grašak panel". */
 export default function Osoblje() {
@@ -41,7 +36,7 @@ export default function Osoblje() {
   const [profil, setProfil] = useState<Profil | null>(null)
   const [konfig, setKonfig] = useState<KonfigOsoblje | null>(null)
   const [greska, setGreska] = useState('')
-  const [tab, setTab] = useState<'dan' | 'izvjestaj' | 'podesavanja'>('dan')
+  const [tab, setTab] = useState<'dan' | 'sedmica' | 'lista' | 'izvjestaj' | 'podesavanja'>('dan')
   const [signal, setSignal] = useState(0)          // novo obavještenje -> osvježi pregled dana
   const [fokus, setFokus] = useState<string>('')   // tap na obavještenje -> taj dan
 
@@ -88,11 +83,13 @@ export default function Osoblje() {
   const osvjeziKonfig = () => {
     osoblje<{ konfig: KonfigOsoblje }>('prijava', pristup).then((r) => { if (r.ok) setKonfig(r.konfig) }).catch(() => {})
   }
+  const otvoriDan = (d: string) => { setTab('dan'); setFokus(d + '#' + Date.now()) }
+  const dan = <DanPanel key={fokus || 'dan'} pristup={pristup} konfig={konfig} profil={profil} signal={signal} pocetniDatum={fokus.split('#')[0]} />
   return (
     <Okvir
       desno={
         <div className="flex items-center gap-2">
-          <Zvono pristup={pristup} onNovo={() => setSignal((x) => x + 1)} onOtvoriDan={(d) => { setTab('dan'); setFokus(d + '#' + Date.now()) }} />
+          <Zvono pristup={pristup} onNovo={() => setSignal((x) => x + 1)} onOtvoriDan={otvoriDan} />
           <button onClick={odjava} className="flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold">
             <LogOut className="h-4 w-4" /> Odjava
           </button>
@@ -100,16 +97,18 @@ export default function Osoblje() {
       }
       podnaslov={`${profil.ime} · ${profil.uloga}`}
     >
-      {admin && (
-        <div className="mb-4 flex flex-wrap gap-2 print:hidden">
-          <Tab aktivan={tab === 'dan'} onClick={() => setTab('dan')}><CalendarDays className="h-4 w-4" /> Dan</Tab>
-          <Tab aktivan={tab === 'izvjestaj'} onClick={() => setTab('izvjestaj')}><BarChart3 className="h-4 w-4" /> Izvještaj</Tab>
-          {vlasnik && <Tab aktivan={tab === 'podesavanja'} onClick={() => setTab('podesavanja')}><Settings className="h-4 w-4" /> Podešavanja</Tab>}
-        </div>
-      )}
-      {tab === 'dan' || !admin ? <DanPanel key={fokus || 'dan'} pristup={pristup} konfig={konfig} profil={profil} signal={signal} pocetniDatum={fokus.split('#')[0]} />
-        : tab === 'izvjestaj' ? <IzvjestajPanel pristup={pristup} konfig={konfig} />
-          : vlasnik ? <PodesavanjaPanel pristup={pristup} onSacuvano={osvjeziKonfig} onOdjava={odjava} /> : null}
+      <div className="mb-4 flex flex-wrap gap-2 print:hidden">
+        <Tab aktivan={tab === 'dan'} onClick={() => setTab('dan')}><CalendarDays className="h-4 w-4" /> Dan</Tab>
+        <Tab aktivan={tab === 'sedmica'} onClick={() => setTab('sedmica')}><CalendarRange className="h-4 w-4" /> Sedmica</Tab>
+        {admin && <Tab aktivan={tab === 'lista'} onClick={() => setTab('lista')}><ListChecks className="h-4 w-4" /> Lista</Tab>}
+        {admin && <Tab aktivan={tab === 'izvjestaj'} onClick={() => setTab('izvjestaj')}><BarChart3 className="h-4 w-4" /> Izvještaj</Tab>}
+        {vlasnik && <Tab aktivan={tab === 'podesavanja'} onClick={() => setTab('podesavanja')}><Settings className="h-4 w-4" /> Podešavanja</Tab>}
+      </div>
+      {tab === 'sedmica' ? <SedmicaPanel pristup={pristup} konfig={konfig} onOtvoriDan={otvoriDan} />
+        : tab === 'lista' && admin ? <ListaPanel pristup={pristup} konfig={konfig} />
+          : tab === 'izvjestaj' && admin ? <IzvjestajPanel pristup={pristup} konfig={konfig} />
+            : tab === 'podesavanja' && vlasnik ? <PodesavanjaPanel pristup={pristup} onSacuvano={osvjeziKonfig} onOdjava={odjava} />
+              : dan}
     </Okvir>
   )
 }
@@ -129,15 +128,6 @@ function Okvir({ children, desno, podnaslov }: { children: ReactNode; desno?: Re
       </header>
       <main className="mx-auto max-w-5xl px-3 pt-4 sm:px-4">{children}</main>
     </div>
-  )
-}
-
-function Tab({ aktivan, onClick, children }: { aktivan: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button onClick={onClick} className={'flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold ' +
-      (aktivan ? 'bg-grass text-white' : 'bg-white text-ink')}>
-      {children}
-    </button>
   )
 }
 
@@ -172,7 +162,10 @@ function Prijava({ onPrijava, greska, cekam }: { onPrijava: (p: Pristup) => Prom
 
 /* ---------------- DAN ---------------- */
 
-type Izbor = { tip: 'novi'; osoba: string; vrijeme: string } | { tip: 'termin'; osoba: string; termin: TerminOsoblje }
+type Izbor =
+  | { tip: 'novi'; osoba: string; vrijeme: string }
+  | { tip: 'termin'; osoba: string; termin: TerminOsoblje }
+  | { tip: 'blokada'; osoba: string; id: string; naziv: string }
 
 function DanPanel({ pristup, konfig, profil, signal, pocetniDatum }: {
   pristup: Pristup; konfig: KonfigOsoblje; profil: Profil; signal: number; pocetniDatum?: string
@@ -278,16 +271,21 @@ function DanPanel({ pristup, konfig, profil, signal, pocetniDatum }: {
               </tbody>
             </table>
           </div>
-          <p className="mt-2 text-xs text-ink/50">Klik na "slobodno" upisuje termin (npr. kad neko zove). Klik na termin: telefon, napomena, nije došao, otkaži.</p>
+          <p className="mt-2 text-xs text-ink/50">Klik na "slobodno": novi termin (kad neko zove) ili pauza. Klik na termin: telefon, istorija, napomena, pomjeri, nije došao, otkaži. Žuto = kartica Veseli Grašak.</p>
         </>
       )}
 
       {izbor?.tip === 'novi' && (
-        <NoviTermin pristup={pristup} konfig={konfig} lokId={lokId} datum={datum} osoba={izbor.osoba} vrijeme={izbor.vrijeme}
+        <NoviTermin pristup={pristup} konfig={konfig} lokId={lokId} datum={datum} osoba={izbor.osoba} vrijeme={izbor.vrijeme} radno={prikaz?.radno ?? null}
           onZatvori={() => setIzbor(null)} onGotovo={gotovo} />
       )}
       {izbor?.tip === 'termin' && (
-        <DetaljiTermina pristup={pristup} osoba={izbor.osoba} t={izbor.termin} onZatvori={() => setIzbor(null)} onGotovo={gotovo} />
+        <DetaljiTermina pristup={pristup} konfig={konfig} lokId={lokId} datum={datum} osoba={izbor.osoba} t={izbor.termin} onZatvori={() => setIzbor(null)} onGotovo={gotovo} />
+      )}
+      {izbor?.tip === 'blokada' && (
+        <Prozor naslov={`${izbor.naziv} · ${izbor.osoba}`} onZatvori={() => setIzbor(null)}>
+          <BlokadaDetalji pristup={pristup} id={izbor.id} naziv={izbor.naziv} osoba={izbor.osoba} onGotovo={gotovo} />
+        </Prozor>
       )}
     </div>
   )
@@ -310,17 +308,19 @@ function Popunjenost({ o }: { o: OsobaDan }) {
   )
 }
 
-/** Polje od pola sata je prošlo kad mu je kraj prije trenutnog vremena. */
-function proslo(vrijeme: string): boolean {
-  const [h, m] = vrijeme.split(':').map(Number)
-  const sada = new Date()
-  return h * 60 + m + 30 <= sada.getHours() * 60 + sada.getMinutes()
-}
-
 function Celija({ o, vrijeme, proslo, onIzbor }: { o: OsobaDan; vrijeme: string; proslo: boolean; onIzbor: (i: Izbor) => void }) {
   const s = o.slotovi.find((x) => x.vrijeme === vrijeme)
   if (!s || s.stanje === 'van') return <td className="bg-ink/[0.03] p-1" />
-  if (s.stanje === 'blokada') return <td className="p-1"><div className="rounded-lg bg-ink/10 px-2 py-2 text-xs font-bold text-ink/60">{s.naziv || 'Pauza'}</div></td>
+  if (s.stanje === 'blokada') {
+    const naziv = s.naziv || 'Pauza', id = s.id
+    return (
+      <td className="p-1">
+        {id ? (
+          <button onClick={() => onIzbor({ tip: 'blokada', osoba: o.ime, id, naziv })} className="w-full rounded-lg bg-ink/10 px-2 py-2 text-left text-xs font-bold text-ink/60 hover:bg-ink/20">{naziv}</button>
+        ) : <div className="rounded-lg bg-ink/10 px-2 py-2 text-xs font-bold text-ink/60">{naziv}</div>}
+      </td>
+    )
+  }
   if (s.stanje === 'nastavak') return <td className="p-1"><div className="h-9 rounded-lg bg-grass/15" /></td>
   if (s.stanje === 'slobodno') {
     return (
@@ -341,8 +341,8 @@ function Celija({ o, vrijeme, proslo, onIzbor }: { o: OsobaDan; vrijeme: string;
           const nijeDosao = t.status === 'nije_dosao'
           return (
             <button key={t.id} onClick={() => onIzbor({ tip: 'termin', osoba: o.ime, termin: t })}
-              className={'w-full rounded-lg px-2 py-1.5 text-left ' + (nijeDosao ? 'bg-coral/20 text-ink line-through' : 'bg-grass text-white')}>
-              <span className="block truncate text-sm font-bold">{t.dijete || 'bez imena'}</span>
+              className={'w-full rounded-lg px-2 py-1.5 text-left ' + (nijeDosao ? 'bg-coral/20 text-ink line-through' : t.kartica ? 'bg-sun text-ink' : 'bg-grass text-white')}>
+              <span className="flex items-center gap-1 text-sm font-bold"><span className="truncate">{t.dijete || 'bez imena'}</span>{t.kartica && <CreditCard className="h-3.5 w-3.5 shrink-0" aria-label="kartica Veseli Grašak" />}</span>
               <span className="block truncate text-[11px] opacity-90">{t.usluga} · {t.od}-{t.do}</span>
             </button>
           )
@@ -352,24 +352,11 @@ function Celija({ o, vrijeme, proslo, onIzbor }: { o: OsobaDan; vrijeme: string;
   )
 }
 
-function Prozor({ naslov, onZatvori, children }: { naslov: string; onZatvori: () => void; children: ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40 sm:items-center" onClick={onZatvori}>
-      <div className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-5 shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <h2 className="font-display text-xl font-extrabold text-ink">{naslov}</h2>
-          <button onClick={onZatvori} className="rounded-full bg-grass-tint p-1.5" aria-label="Zatvori"><X className="h-5 w-5" /></button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, onZatvori, onGotovo }: {
-  pristup: Pristup; konfig: KonfigOsoblje; lokId: string; datum: string; osoba: string; vrijeme: string
+function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, radno, onZatvori, onGotovo }: {
+  pristup: Pristup; konfig: KonfigOsoblje; lokId: string; datum: string; osoba: string; vrijeme: string; radno: [string, string] | null
   onZatvori: () => void; onGotovo: (t: string) => void
 }) {
+  const [rezim, setRezim] = useState<'termin' | 'pauza'>('termin')
   const [usluga, setUsluga] = useState(konfig.usluge[0]?.id || '')
   const [salje, setSalje] = useState(false)
   const [greska, setGreska] = useState('')
@@ -381,6 +368,7 @@ function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, onZatvori, 
       const r = await osoblje('zakazi', pristup, {
         lok: lokId, osoba, usluga, datum, vrijeme,
         dijete: f.get('dijete'), telefon: f.get('telefon'), roditelj: f.get('roditelj'), napomena: f.get('napomena'),
+        email: f.get('email'), kartica: f.get('kartica') === 'on',
       })
       if (r.ok) onGotovo(r.poruka || 'Upisano.')
       else setGreska(r.poruka || 'Nije upisano.')
@@ -391,8 +379,15 @@ function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, onZatvori, 
     }
   }
   return (
-    <Prozor naslov={`Novi termin · ${osoba} · ${vrijeme}`} onZatvori={onZatvori}>
+    <Prozor naslov={`${rezim === 'pauza' ? 'Pauza' : 'Novi termin'} · ${osoba} · ${vrijeme}`} onZatvori={onZatvori}>
       <p className="-mt-2 mb-3 text-sm capitalize text-ink/60">{lijepDatum(datum)}</p>
+      <div className="mb-3 flex gap-2">
+        <button type="button" onClick={() => setRezim('termin')} className={'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold ' + (rezim === 'termin' ? 'bg-grass text-white' : 'bg-grass-tint text-ink')}><Plus className="h-4 w-4" /> Termin</button>
+        <button type="button" onClick={() => setRezim('pauza')} className={'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold ' + (rezim === 'pauza' ? 'bg-ink text-white' : 'bg-grass-tint text-ink')}><Coffee className="h-4 w-4" /> Pauza / ne radi</button>
+      </div>
+      {rezim === 'pauza' ? (
+        <PauzaForma pristup={pristup} lokId={lokId} datum={datum} osoba={osoba} vrijeme={vrijeme} radno={radno} onGotovo={onGotovo} />
+      ) : (
       <form onSubmit={posalji} className="grid gap-3">
         <div className="flex flex-wrap gap-2">
           {konfig.usluge.map((u) => (
@@ -405,19 +400,26 @@ function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, onZatvori, 
         <input name="dijete" required maxLength={60} placeholder="Ime djeteta *" className={inputCls} autoFocus />
         <input name="telefon" type="tel" inputMode="tel" placeholder="Telefon roditelja" className={inputCls} />
         <input name="roditelj" maxLength={60} placeholder="Ime roditelja" className={inputCls} />
+        <input name="email" type="email" inputMode="email" maxLength={80} placeholder="Email roditelja (potvrda i podsjetnik)" className={inputCls} />
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl border-2 border-sun bg-sun/30 px-3 py-2.5 text-sm font-bold text-ink">
+          <input name="kartica" type="checkbox" className="h-5 w-5 accent-grass" /> Ima karticu Veseli Grašak (15%)
+        </label>
         <textarea name="napomena" maxLength={300} rows={2} placeholder="Napomena / dodatak" className={inputCls} />
         {greska && <p className="rounded-xl bg-coral/10 p-2 text-sm text-ink">{greska}</p>}
         <button disabled={salje || !usluga} className="flex items-center justify-center gap-2 rounded-full bg-coral py-3 font-bold text-white disabled:opacity-50">
           {salje ? <Loader2 className="h-5 w-5 animate-spin" /> : <Check className="h-5 w-5" />} Upiši termin
         </button>
       </form>
+      )}
     </Prozor>
   )
 }
 
-function DetaljiTermina({ pristup, osoba, t, onZatvori, onGotovo }: {
-  pristup: Pristup; osoba: string; t: TerminOsoblje; onZatvori: () => void; onGotovo: (t: string) => void
+function DetaljiTermina({ pristup, konfig, lokId, datum, osoba, t, onZatvori, onGotovo }: {
+  pristup: Pristup; konfig: KonfigOsoblje; lokId: string; datum: string; osoba: string; t: TerminOsoblje
+  onZatvori: () => void; onGotovo: (t: string) => void
 }) {
+  const [pomjeranje, setPomjeranje] = useState(false)
   const [radi, setRadi] = useState('')
   const [greska, setGreska] = useState('')
   const [tekst, setTekst] = useState('')
@@ -443,9 +445,12 @@ function DetaljiTermina({ pristup, osoba, t, onZatvori, onGotovo }: {
         {red('Uzrast', t.uzrast && t.uzrast + ' god.')}
         {red('Roditelj', t.roditelj)}
         {red('Telefon', t.telefon && <a href={'tel:' + t.telefon} className="inline-flex items-center gap-1 font-bold text-grass-deep"><Phone className="h-4 w-4" /> {t.telefon}</a>)}
+        {red('Email', t.email && <a href={'mailto:' + t.email} className="inline-flex items-center gap-1 font-bold text-grass-deep"><Mail className="h-4 w-4" /> {t.email}</a>)}
+        {t.kartica && red('Kartica', <span className="inline-flex items-center gap-1 rounded-full bg-sun px-2 py-0.5 text-xs font-bold"><CreditCard className="h-3.5 w-3.5" /> Veseli Grašak, 15% popusta</span>)}
         {red('Napomena', t.napomena)}
         {red('Zakazano', izvor)}
         {red('Status', t.status === 'nije_dosao' ? 'nije došao' : 'zakazan')}
+        <Istorija pristup={pristup} telefon={t.telefon} />
       </div>
       <div className="flex gap-2">
         <input value={tekst} onChange={(e) => setTekst(e.target.value)} maxLength={200} placeholder="Dopiši napomenu..." className={inputCls} />
@@ -455,7 +460,7 @@ function DetaljiTermina({ pristup, osoba, t, onZatvori, onGotovo }: {
         </button>
       </div>
       {greska && <p className="mt-3 rounded-xl bg-coral/10 p-2 text-sm text-ink">{greska}</p>}
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-4 grid grid-cols-3 gap-2">
         {t.status === 'nije_dosao' ? (
           <button disabled={!!radi} onClick={() => akcija('status', { status: 'zakazan' })}
             className="flex items-center justify-center gap-1.5 rounded-full bg-grass-tint py-3 text-sm font-bold text-ink">
@@ -467,12 +472,20 @@ function DetaljiTermina({ pristup, osoba, t, onZatvori, onGotovo }: {
             <UserX className="h-4 w-4" /> Nije došao
           </button>
         )}
+        <button disabled={!!radi} onClick={() => setPomjeranje(true)}
+          className="flex items-center justify-center gap-1.5 rounded-full bg-grass-tint py-3 text-sm font-bold text-ink">
+          <CalendarClock className="h-4 w-4" /> Pomjeri
+        </button>
         <button disabled={!!radi}
-          onClick={() => { if (window.confirm('Otkazati termin? Vrijeme postaje slobodno za druge.')) void akcija('status', { status: 'otkazan' }) }}
+          onClick={() => { if (window.confirm('Otkazati termin? Vrijeme postaje slobodno za druge, roditelj dobija email ako ga je ostavio.')) void akcija('status', { status: 'otkazan' }) }}
           className="flex items-center justify-center gap-1.5 rounded-full bg-coral py-3 text-sm font-bold text-white">
           {radi === 'status' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />} Otkaži
         </button>
       </div>
+      {pomjeranje && (
+        <PomjeriTermin pristup={pristup} konfig={konfig} lokId={lokId} osoba={osoba} t={t} datum={datum}
+          onZatvori={() => setPomjeranje(false)} onGotovo={onGotovo} />
+      )}
     </Prozor>
   )
 }

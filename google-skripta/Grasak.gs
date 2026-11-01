@@ -22,11 +22,13 @@ const CFG = {
   DANA_UNAPRIJED: 30,
   SAT_PODSJETNIKA: 18,         // podsjetnik za sjutrašnje termine ide u 18h
   POZIVNI: '+382',
+  SAJT: 'https://grasaksalon.me',             // link za otkazivanje u emailu i kalendaru roditelja
+  EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
-                   'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano'];
+                   'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
 const KOL = ZAGLAVLJE.reduce((o, k, i) => { o[k] = i; return o; }, {});   // indeks od 0
 const STATUSI = ['zakazan', 'nije_dosao', 'otkazan'];
 
@@ -49,7 +51,7 @@ function postavi() {
   const ss = SpreadsheetApp.getActive();
   let sh = ss.getSheetByName(LIST_TERMINI);
   if (!sh) sh = ss.insertSheet(LIST_TERMINI);
-  sh.getRange('A:Q').setNumberFormat('@'); // tekst: datumi, vremena i +382 brojevi ostaju kako su upisani
+  sh.getRange('A:S').setNumberFormat('@'); // tekst: datumi, vremena i +382 brojevi ostaju kako su upisani
   sh.getRange(1, 1, 1, ZAGLAVLJE.length).setValues([ZAGLAVLJE]).setFontWeight('bold').setBackground('#e7f5e4');
   sh.setFrozenRows(1);
   const ob = ss.getSheetByName(LIST_OBAVJESTENJA);
@@ -138,6 +140,8 @@ function redZaDogadjaj_(ev, lokPoFrizeru, tz) {
   r[KOL['Potvrda SMS']] = ev.getTag('potvrda') || '';
   r[KOL['Podsjetnik SMS']] = ev.getTag('podsjetnik') || '';
   r[KOL['Azurirano']] = sadaTekst_();
+  r[KOL['Kartica']] = poljeIzOpisa(opis, 'Kartica') ? 'da' : '';   // kartica Veseli Grašak (15% popusta)
+  r[KOL['Email']] = poljeIzOpisa(opis, 'Email');
   return r;
 }
 
@@ -267,14 +271,119 @@ function posaljiPodsjetnike() {
 
   kal_().getEvents(sjutra, prekosjutra).forEach(ev => {
     const n = rastaviNaslov(ev.getTitle());
-    if (!n || jeBlokada(n.usluga) || ev.getTag('podsjetnik') || ev.getTag('status') === 'otkazan') return;
-    const tel = izvuciTelefon(poljeIzOpisa(ev.getDescription(), 'Telefon') || ev.getDescription());
+    if (!n || jeBlokada(n.usluga) || ev.getTag('status') === 'otkazan') return;
+    const opis = ev.getDescription();
+    // email podsjetnik (besplatno) - nezavisno od SMS-a
+    if (poljeIzOpisa(opis, 'Email') && !ev.getTag('podsjetnik_email') && posaljiEmailTermina_(ev, 'podsjetnik')) ev.setTag('podsjetnik_email', 'poslat');
+    if (ev.getTag('podsjetnik')) return;
+    const tel = izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis);
     if (!tel) return;
     const vrijeme = Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm');
     const lok = lokPoFrizeru[n.frizer.toLowerCase()] || {};
     if (posaljiSms(tel, tekstPodsjetnika(vrijeme, n.frizer, lok.telefon))) ev.setTag('podsjetnik', 'poslat');
   });
   sinhronizuj();
+}
+
+/* ---------- email roditelju: potvrda, podsjetnik, pomjeranje, otkazivanje ---------- */
+
+const DANI_PUNI_ = ['nedjelja', 'ponedjeljak', 'utorak', 'srijeda', 'četvrtak', 'petak', 'subota'];
+
+/** Kod za otkazivanje preko linka: 8 znakova, bez zbunjujućih (0/O, 1/I). */
+function napraviKod_() {
+  const znaci = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 8; i++) s += znaci.charAt(Math.floor(Math.random() * znaci.length));
+  return s;
+}
+
+function jeEmail(s) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(s || ''));
+}
+
+/** Link kojim roditelj sam otkazuje termin (sajt > zakazi?otkazi=ID&kod=KOD). */
+function linkOtkazivanja_(ev) {
+  const kod = poljeIzOpisa(ev.getDescription(), 'Kod');
+  return kod ? CFG.SAJT + '/zakazi?otkazi=' + encodeURIComponent(ev.getId()) + '&kod=' + kod : '';
+}
+
+function datumRijecima_(d, tz) {
+  const dan = Number(Utilities.formatDate(d, tz, 'u')) % 7;
+  return DANI_PUNI_[dan] + ', ' + Utilities.formatDate(d, tz, 'dd.MM.yyyy.') + ' u ' + Utilities.formatDate(d, tz, 'HH:mm');
+}
+
+function icsTekst_(s) {
+  return String(s || '').replace(/\\/g, '\\\\').replace(/[,;]/g, m => '\\' + m).replace(/\r?\n/g, '\\n');
+}
+
+function icsDatum_(d) {
+  return Utilities.formatDate(d, 'UTC', 'yyyyMMdd') + 'T' + Utilities.formatDate(d, 'UTC', 'HHmmss') + 'Z';
+}
+
+/** Termin kao .ics fajl (prilog emaila): roditelj ga otvori i dobije podsjetnik u svom kalendaru. */
+function icsZaTermin_(ev, lok) {
+  const n = rastaviNaslov(ev.getTitle()) || { frizer: '', usluga: '', klijent: '' };
+  const link = linkOtkazivanja_(ev);
+  const mjesto = [lok.naziv, lok.adresa].filter(Boolean).join(', ');
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Grasak//Zakazivanje//SR', 'METHOD:PUBLISH', 'BEGIN:VEVENT',
+    'UID:' + ev.getId(), 'DTSTAMP:' + icsDatum_(new Date()), 'DTSTART:' + icsDatum_(ev.getStartTime()), 'DTEND:' + icsDatum_(ev.getEndTime()),
+    'SUMMARY:' + icsTekst_('Grašak: ' + n.usluga + (n.klijent ? ' (' + n.klijent + ')' : '')),
+    'LOCATION:' + icsTekst_(mjesto),
+    'DESCRIPTION:' + icsTekst_('Frizer: ' + n.frizer + (link ? '\nOtkazivanje: ' + link : '') + '\nSalon: ' + (lok.telefon || CFG.TEL_SALONA)),
+    'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:Sjutra termin u Grašku', 'END:VALARM',
+    'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', 'DESCRIPTION:Za 2 sata termin u Grašku', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+}
+
+/**
+ * Email roditelju sa naloga salona. vrsta: potvrda | podsjetnik | pomjeren | otkazan | otkazan_roditelj.
+ * Vraća true ako je poslato. Nikad ne ruši upis termina: greška ide samo u log.
+ */
+function posaljiEmailTermina_(ev, vrsta) {
+  try {
+    const opis = ev.getDescription();
+    const email = poljeIzOpisa(opis, 'Email');
+    if (!jeEmail(email)) return false;
+    const n = rastaviNaslov(ev.getTitle()) || { frizer: '', usluga: '', klijent: '' };
+    const lok = lokPoFrizeru_()[n.frizer.toLowerCase()] || {};
+    const tz = CFG.TZ;
+    const kad = datumRijecima_(ev.getStartTime(), tz);
+    const kratko = Utilities.formatDate(ev.getStartTime(), tz, 'dd.MM.') + ' u ' + Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm');
+    const tel = lok.telefon || CFG.TEL_SALONA;
+    const roditelj = poljeIzOpisa(opis, 'Roditelj');
+    const link = linkOtkazivanja_(ev);
+    const pozdrav = 'Poštovani ' + (roditelj || 'roditelju') + ',\n\n';
+    const detalji = 'Dijete: ' + n.klijent + '\nUsluga: ' + n.usluga + '\nKad: ' + kad + '\nFrizer: ' + n.frizer +
+      '\nGdje: ' + [lok.naziv, lok.adresa].filter(Boolean).join(', ') + '\n\n';
+    const otkaz = (link ? 'Ako ne možete doći, otkažite na vrijeme: ' + link + '\nili pozovite ' : 'Ako ne možete doći, pozovite ') + tel + '.\n\n';
+    const kraj = 'Vidimo se u Grašku!\n' + CFG.SAJT;
+    let naslov, tijelo, prilog = null;
+    if (vrsta === 'potvrda') {
+      naslov = 'Grašak: termin ' + kratko;
+      tijelo = pozdrav + 'termin je zakazan.\n\n' + detalji + otkaz + 'U prilogu je termin za vaš kalendar: otvorite ga i telefon će vas podsjetiti.\n\n' + kraj;
+      prilog = icsZaTermin_(ev, lok);
+    } else if (vrsta === 'podsjetnik') {
+      naslov = 'Grašak: podsjetnik, sjutra u ' + Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm');
+      tijelo = pozdrav + 'podsjećamo na sjutrašnji termin.\n\n' + detalji + otkaz + kraj;
+    } else if (vrsta === 'pomjeren') {
+      naslov = 'Grašak: termin je pomjeren na ' + kratko;
+      tijelo = pozdrav + 'termin je pomjeren. Novi termin:\n\n' + detalji + otkaz + 'U prilogu je novi termin za vaš kalendar.\n\n' + kraj;
+      prilog = icsZaTermin_(ev, lok);
+    } else if (vrsta === 'otkazan') {
+      naslov = 'Grašak: termin ' + kratko + ' je otkazan';
+      tijelo = pozdrav + 'termin ' + kad + ' (' + n.klijent + ', ' + n.usluga + ') je otkazan.\n\nNovi termin: ' + CFG.SAJT + '/zakazi ili ' + tel + '.\n\n' + kraj;
+    } else {
+      naslov = 'Grašak: termin ' + kratko + ' je otkazan na vaš zahtjev';
+      tijelo = pozdrav + 'otkazali ste termin ' + kad + ' (' + n.klijent + ', ' + n.usluga + ').\n\nNovi termin: ' + CFG.SAJT + '/zakazi ili ' + tel + '.\n\n' + kraj;
+    }
+    const poruka = { to: email, subject: naslov, body: tijelo, name: CFG.EMAIL_IME };
+    if (prilog) poruka.attachments = [Utilities.newBlob(prilog, 'text/calendar', 'grasak-termin.ics')];
+    MailApp.sendEmail(poruka);
+    return true;
+  } catch (e) {
+    console.log('Email nije poslat: ' + e);
+    return false;
+  }
 }
 
 /* ---------- SMS ---------- */
@@ -364,7 +473,7 @@ function rastaviNaslov(naslov) {
 
 /** Događaj koji zauzima vrijeme frizera, ali nije termin: "Nikola - Pauza", "Nikola - Odmor"... */
 function jeBlokada(usluga) {
-  return /^(pauza|odmor|bolovanje|slobodan|blokirano|zatvoreno|godišnji|godisnji)/i.test(String(usluga || '').trim());
+  return /^(pauza|odmor|bolovanje|slobodan|blokirano|zatvoreno|godišnji|godisnji|ne radi)/i.test(String(usluga || '').trim());
 }
 
 /** "Roditelj: Ana Petrović" iz opisa događaja -> "Ana Petrović" ("-" -> prazno) */
@@ -415,7 +524,6 @@ function bezDijakritika(s) {
                  'Č': 'C', 'Ć': 'C', 'Š': 'S', 'Ž': 'Z', 'Đ': 'Dj' };
   return String(s).replace(/[čćšžđČĆŠŽĐ]/g, c => mapa[c]);
 }
-
 
 /**
  * Grašak - podešavanja koja Kristina (vlasnik, grasaksalon@gmail.com) mijenja u tabeli, bez koda.
@@ -753,7 +861,6 @@ function napraviId(naziv) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-
 /**
  * Grašak - API za aplikaciju (Apps Script web app).
  * Radi u ISTOM projektu kao Kod.gs: koristi rastaviNaslov, posaljiSms, tekstPotvrde, normalizujTelefon.
@@ -788,6 +895,7 @@ function doGet(e) {
     if (p.akcija === 'konfig') return json_(javnaKonfig_());
     if (p.akcija === 'slotovi') return json_({ slotovi: slotoviZaDan_(p.lok, p.osoba, p.usluga, p.datum) });
     if (p.akcija === 'slotovi_period') return json_({ dani: slotoviPeriod_(p.lok, p.osoba, p.usluga, Number(p.dana) || 14) });
+    if (p.akcija === 'termin') return json_(terminZaRoditelja_(p.id, p.kod));
     return json_({ greska: 'Nepoznata akcija' });
   } catch (err) {
     return json_({ greska: String(err.message || err) });
@@ -802,18 +910,18 @@ function doPost(e) {
     try { return json_(osobljeAkcija_(z)); } catch (err) { return json_({ ok: false, poruka: String(err.message || err) }); }
   }
   // zaštita od zloupotrebe javnog linka: najviše 30 upisa (termini + vaučeri) u 10 minuta
-  if ((z.akcija === 'zakazi' || z.akcija === 'vaucer') && !ogranicenje_('javni_upis', 30, 600)) {
+  if ((z.akcija === 'zakazi' || z.akcija === 'vaucer' || z.akcija === 'otkazi') && !ogranicenje_('javni_upis', 30, 600)) {
     return json_({ ok: false, poruka: 'Previše zahtjeva u kratkom roku. Pokušajte za nekoliko minuta ili pozovite salon.' });
   }
   if (z.akcija === 'vaucer') {
     try { return json_(vaucer_(z)); } catch (err) { return json_({ ok: false, poruka: String(err.message || err) }); }
   }
-  if (z.akcija !== 'zakazi') return json_({ ok: false, poruka: 'Nepoznata akcija' });
+  if (z.akcija !== 'zakazi' && z.akcija !== 'otkazi') return json_({ ok: false, poruka: 'Nepoznata akcija' });
 
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) return json_({ ok: false, poruka: 'Sistem je zauzet, pokušajte ponovo.' });
   try {
-    return json_(zakazi_(z));
+    return json_(z.akcija === 'otkazi' ? otkaziSaSajta_(z) : zakazi_(z));
   } catch (err) {
     return json_({ ok: false, poruka: String(err.message || err) });
   } finally {
@@ -948,6 +1056,9 @@ function zakazi_(z) {
   const napomena = cistTekst(z.napomena, 300);
   if (!dijete || !roditelj) return { ok: false, poruka: 'Upišite ime i prezime djeteta i roditelja.' };
   if (telefon.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Upišite ispravan broj telefona.' };
+  const email = String(z.email || '').trim().toLowerCase().slice(0, 80);
+  if (email && !jeEmail(email)) return { ok: false, poruka: 'Email adresa nije ispravna (ili je ostavite praznu).' };
+  const kartica = z.kartica === true || /^(da|true|1)$/i.test(String(z.kartica || ''));
   // jedan broj telefona: najviše 3 buduća termina preko sajta (zaštita od lažnog zauzimanja)
   const danasIso = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');
   const aktivnih = citajTermine_(CFG.TZ).filter(r => r.telefon === telefon && r.datum >= danasIso && r.status === 'zakazan').length;
@@ -961,14 +1072,53 @@ function zakazi_(z) {
   const kraj = new Date(pocetak.getTime() + u.trajanje * 60000);
   const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + ' (' + dijete + ')', pocetak, kraj, {
     description: 'Roditelj: ' + roditelj + '\nTelefon: ' + telefon + '\nUzrast: ' + (uzrast || '-') +
-      '\nNapomena: ' + (napomena || '-') + '\nIzvor: sajt',
+      '\nNapomena: ' + (napomena || '-') + '\nKartica: ' + (kartica ? 'da' : '-') + '\nEmail: ' + (email || '-') +
+      '\nKod: ' + napraviKod_() + '\nIzvor: sajt',
   });
+  if (kartica) ev.setColor(CalendarApp.EventColor.YELLOW);   // kartica Veseli Grašak: žuto i u Google kalendaru
 
   if (posaljiSms(telefon, tekstPotvrde(z.datum, z.vrijeme, z.osoba, lok.telefon))) ev.setTag('potvrda', 'poslat');
+  if (email) posaljiEmailTermina_(ev, 'potvrda');
   zapisiObavjestenje_('novi', z.osoba, z.datum, z.vrijeme, u.naziv, dijete, 'sajt', roditelj);
   ev.setTag('obav', 'da');
   upisiTermin_(ev);
-  return { ok: true, poruka: 'Termin je zakazan. Potvrda stiže SMS-om.' };
+  return { ok: true, poruka: 'Termin je zakazan.', id: ev.getId(), kod: poljeIzOpisa(ev.getDescription(), 'Kod'), email: !!email };
+}
+
+/* ---------- roditelj: pregled i otkazivanje preko linka iz potvrde (id termina + kod) ---------- */
+
+function terminPoKodu_(id, kod) {
+  const k = String(kod || '').trim().toUpperCase();
+  const ev = k.length >= 6 && id ? kal_().getEventById(String(id)) : null;
+  if (!ev || poljeIzOpisa(ev.getDescription(), 'Kod').toUpperCase() !== k) throw new Error('Termin nije pronađen ili je već otkazan.');
+  const n = rastaviNaslov(ev.getTitle());
+  if (!n || jeBlokada(n.usluga)) throw new Error('Termin nije pronađen.');
+  return { ev: ev, n: n };
+}
+
+function terminZaRoditelja_(id, kod) {
+  const t = terminPoKodu_(id, kod);
+  const tz = CFG.TZ;
+  const lok = lokPoFrizeru_()[t.n.frizer.toLowerCase()] || {};
+  return {
+    datum: Utilities.formatDate(t.ev.getStartTime(), tz, 'yyyy-MM-dd'), vrijeme: Utilities.formatDate(t.ev.getStartTime(), tz, 'HH:mm'),
+    osoba: t.n.frizer, usluga: t.n.usluga, dijete: t.n.klijent, lokacija: lok.naziv || '', adresa: lok.adresa || '',
+    telefonSalona: lok.telefon || CFG.TEL_SALONA, prosao: t.ev.getStartTime() <= new Date(), status: t.ev.getTag('status') || 'zakazan',
+  };
+}
+
+/** Roditelj otkazuje sam: red u tabeli = otkazan, zvonce frizeru, email potvrda, događaj nestaje iz kalendara. */
+function otkaziSaSajta_(z) {
+  const t = terminPoKodu_(z.id, z.kod);
+  if (t.ev.getStartTime() <= new Date()) return { ok: false, poruka: 'Termin je već prošao, ne može se otkazati.' };
+  const red = redZaDogadjaj_(t.ev, lokPoFrizeru_(), CFG.TZ);
+  red[KOL['Status']] = 'otkazan';
+  red[KOL['Napomena']] = (red[KOL['Napomena']] ? red[KOL['Napomena']] + ' | ' : '') + 'otkazao roditelj preko sajta';
+  upisiRed_(red);
+  zapisiObavjestenje_('otkazan', red[KOL['Frizer']], red[KOL['Datum']], red[KOL['Vrijeme']], red[KOL['Usluga']], red[KOL['Dijete']], 'sajt', red[KOL['Roditelj']]);
+  posaljiEmailTermina_(t.ev, 'otkazan_roditelj');
+  t.ev.deleteEvent();
+  return { ok: true, poruka: 'Termin je otkazan. Hvala što ste javili na vrijeme.' };
 }
 
 /** Narudžba poklon vaučera: red u listu "Vaučeri" + SMS kupcu. Kristina se javlja kupcu za preuzimanje. */
@@ -1016,7 +1166,6 @@ function generisiSlotove(radno, korak, trajanje, zauzeti, najranije) {
   return rez;
 }
 
-
 /**
  * Grašak - admin panel (grasaksalon.me/panel). Prijava: ime + šifra iz lista "Osoblje".
  *
@@ -1043,6 +1192,18 @@ function osobljeAkcija_(z) {
       return pisanje_(() => promijeniStatus_(o, p, z.id, z.status));
     case 'osoblje_napomena':
       return pisanje_(() => dopisiNapomenu_(o, p, z.id, z.tekst));
+    case 'osoblje_pomjeri':
+      return pisanje_(() => pomjeriTermin_(o, p, z));
+    case 'osoblje_blokada':
+      return pisanje_(() => upisiBlokadu_(o, p, z));
+    case 'osoblje_obrisi_blokadu':
+      return pisanje_(() => obrisiBlokadu_(o, p, z.id));
+    case 'osoblje_sedmica':
+      return { ok: true, sedmica: sedmicaPregled_(o, p, z.lok, z.od) };
+    case 'osoblje_klijent':
+      return { ok: true, klijent: klijentPregled_(o, p, z.telefon) };
+    case 'osoblje_predstojeci':
+      return { ok: true, termini: predstojeciTermini_(o, p, Number(z.dana) || 14) };
     case 'osoblje_obavjestenja':
       return { ok: true, obavjestenja: obavjestenjaZa_(o, p, z.posle), sada: String(Date.now()) };
     case 'osoblje_izvjestaj':
@@ -1125,29 +1286,114 @@ function danPregled_(o, p, lokId, datum) {
   const od = Utilities.parseDate(datum + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
   const dogadjaji = kal_().getEvents(od, Utilities.parseDate(dodajDane(datum, 1) + ' 00:00', tz, 'yyyy-MM-dd HH:mm'));
   const nr = ucitajNeradne(p.lokacije);
-  const neradni = neradniUPeriodu(datum, datum, nr.praznici, nr.posebni, lok.naziv)[datum] || '';
+  return danIzDogadjaja_(lok, datum, dogadjaji, neradniUPeriodu(datum, datum, nr.praznici, nr.posebni, lok.naziv)[datum] || '');
+}
+
+/** Raspored jednog dana iz već pročitanih događaja (koristi ga i sedmični pregled, jedno čitanje kalendara). */
+function danIzDogadjaja_(lok, datum, dogadjaji, neradni) {
+  const tz = CFG.TZ;
+  const od = Utilities.parseDate(datum + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
+  const kraj = new Date(od.getTime() + 864e5);
   const radno = neradni ? null : lok.radno[danUSedmici(datum)] || null;
 
   const osobe = lok.osobe.map(ime => {
     const termini = [], blokade = [];
     dogadjaji.forEach(ev => {
+      if (ev.getEndTime() <= od || ev.getStartTime() >= kraj) return;   // događaj drugog dana
       const n = rastaviNaslov(ev.getTitle());
       if (!n || n.frizer.toLowerCase() !== ime.toLowerCase()) return;
       const cijeli = ev.isAllDayEvent();
       const s = cijeli ? 0 : Math.max(0, Math.round((ev.getStartTime() - od) / 60000));
       const k = cijeli ? 1440 : Math.min(1440, Math.round((ev.getEndTime() - od) / 60000));
-      if (cijeli || jeBlokada(n.usluga)) { blokade.push({ od: s, do: k, naziv: n.usluga }); return; }
+      if (cijeli || jeBlokada(n.usluga)) { blokade.push({ id: ev.getId(), od: s, do: k, naziv: n.usluga }); return; }
       const opis = ev.getDescription();
       termini.push({
         id: ev.getId(), od: s, do: k, usluga: n.usluga, dijete: n.klijent,
         uzrast: poljeIzOpisa(opis, 'Uzrast'), roditelj: poljeIzOpisa(opis, 'Roditelj'),
         telefon: izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis), napomena: poljeIzOpisa(opis, 'Napomena'),
         izvor: poljeIzOpisa(opis, 'Izvor') || 'kalendar', status: ev.getTag('status') || 'zakazan',
+        kartica: !!poljeIzOpisa(opis, 'Kartica'), email: poljeIzOpisa(opis, 'Email'),
       });
     });
     return Object.assign({ ime: ime }, rasporedDana(radno, APP.KORAK_MIN, termini, blokade));
   });
   return { datum: datum, lokacija: lok.id, radno: radno, neradni: neradni, osobe: osobe };
+}
+
+/** Sedmica (7 dana od "od") za sve frizere lokacije: broj termina, popunjenost, slobodno. Jedno čitanje kalendara. */
+function sedmicaPregled_(o, p, lokId, od) {
+  const lok = dozvoljenaLok_(o, p, lokId);
+  provjeriDatum_(od);
+  const tz = CFG.TZ;
+  const kraj = dodajDane(od, 7);
+  const dogadjaji = kal_().getEvents(Utilities.parseDate(od + ' 00:00', tz, 'yyyy-MM-dd HH:mm'),
+    Utilities.parseDate(kraj + ' 00:00', tz, 'yyyy-MM-dd HH:mm'));
+  const nr = ucitajNeradne(p.lokacije);
+  const neradni = neradniUPeriodu(od, dodajDane(od, 6), nr.praznici, nr.posebni, lok.naziv);
+  const dani = [];
+  for (let d = od; d < kraj; d = dodajDane(d, 1)) {
+    const dan = danIzDogadjaja_(lok, d, dogadjaji, neradni[d] || '');
+    dani.push({
+      datum: d, neradni: dan.neradni, radno: dan.radno,
+      osobe: dan.osobe.map(x => ({
+        ime: x.ime, termini: x.termini.filter(t => t.status !== 'otkazan').length,
+        nijeDosao: x.termini.filter(t => t.status === 'nije_dosao').length, kartica: x.termini.filter(t => t.kartica).length,
+        popunjeno: x.popunjeno, slobodno: x.slotovi.filter(sl => sl.stanje === 'slobodno').length,
+      })),
+    });
+  }
+  return { od: od, do: dodajDane(od, 6), lokacija: lok.id, dani: dani };
+}
+
+/** Istorija klijenta po broju telefona (iz tabele Termini): posjete, izostanci, otkazivanja, djeca, kartica. */
+function klijentPregled_(o, p, telefon) {
+  const tel = normalizujTelefon(telefon);
+  if (tel.replace(/\D/g, '').length < 10) return null;
+  const tz = CFG.TZ;
+  const danas = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const lokacije = dozvoljeneLokacije_(o, p).map(l => l.naziv);
+  const redovi = citajTermine_(tz).filter(r => r.telefon === tel && (!r.lokacija || lokacije.indexOf(r.lokacija) >= 0));
+  const prosli = redovi.filter(r => r.datum < danas && r.status === 'zakazan');   // prošao i nije označen "nije došao" = bio
+  const djeca = {};
+  redovi.forEach(r => { if (r.dijete) djeca[r.dijete] = true; });
+  return {
+    posjete: prosli.length,
+    zadnja: prosli.length ? prosli.map(r => r.datum).sort().pop() : '',
+    prva: redovi.length ? redovi.map(r => r.datum).sort()[0] : '',
+    nijeDosao: redovi.filter(r => r.status === 'nije_dosao').length,
+    otkazano: redovi.filter(r => r.status === 'otkazan').length,
+    predstoji: redovi.filter(r => r.datum >= danas && r.status === 'zakazan').length,
+    kartica: redovi.some(r => r.kartica),
+    djeca: Object.keys(djeca),
+  };
+}
+
+/** Svi predstojeći termini (do 60 dana) za dozvoljene lokacije, iz kalendara, po vremenu. */
+function predstojeciTermini_(o, p, dana) {
+  const n = Math.min(60, Math.max(1, dana));
+  const tz = CFG.TZ;
+  const sada = new Date();
+  const kraj = Utilities.parseDate(dodajDane(Utilities.formatDate(sada, tz, 'yyyy-MM-dd'), n) + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
+  const lokPoFrizeru = lokPoFrizeru_();
+  const dozvoljene = {};
+  dozvoljeneLokacije_(o, p).forEach(l => { dozvoljene[l.id] = true; });
+  const rez = [];
+  kal_().getEvents(sada, kraj).forEach(ev => {
+    const t = rastaviNaslov(ev.getTitle());
+    if (!t || jeBlokada(t.usluga) || ev.isAllDayEvent()) return;
+    const lok = lokPoFrizeru[t.frizer.toLowerCase()];
+    if (!lok || !dozvoljene[lok.id]) return;
+    const opis = ev.getDescription();
+    rez.push({
+      id: ev.getId(), datum: Utilities.formatDate(ev.getStartTime(), tz, 'yyyy-MM-dd'),
+      vrijeme: Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm'), kraj: Utilities.formatDate(ev.getEndTime(), tz, 'HH:mm'),
+      frizer: t.frizer, lokacija: lok.naziv, usluga: t.usluga, dijete: t.klijent,
+      roditelj: poljeIzOpisa(opis, 'Roditelj'), telefon: izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis),
+      kartica: !!poljeIzOpisa(opis, 'Kartica'), napomena: poljeIzOpisa(opis, 'Napomena'),
+      status: ev.getTag('status') || 'zakazan', izvor: poljeIzOpisa(opis, 'Izvor') || 'kalendar',
+    });
+  });
+  return rez.sort((a, b) => (a.datum + a.vrijeme).localeCompare(b.datum + b.vrijeme));
 }
 
 /* ---------- obavještenja (zvonce u panelu) ---------- */
@@ -1179,6 +1425,9 @@ function zakaziOsoblje_(o, p, z) {
   if (!dijete) return { ok: false, poruka: 'Upišite ime djeteta.' };
   const telefon = cist_(z.telefon, 30) ? normalizujTelefon(z.telefon) : '';
   if (telefon && telefon.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Broj telefona nije ispravan.' };
+  const email = String(z.email || '').trim().toLowerCase().slice(0, 80);
+  if (email && !jeEmail(email)) return { ok: false, poruka: 'Email adresa nije ispravna.' };
+  const kartica = z.kartica === true || /^(da|true|1)$/i.test(String(z.kartica || ''));
 
   const s = uMinute(z.vrijeme), k = s + u.trajanje;
   if (zauzeto_(lok, z.osoba, z.datum).some(([a, b]) => s < b && k > a)) {
@@ -1190,9 +1439,12 @@ function zakaziOsoblje_(o, p, z) {
     new Date(pocetak.getTime() + u.trajanje * 60000), {
       description: 'Roditelj: ' + (cist_(z.roditelj, 60) || '-') + '\nTelefon: ' + (telefon || '-') +
         '\nUzrast: ' + (cist_(z.uzrast, 10) || '-') + '\nNapomena: ' + (cist_(z.napomena, 300) || '-') +
+        '\nKartica: ' + (kartica ? 'da' : '-') + '\nEmail: ' + (email || '-') + '\nKod: ' + napraviKod_() +
         '\nIzvor: telefon - ' + o.ime,
     });
+  if (kartica) ev.setColor(CalendarApp.EventColor.YELLOW);
   potvrdiAkoTreba_(ev, lokPoFrizeru_(), tz);
+  if (email) posaljiEmailTermina_(ev, 'potvrda');
   zapisiObavjestenje_('novi', z.osoba, z.datum, z.vrijeme, u.naziv, dijete, 'panel', o.ime);
   ev.setTag('obav', 'da');
   upisiTermin_(ev);
@@ -1219,6 +1471,7 @@ function promijeniStatus_(o, p, id, status) {
     upisiRed_(red);
     if (ev.getStartTime() > new Date()) {
       zapisiObavjestenje_('otkazan', red[KOL['Frizer']], red[KOL['Datum']], red[KOL['Vrijeme']], red[KOL['Usluga']], red[KOL['Dijete']], 'panel', o.ime);
+      posaljiEmailTermina_(ev, 'otkazan');
     }
     ev.deleteEvent(); // termin se oslobađa za sajt i za kalendar
     return { ok: true, poruka: 'Termin je otkazan, vrijeme je ponovo slobodno.' };
@@ -1237,6 +1490,87 @@ function dopisiNapomenu_(o, p, id, tekst) {
   ev.setDescription(postaviPoljeUOpisu(opis, 'Napomena', (stara ? stara + ' | ' : '') + t + ' (' + o.ime + ')'));
   upisiTermin_(ev);
   return { ok: true, poruka: 'Napomena je dopisana.' };
+}
+
+/** Pomjeranje termina: novi dan i sat (po potrebi drugi frizer iste lokacije), podaci ostaju, roditelj dobija email. */
+function pomjeriTermin_(o, p, z) {
+  const ev = terminZaIzmjenu_(o, p, z.id);
+  provjeriDatum_(z.datum);
+  if (!/^\d{2}:\d{2}$/.test(String(z.vrijeme || ''))) return { ok: false, poruka: 'Neispravno vrijeme.' };
+  const n = rastaviNaslov(ev.getTitle());
+  const lok = lokPoFrizeru_()[n.frizer.toLowerCase()];
+  const osoba = cist_(z.osoba, 40) || n.frizer;
+  if (lok.osobe.indexOf(osoba) < 0) return { ok: false, poruka: 'Nepoznat frizer.' };
+  const tz = CFG.TZ;
+  const trajanje = Math.round((ev.getEndTime() - ev.getStartTime()) / 60000);
+  const s = uMinute(z.vrijeme), k = s + trajanje;
+  const od = Utilities.parseDate(z.datum + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
+  const sukob = kal_().getEvents(od, new Date(od.getTime() + 864e5)).some(x => {
+    if (x.getId() === ev.getId()) return false;
+    const t = rastaviNaslov(x.getTitle());
+    if (!t || t.frizer.toLowerCase() !== osoba.toLowerCase()) return false;
+    const xs = x.isAllDayEvent() ? 0 : Math.max(0, (x.getStartTime() - od) / 60000);
+    const xk = x.isAllDayEvent() ? 1440 : Math.min(1440, (x.getEndTime() - od) / 60000);
+    return s < xk && k > xs;
+  });
+  if (sukob) return { ok: false, poruka: 'To vrijeme je zauzeto. Izaberite drugo.' };
+  const staro = Utilities.formatDate(ev.getStartTime(), tz, 'dd.MM.') + ' ' + Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm') +
+    (osoba !== n.frizer ? ' (' + n.frizer + ')' : '');
+  const pocetak = Utilities.parseDate(z.datum + ' ' + z.vrijeme, tz, 'yyyy-MM-dd HH:mm');
+  ev.setTime(pocetak, new Date(pocetak.getTime() + trajanje * 60000));
+  if (osoba !== n.frizer) ev.setTitle(osoba + ' - ' + n.usluga + (n.klijent ? ' (' + n.klijent + ')' : ''));
+  ev.deleteTag('podsjetnik'); ev.deleteTag('podsjetnik_email');   // novi dan = novi podsjetnik
+  const opis = ev.getDescription();
+  const stara = poljeIzOpisa(opis, 'Napomena');
+  ev.setDescription(postaviPoljeUOpisu(opis, 'Napomena', (stara ? stara + ' | ' : '') + 'pomjeren sa ' + staro + ' (' + o.ime + ')'));
+  zapisiObavjestenje_('pomjeren', osoba, z.datum, z.vrijeme, n.usluga, n.klijent, 'panel', o.ime);
+  posaljiEmailTermina_(ev, 'pomjeren');
+  upisiTermin_(ev);
+  const [g, m, d] = z.datum.split('-');
+  return { ok: true, poruka: 'Pomjereno na ' + d + '.' + m + '. u ' + z.vrijeme + (osoba !== n.frizer ? ', ' + osoba : '') + '.' };
+}
+
+/** Pauza ili "ne radi" iz panela: događaj "Frizer - Pauza" (sajt odmah prestaje da nudi to vrijeme). */
+function upisiBlokadu_(o, p, z) {
+  const lok = dozvoljenaLok_(o, p, z.lok);
+  const osoba = cist_(z.osoba, 40);
+  if (lok.osobe.indexOf(osoba) < 0) return { ok: false, poruka: 'Nepoznat frizer.' };
+  provjeriDatum_(z.datum);
+  const cijeli = z.cijeliDan === true || /^(da|true|1)$/i.test(String(z.cijeliDan || ''));
+  const naziv = cijeli ? 'Ne radi' : /^ne radi/i.test(String(z.naziv || '')) ? 'Ne radi' : 'Pauza';
+  const tz = CFG.TZ;
+  const od = Utilities.parseDate(z.datum + ' 00:00', tz, 'yyyy-MM-dd HH:mm');
+  let s = 0, k = 1440;
+  if (!cijeli) {
+    if (!/^\d{2}:\d{2}$/.test(String(z.od || '')) || !/^\d{2}:\d{2}$/.test(String(z.do || ''))) return { ok: false, poruka: 'Neispravno vrijeme.' };
+    s = uMinute(z.od); k = uMinute(z.do);
+    if (k <= s) return { ok: false, poruka: 'Kraj mora biti poslije početka.' };
+  }
+  const sukob = kal_().getEvents(od, new Date(od.getTime() + 864e5)).find(x => {
+    const t = rastaviNaslov(x.getTitle());
+    if (!t || jeBlokada(t.usluga) || x.isAllDayEvent() || t.frizer.toLowerCase() !== osoba.toLowerCase()) return false;
+    const xs = Math.max(0, (x.getStartTime() - od) / 60000), xk = Math.min(1440, (x.getEndTime() - od) / 60000);
+    return s < xk && k > xs;
+  });
+  if (sukob) {
+    return { ok: false, poruka: 'U tom vremenu već ima termin (' + (rastaviNaslov(sukob.getTitle()).klijent || 'bez imena') + '). Prvo ga pomjerite ili otkažite.' };
+  }
+  const naslov = osoba + ' - ' + naziv;
+  const ev = cijeli ? kal_().createAllDayEvent(naslov, od)
+    : kal_().createEvent(naslov, new Date(od.getTime() + s * 60000), new Date(od.getTime() + k * 60000));
+  ev.setDescription('Upisano u panelu: ' + o.ime);
+  return { ok: true, poruka: naslov + ' upisano. Sajt više ne nudi to vrijeme.', id: ev.getId() };
+}
+
+function obrisiBlokadu_(o, p, id) {
+  const ev = kal_().getEventById(String(id || ''));
+  if (!ev) return { ok: false, poruka: 'Pauza nije pronađena (možda je već uklonjena).' };
+  const n = rastaviNaslov(ev.getTitle());
+  if (!n || !(ev.isAllDayEvent() || jeBlokada(n.usluga))) return { ok: false, poruka: 'Ovo nije pauza.' };
+  const lok = lokPoFrizeru_()[n.frizer.toLowerCase()];
+  if (!lok || !dozvoljeneLokacije_(o, p).some(l => l.id === lok.id)) return { ok: false, poruka: 'Nemate pristup.' };
+  ev.deleteEvent();
+  return { ok: true, poruka: 'Uklonjeno, vrijeme je ponovo slobodno.' };
 }
 
 /* ---------- podešavanja iz aplikacije (samo vlasnik) ---------- */
@@ -1347,7 +1681,8 @@ function citajTermine_(tz) {
     kraj: vrijemeTekst(r[KOL['Kraj']], tz), lokacija: String(r[KOL['Lokacija']] || ''),
     frizer: String(r[KOL['Frizer']] || ''), usluga: String(r[KOL['Usluga']] || ''),
     telefon: telefonIzTabele(r[KOL['Telefon']]), izvor: String(r[KOL['Izvor']] || ''),
-    status: String(r[KOL['Status']] || 'zakazan'),
+    status: String(r[KOL['Status']] || 'zakazan'), dijete: String(r[KOL['Dijete']] || ''),
+    roditelj: String(r[KOL['Roditelj']] || ''), kartica: String(r[KOL['Kartica']] || '').toLowerCase() === 'da',
   })).filter(r => r.datum);
 }
 
@@ -1458,7 +1793,7 @@ function rasporedDana(radno, korak, termini, blokade) {
       else stanje = 'slobodno';
       const slot = { vrijeme: uVrijeme(s), stanje: stanje };
       if (pocinju.length) slot.termini = pocinju;
-      if (stanje === 'blokada') slot.naziv = blok.naziv;
+      if (stanje === 'blokada') { slot.naziv = blok.naziv; if (blok.id) slot.id = blok.id; }
       slotovi.push(slot);
     }
   }
@@ -1566,4 +1901,3 @@ function izvjestajHtml(iz) {
     '<b>Odakle termini:</b> ' + (iz.poIzvoru.map(x => x.naziv + ' ' + x.broj).join(', ') || '-') + '</p>' +
     '<p style="color:#888">Detalji: grasaksalon.me/panel > Izvještaj</p></div>';
 }
-

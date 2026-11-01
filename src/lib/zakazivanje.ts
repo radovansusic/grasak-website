@@ -36,6 +36,14 @@ export interface Zahtjev {
   roditelj: string
   telefon: string
   napomena: string
+  email: string      // nije obavezno: potvrda i podsjetnik emailom
+  kartica: boolean   // kartica Veseli Grašak (15% popusta): termin druge boje u panelu
+}
+/** Odgovor na zakazivanje: id i kod služe za otkazivanje preko linka (starija skripta ih ne vraća). */
+export interface Zakazano { ok: boolean; poruka: string; id?: string; kod?: string; email?: boolean }
+export interface TerminRoditelja {
+  datum: string; vrijeme: string; osoba: string; usluga: string; dijete: string
+  lokacija: string; adresa: string; telefonSalona: string; prosao: boolean; status: string
 }
 
 async function get<T>(params: Record<string, string>): Promise<T> {
@@ -57,7 +65,7 @@ export const ucitajPeriod = (lok: string, osoba: string, usluga: string, dana: n
     return r.dani
   })
 
-export async function zakazi(z: Zahtjev): Promise<{ ok: boolean; poruka: string }> {
+export async function zakazi(z: Zahtjev): Promise<Zakazano> {
   // text/plain izbjegava CORS preflight prema Apps Script-u
   const r = await fetch(API_URL, {
     method: 'POST',
@@ -65,6 +73,53 @@ export async function zakazi(z: Zahtjev): Promise<{ ok: boolean; poruka: string 
     body: JSON.stringify({ akcija: 'zakazi', ...z }),
   })
   return r.json()
+}
+
+/** Termin roditelja po linku iz potvrde (id + kod). */
+export const ucitajTermin = (id: string, kod: string) => get<TerminRoditelja>({ akcija: 'termin', id, kod })
+
+export async function otkaziTermin(id: string, kod: string): Promise<{ ok: boolean; poruka: string }> {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ akcija: 'otkazi', id, kod }),
+  })
+  return r.json()
+}
+
+export function linkOtkazivanja(id: string, kod: string): string {
+  return `${window.location.origin}/zakazi?otkazi=${encodeURIComponent(id)}&kod=${encodeURIComponent(kod)}`
+}
+
+const dvocifreno = (n: number) => String(n).padStart(2, '0')
+
+/** Termin kao .ics fajl za kalendar roditelja (podsjetnik dan ranije i 2 sata prije), u vremenu salona. */
+export function napraviIcs(t: { id?: string; datum: string; vrijeme: string; trajanje: number; naslov: string; mjesto: string; opis: string }): string {
+  const [g, m, d] = t.datum.split('-').map(Number)
+  const [h, mi] = t.vrijeme.split(':').map(Number)
+  const pocetak = new Date(g, m - 1, d, h, mi)
+  const kraj = new Date(pocetak.getTime() + t.trajanje * 60000)
+  const lokalno = (x: Date) => `${x.getFullYear()}${dvocifreno(x.getMonth() + 1)}${dvocifreno(x.getDate())}T${dvocifreno(x.getHours())}${dvocifreno(x.getMinutes())}00`
+  const sada = new Date()
+  const utc = `${sada.getUTCFullYear()}${dvocifreno(sada.getUTCMonth() + 1)}${dvocifreno(sada.getUTCDate())}T${dvocifreno(sada.getUTCHours())}${dvocifreno(sada.getUTCMinutes())}00Z`
+  const esc = (s: string) => s.replace(/\\/g, '\\\\').replace(/[,;]/g, (c) => '\\' + c).replace(/\n/g, '\\n')
+  return [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Grasak//Zakazivanje//SR', 'BEGIN:VEVENT',
+    `UID:${t.id || 'grasak-' + Date.now() + '@grasaksalon.me'}`, `DTSTAMP:${utc}`,
+    `DTSTART;TZID=Europe/Podgorica:${lokalno(pocetak)}`, `DTEND;TZID=Europe/Podgorica:${lokalno(kraj)}`,
+    `SUMMARY:${esc(t.naslov)}`, `LOCATION:${esc(t.mjesto)}`, `DESCRIPTION:${esc(t.opis)}`,
+    'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:Grašak', 'END:VALARM',
+    'BEGIN:VALARM', 'TRIGGER:-PT2H', 'ACTION:DISPLAY', 'DESCRIPTION:Grašak', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ].join('\r\n')
+}
+
+export function preuzmiIcs(ics: string, ime = 'grasak-termin.ics') {
+  const a = document.createElement('a')
+  a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar;charset=utf-8' }))
+  a.download = ime
+  a.click()
+  URL.revokeObjectURL(a.href)
 }
 
 export function isoDatum(d: Date): string {

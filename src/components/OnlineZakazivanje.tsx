@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarCheck, Loader2, PartyPopper } from 'lucide-react'
+import { CalendarCheck, CalendarPlus, Check, Copy, Loader2, PartyPopper } from 'lucide-react'
 import { useLang } from '@/i18n/LanguageContext'
 import { t as prevodi } from '@/i18n/translations'
 import { sendBookingEmail } from '@/lib/booking'
 import MjesecniKalendar, { type StanjeDana } from '@/components/MjesecniKalendar'
 import {
-  isoDatum, ucitajKonfig, ucitajPeriod, ucitajSlotove, zakazi,
+  isoDatum, linkOtkazivanja, napraviIcs, preuzmiIcs, ucitajKonfig, ucitajPeriod, ucitajSlotove, zakazi,
   type Konfig, type Lokacija, type Slot, type Usluga,
 } from '@/lib/zakazivanje'
+
+/** Poslije zakazivanja: podaci za ekran uspjeha, kalendar roditelja i link za otkazivanje. */
+interface Uspjeh { tekst: string; datum: string; vrijeme: string; osoba: string; usluga: Usluga; lok: Lokacija; id?: string; kod?: string; email: string }
 
 /** Online zakazivanje: lokacija > frizer > usluga > dan (mjesečni kalendar) > termin (30 min) > podaci.
  *  Termin se upisuje u kalendar salona; salon dobija email i obavještenje u panelu. */
@@ -47,7 +50,8 @@ export default function OnlineZakazivanje() {
   const [osvjezenje, setOsvjezenje] = useState(0)
   const [izbor, setIzbor] = useState({ kljuc: '', vrijeme: '' })
   const [salje, setSalje] = useState(false)
-  const [uspjeh, setUspjeh] = useState('')
+  const [uspjeh, setUspjeh] = useState<Uspjeh | null>(null)
+  const [kopirano, setKopirano] = useState(false)
   const [poruka, setPoruka] = useState('')
   const formaRef = useRef<HTMLDivElement>(null)
   const terminiRef = useRef<HTMLDivElement>(null)
@@ -107,6 +111,7 @@ export default function OnlineZakazivanje() {
         lok: lok.id, osoba, usluga: usluga.id, datum, vrijeme,
         dijete: polje('dijete'), uzrast: polje('uzrast'), roditelj: polje('roditelj'),
         telefon: polje('telefon'), napomena: polje('napomena'),
+        email: polje('email'), kartica: f.get('kartica') === 'on',
       })
       if (r.ok) {
         const [, m, d] = datum.split('-')
@@ -115,8 +120,10 @@ export default function OnlineZakazivanje() {
           Termin: `${d}.${m}. u ${vrijeme}`, Lokacija: lok.naziv, Frizer: osoba, Usluga: usluga.naziv,
           Dijete: `${polje('dijete')} (${polje('uzrast') || '-'} god.)`, Roditelj: polje('roditelj'),
           Telefon: polje('telefon'), Napomena: polje('napomena') || '-', Izvor: 'Sajt - online zakazivanje (u kalendaru)',
+          Email: polje('email') || '-', Kartica: f.get('kartica') === 'on' ? 'Veseli Grašak' : '-',
         })
-        setUspjeh(tr('zakazi.when', { datum: `${d}.${m}.`, vrijeme, osoba }))
+        setUspjeh({ tekst: tr('zakazi.when', { datum: `${d}.${m}.`, vrijeme, osoba }), datum, vrijeme, osoba, usluga, lok, id: r.id, kod: r.kod, email: polje('email') })
+        setKopirano(false)
         window.scrollTo({ top: 0, behavior: 'smooth' })
         setOsvjezenje((x) => x + 1) // zauzeti termin nestaje i za sljedeće zakazivanje
       } else {
@@ -133,14 +140,38 @@ export default function OnlineZakazivanje() {
   }
 
   if (uspjeh) {
+    const link = uspjeh.id && uspjeh.kod ? linkOtkazivanja(uspjeh.id, uspjeh.kod) : ''
+    const uKalendar = () => preuzmiIcs(napraviIcs({
+      id: uspjeh.id, datum: uspjeh.datum, vrijeme: uspjeh.vrijeme, trajanje: uspjeh.usluga.trajanje,
+      naslov: `Grašak: ${uspjeh.usluga.naziv}`, mjesto: [uspjeh.lok.naziv, uspjeh.lok.adresa].filter(Boolean).join(', '),
+      opis: `${tr('zakazi.stylist')}: ${uspjeh.osoba}` + (link ? `\n${tr('zakazi.cancelLink')}: ${link}` : ''),
+    }))
+    const kopiraj = () => { navigator.clipboard?.writeText(link).then(() => setKopirano(true)).catch(() => {}) }
     return (
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="rounded-3xl bg-white p-10 text-center shadow-xl shadow-ink/10">
+        className="rounded-3xl bg-white p-8 text-center shadow-xl shadow-ink/10 sm:p-10">
         <PartyPopper className="mx-auto h-14 w-14 text-coral" />
         <h2 className="mt-4 font-display text-3xl font-extrabold text-ink">{tr('zakazi.okTitle')}</h2>
-        <p className="mt-2 text-lg text-ink/80">{uspjeh}</p>
+        <p className="mt-2 text-lg text-ink/80">{uspjeh.tekst}</p>
         <p className="mt-1 text-ink/60">{tr('zakazi.okText')}</p>
-        <button onClick={() => { setUspjeh(''); setDatum(''); }} className="mt-6 rounded-full bg-grass px-6 py-3 font-bold text-white">
+        {uspjeh.email && <p className="mt-2 text-sm font-bold text-grass-deep">{tr('zakazi.okEmail', { email: uspjeh.email })}</p>}
+        <button onClick={uKalendar} className="mt-5 inline-flex items-center gap-2 rounded-full border-2 border-grass px-5 py-2.5 font-bold text-grass-deep">
+          <CalendarPlus className="h-5 w-5" /> {tr('zakazi.addCal')}
+        </button>
+        <p className="mt-1 text-xs text-ink/50">{tr('zakazi.addCalHint')}</p>
+        {link && (
+          <div className="mt-5 rounded-2xl bg-grass-tint p-4 text-left">
+            <p className="font-bold text-ink">{tr('zakazi.cancelLinkTitle')}</p>
+            <p className="mt-1 text-sm text-ink/70">{tr('zakazi.cancelKeep')}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <a href={link} className="break-all text-sm font-bold text-grass-deep underline">{tr('zakazi.cancelLink')}</a>
+              <button type="button" onClick={kopiraj} className="inline-flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-ink shadow-sm">
+                {kopirano ? <Check className="h-3.5 w-3.5 text-grass" /> : <Copy className="h-3.5 w-3.5" />} {kopirano ? tr('zakazi.copied') : tr('zakazi.copyLink')}
+              </button>
+            </div>
+          </div>
+        )}
+        <button onClick={() => { setUspjeh(null); setDatum(''); }} className="mt-6 rounded-full bg-grass px-6 py-3 font-bold text-white">
           {tr('zakazi.again')}
         </button>
       </motion.div>
@@ -243,6 +274,10 @@ export default function OnlineZakazivanje() {
               <input name="uzrast" maxLength={10} inputMode="numeric" placeholder={tr('zakazi.age')} className={inputCls} />
               <input name="roditelj" required maxLength={60} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
               <input name="telefon" required type="tel" inputMode="tel" placeholder="069 123 456" autoComplete="tel" className={inputCls} />
+              <input name="email" type="email" inputMode="email" maxLength={80} placeholder={tr('zakazi.email')} autoComplete="email" className={inputCls + ' sm:col-span-2'} />
+              <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-sun bg-sun/30 px-4 py-3 font-bold text-ink sm:col-span-2">
+                <input name="kartica" type="checkbox" className="h-5 w-5 accent-grass" /> {tr('zakazi.loyalty')}
+              </label>
               <textarea name="napomena" maxLength={300} rows={2} placeholder={tr('zakazi.note')} className={inputCls + ' sm:col-span-2'} />
               <p className="text-xs text-ink/50 sm:col-span-2">{tr('zakazi.privacy')}</p>
               {poruka && <p className="rounded-xl bg-coral/10 p-3 text-ink sm:col-span-2">{poruka}</p>}

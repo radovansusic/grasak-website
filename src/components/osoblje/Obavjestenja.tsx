@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Bell, BellRing, CalendarPlus, CalendarX, X } from 'lucide-react'
+import { Bell, BellRing, CalendarClock, CalendarPlus, CalendarX, X } from 'lucide-react'
 import { osoblje, type Obavjestenje, type Pristup } from '@/lib/osoblje'
 
 const DANI = ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub']
@@ -25,12 +25,17 @@ function prije(kad: string): string {
   return `${d.getDate()}.${d.getMonth() + 1}.`
 }
 function ko(o: Obavjestenje): string {
-  if (o.izvor === 'sajt') return 'zakazao roditelj na sajtu'
+  if (o.izvor === 'sajt') return o.tip === 'otkazan' ? 'otkazao roditelj preko sajta' : 'zakazao roditelj na sajtu'
   if (o.izvor === 'kalendar') return 'Google kalendar'
-  return (o.tip === 'otkazan' ? 'otkazao/la: ' : 'upisao/la: ') + o.ko
+  return (o.tip === 'otkazan' ? 'otkazao/la: ' : o.tip === 'pomjeren' ? 'pomjerio/la: ' : 'upisao/la: ') + o.ko
 }
 function naslovObavjestenja(o: Obavjestenje): string {
-  return (o.tip === 'otkazan' ? 'Otkazan termin' : 'Novi termin') + ' · ' + o.frizer
+  return (o.tip === 'otkazan' ? 'Otkazan termin' : o.tip === 'pomjeren' ? 'Pomjeren termin' : 'Novi termin') + ' · ' + o.frizer
+}
+function Ikona({ o, cls }: { o: Obavjestenje; cls: string }) {
+  if (o.tip === 'otkazan') return <CalendarX className={cls + ' text-coral'} />
+  if (o.tip === 'pomjeren') return <CalendarClock className={cls + ' text-sky'} />
+  return <CalendarPlus className={cls + ' text-grass'} />
 }
 function tekstObavjestenja(o: Obavjestenje): string {
   return [kadaTermin(o), o.dijete || 'bez imena', o.usluga].filter(Boolean).join(' · ')
@@ -130,7 +135,7 @@ export default function Zvono({ pristup, onNovo, onOtvoriDan }: {
 
       {traka && (
         <button onClick={otvori} className="fixed inset-x-3 top-20 z-50 mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-white p-3 text-left text-ink shadow-2xl">
-          {traka.tip === 'otkazan' ? <CalendarX className="mt-0.5 h-6 w-6 shrink-0 text-coral" /> : <CalendarPlus className="mt-0.5 h-6 w-6 shrink-0 text-grass" />}
+          <Ikona o={traka} cls="mt-0.5 h-6 w-6 shrink-0" />
           <span className="min-w-0">
             <span className="block font-bold">{naslovObavjestenja(traka)}</span>
             <span className="block text-sm text-ink/70">{tekstObavjestenja(traka)}</span>
@@ -156,8 +161,8 @@ export default function Zvono({ pristup, onNovo, onOtvoriDan }: {
               {lista.map((o) => (
                 <li key={o.kad}>
                   <button onClick={() => { setOtvoreno(false); if (jeDatum(o.datum)) onOtvoriDan(o.datum) }}
-                    className={'flex w-full items-start gap-3 rounded-2xl p-3 text-left ' + (o.tip === 'otkazan' ? 'bg-coral/10' : 'bg-grass-tint')}>
-                    {o.tip === 'otkazan' ? <CalendarX className="mt-0.5 h-5 w-5 shrink-0 text-coral" /> : <CalendarPlus className="mt-0.5 h-5 w-5 shrink-0 text-grass" />}
+                    className={'flex w-full items-start gap-3 rounded-2xl p-3 text-left ' + (o.tip === 'otkazan' ? 'bg-coral/10' : o.tip === 'pomjeren' ? 'bg-sky/20' : 'bg-grass-tint')}>
+                    <Ikona o={o} cls="mt-0.5 h-5 w-5 shrink-0" />
                     <span className="min-w-0 flex-1">
                       <span className="block font-bold">{naslovObavjestenja(o)}</span>
                       <span className="block text-sm">{tekstObavjestenja(o)}</span>
