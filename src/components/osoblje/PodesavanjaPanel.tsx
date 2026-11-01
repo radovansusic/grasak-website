@@ -194,7 +194,7 @@ export default function PodesavanjaPanel({ pristup, onSacuvano, onOdjava }: {
         })}
       </Sekcija>
 
-      <Sekcija naslov="Osoblje i šifre" dodaj={() => promijeni({ osoblje: [...s.osoblje, { red: null, ime: '', uloga: 'frizer', lokacija: naziviLok[0] || '', imaSifru: false, sifra: '', email: '', aktivan: true }] })} dodajTekst="Dodaj osobu">
+      <Sekcija naslov="Tim i šifre" dodaj={() => promijeni({ osoblje: [...s.osoblje, { red: null, ime: '', uloga: 'frizer', lokacija: naziviLok[0] || '', imaSifru: false, sifra: '', email: '', aktivan: true }] })} dodajTekst="Dodaj osobu">
         {s.osoblje.map((o, i) => {
           const izmijeni = (n: Partial<OsobaPod>) => promijeni({ osoblje: s.osoblje.map((x, j) => (j === i ? { ...x, ...n } : x)) })
           const bezSifre = !o.imaSifru && !o.sifra

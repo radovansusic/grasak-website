@@ -1,11 +1,11 @@
-// Grašak - zakazivanje, vaučeri i panel za osoblje. Sve u jednom fajlu: zalijepiti u Apps Script (Extensions > Apps Script).
+// Grašak - zakazivanje, vaučeri i admin panel. Sve u jednom fajlu: zalijepiti u Apps Script (Extensions > Apps Script).
 // Izvor: Kod.gs + Podesavanja.gs + Api.gs + Osoblje.gs
 
 /**
  * Grašak - zakazivanje: Google Calendar + Sheets + SMS podsjetnici.
  *
  * Kako radi:
- * - Roditelji zakazuju na sajtu (grasaksalon.me/zakazi), osoblje u panelu (grasaksalon.me/osoblje).
+ * - Roditelji zakazuju na sajtu (grasaksalon.me/zakazi), osoblje u panelu (grasaksalon.me/panel).
  * - Svi termini su događaji u kalendaru salona; frizeri ga vide i u svom Google Calendar-u.
  * - Tabela "Termini" (Drive) je evidencija svih termina: iz nje se prave izvještaji.
  * - SMS potvrda za novi termin i SMS podsjetnik dan ranije.
@@ -335,7 +335,7 @@ function bezDijakritika(s) {
  * List "Praznici": Praznik | Datum (dan.mjesec.) | Dana | Neradni (DA/NE) - svake godine; unaprijed upisani državni praznici CG
  * List "Neradni dani": Datum | Razlog | Lokacija (prazno = sve) - dani koje vlasnik proglasi neradnim
  * List "Osoblje":  Ime | Uloga (vlasnik/admin/frizer) | Lokacija (prazno = sve) | Šifra | Email | Aktivan
- *   Prijava u panel grasaksalon.me/osoblje: ime + šifra (najmanje 8 znakova, slova i brojevi).
+ *   Prijava u panel grasaksalon.me/panel: ime + šifra (najmanje 8 znakova, slova i brojevi).
  *
  * Nova lokacija = novi red u "Lokacije". Novi frizer = novi red u "Frizeri".
  * Promjena se vidi u aplikaciji odmah, bez ponovnog objavljivanja.
@@ -426,7 +426,7 @@ function provjeriPodesavanja() {
   const linije = p.lokacije.map(l => '• ' + l.naziv + ': ' + (l.osobe.join(', ') || 'NEMA FRIZERA') + ' | ' +
     [1, 2, 3, 4, 5, 6, 0].map(d => dani[d] + ' ' + (l.radno[d] ? l.radno[d].join('-') : 'ne radi')).join(', '));
   linije.push('', 'Usluge: ' + p.usluge.map(u => u.naziv + ' ' + u.trajanje + ' min').join(', '));
-  linije.push('', 'Osoblje (panel grasaksalon.me/osoblje): ' + (os.osoblje.map(o => o.ime + ' - ' + o.uloga +
+  linije.push('', 'Osoblje (panel grasaksalon.me/panel): ' + (os.osoblje.map(o => o.ime + ' - ' + o.uloga +
     (o.lokacijaId ? ', ' + o.lokacijaNaziv : ', sve lokacije')).join('; ') || 'NIKO'));
   if (os.bezPina.length) linije.push('Bez šifre (ne mogu u panel): ' + os.bezPina.join(', '));
   const danas = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');
@@ -828,7 +828,7 @@ function generisiSlotove(radno, korak, trajanje, zauzeti, najranije) {
 
 
 /**
- * Grašak - panel za osoblje (grasaksalon.me/osoblje). Prijava: ime + šifra iz lista "Osoblje".
+ * Grašak - admin panel (grasaksalon.me/panel). Prijava: ime + šifra iz lista "Osoblje".
  *
  * vlasnik (Kristina): sve lokacije, pregled dana, upis termina, statusi, izvještaji, sedmični email.
  * admin:              isto, za sve lokacije ili samo svoju (kolona Lokacija).
@@ -892,7 +892,7 @@ function upozoriVlasnika_(lokacije) {
   try {
     ucitajOsoblje(lokacije).osoblje.filter(x => x.uloga === 'vlasnik' && /@/.test(x.email)).forEach(x => {
       MailApp.sendEmail(x.email, 'Grašak: zaključana prijava u panel',
-        'U posljednjih 15 minuta bilo je ' + PIN_MAX_GRESAKA + ' pogrešnih prijava u panel za osoblje (grasaksalon.me/osoblje). ' +
+        'U posljednjih 15 minuta bilo je ' + PIN_MAX_GRESAKA + ' pogrešnih prijava u admin panel (grasaksalon.me/panel). ' +
         'Prijava je zaključana 15 minuta. Ako to niste bili vi ili vaše osoblje, promijenite šifre u Podešavanjima.');
     });
   } catch (e) { console.log('Upozorenje nije poslato: ' + e); }
@@ -1339,6 +1339,6 @@ function izvjestajHtml(iz) {
     '</table>' +
     '<p><b>Usluge:</b> ' + (iz.poUsluzi.map(x => x.naziv + ' ' + x.broj).join(', ') || '-') + '<br>' +
     '<b>Odakle termini:</b> ' + (iz.poIzvoru.map(x => x.naziv + ' ' + x.broj).join(', ') || '-') + '</p>' +
-    '<p style="color:#888">Detalji: grasaksalon.me/osoblje > Izvještaj</p></div>';
+    '<p style="color:#888">Detalji: grasaksalon.me/panel > Izvještaj</p></div>';
 }
 

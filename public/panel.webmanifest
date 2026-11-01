@@ -1,7 +1,7 @@
 {
-  "name": "Grašak osoblje",
-  "short_name": "Grašak tim",
-  "start_url": "/osoblje",
+  "name": "Grašak panel",
+  "short_name": "Grašak panel",
+  "start_url": "/panel",
   "scope": "/",
   "display": "standalone",
   "background_color": "#FFFFFF",

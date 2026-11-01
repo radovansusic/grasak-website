@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router'
+import { Routes, Route, Navigate } from 'react-router'
 import Layout from './components/Layout'
 import Home from './pages/Home'
 import Usluge from './pages/Usluge'
@@ -12,7 +12,9 @@ import Osoblje from './pages/Osoblje'
 export default function App() {
   return (
     <Routes>
-      <Route path="osoblje" element={<Osoblje />} />
+      <Route path="panel" element={<Osoblje />} />
+      <Route path="admin" element={<Navigate to="/panel" replace />} />
+      <Route path="osoblje" element={<Navigate to="/panel" replace />} />
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="usluge" element={<Usluge />} />

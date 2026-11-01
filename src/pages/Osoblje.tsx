@@ -34,7 +34,7 @@ function lijepDatum(iso: string): string {
   return `${DANI[dt.getDay()]}, ${d}.${m}.`
 }
 
-/** Stranica za osoblje: grasaksalon.me/osoblje. Instalira se kao posebna aplikacija "Grašak osoblje". */
+/** Admin panel salona: grasaksalon.me/panel. Instalira se kao posebna aplikacija "Grašak panel". */
 export default function Osoblje() {
   const [pristup, setPristup] = useState<Pristup | null>(citajPristup)
   const [profil, setProfil] = useState<Profil | null>(null)
@@ -43,10 +43,10 @@ export default function Osoblje() {
   const [tab, setTab] = useState<'dan' | 'izvjestaj' | 'podesavanja'>('dan')
 
   useEffect(() => {
-    document.title = 'Grašak osoblje'
+    document.title = 'Grašak panel'
     const link = document.querySelector('link[rel="manifest"]')
     const stari = link?.getAttribute('href')
-    link?.setAttribute('href', '/osoblje.webmanifest')
+    link?.setAttribute('href', '/panel.webmanifest')
     let robots = document.querySelector('meta[name="robots"]')
     const dodat = !robots
     if (!robots) { robots = document.createElement('meta'); robots.setAttribute('name', 'robots'); document.head.appendChild(robots) }
@@ -115,7 +115,7 @@ function Okvir({ children, desno, podnaslov }: { children: ReactNode; desno?: Re
         <div className="mx-auto flex max-w-5xl items-center gap-3">
           <img src="/brand/grasak-znak.svg" alt="" className="h-10 w-10 rounded-full bg-white p-0.5" />
           <div className="flex-1 leading-tight">
-            <div className="font-display text-lg font-extrabold">Grašak osoblje</div>
+            <div className="font-display text-lg font-extrabold">Grašak panel</div>
             {podnaslov && <div className="text-xs opacity-80">{podnaslov}</div>}
           </div>
           {desno}
@@ -149,7 +149,7 @@ function Prijava({ onPrijava, greska, cekam }: { onPrijava: (p: Pristup) => Prom
   return (
     <form onSubmit={posalji} className="mx-auto mt-10 max-w-sm rounded-3xl bg-white p-6 text-center shadow-xl shadow-ink/10">
       <img src="/brand/grasak-logo-zuta.svg" alt="Grašak" className="mx-auto h-28 w-28" />
-      <h1 className="mt-3 font-display text-2xl font-extrabold text-ink">Prijava za osoblje</h1>
+      <h1 className="mt-3 font-display text-2xl font-extrabold text-ink">Prijava u panel</h1>
       <p className="mt-1 text-sm text-ink/60">Ime i lična šifra.</p>
       <input name="ime" value={ime} onChange={(e) => setIme(e.target.value)} autoComplete="username" placeholder="Ime (npr. Nikola)"
         autoCapitalize="words" autoFocus className={polje} />
