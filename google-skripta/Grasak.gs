@@ -33,8 +33,10 @@ const STATUSI = ['zakazan', 'nije_dosao', 'otkazan'];
 /* ---------- meni i postavljanje ---------- */
 
 function onOpen() {
+  try { tabela_(); } catch (e) { /* zapamti ID ove tabele za sajt i panel */ }
   SpreadsheetApp.getUi().createMenu('Grasak')
     .addItem('1. Postavi (i poslije svake nove verzije koda)', 'postavi')
+    .addItem('Postavi sifru za panel', 'postaviSifruDijalog')
     .addItem('Provjeri podesavanja', 'provjeriPodesavanja')
     .addItem('Osvjezi termine sada', 'sinhronizuj')
     .addItem('Posalji izvjestaj za proslu sedmicu', 'posaljiSedmicniIzvjestaj')
@@ -56,6 +58,40 @@ function postavi() {
   ScriptApp.newTrigger('posaljiPodsjetnike').timeBased().everyDays(1).atHour(CFG.SAT_PODSJETNIKA).inTimezone(CFG.TZ).create();
   ScriptApp.newTrigger('posaljiSedmicniIzvjestaj').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).inTimezone(CFG.TZ).create();
   sinhronizuj();
+}
+
+/** Meni: ime + šifra -> upis u list Osoblje (kolona Šifra), uz provjeru da osoba može u panel. */
+function postaviSifruDijalog() {
+  const ui = SpreadsheetApp.getUi();
+  const r1 = ui.prompt('Šifra za panel', 'Ime osobe (kako će se prijavljivati, npr. Kristina):', ui.ButtonSet.OK_CANCEL);
+  if (r1.getSelectedButton() !== ui.Button.OK) return;
+  const ime = cistTekst(r1.getResponseText(), 40);
+  if (!ime) return;
+  const r2 = ui.prompt('Šifra za panel', 'Nova šifra za ' + ime + ' (najmanje 8 znakova):', ui.ButtonSet.OK_CANCEL);
+  if (r2.getSelectedButton() !== ui.Button.OK) return;
+  const sifra = r2.getResponseText().trim();
+  const greska = provjeriSifru(sifra);
+  if (greska) { ui.alert('Nije sačuvano: ' + greska + '.'); return; }
+
+  const ss = tabela_();
+  if (!ss.getSheetByName(LIST_OSOBLJE)) kreirajListovePodesavanja_();
+  const sh = ss.getSheetByName(LIST_OSOBLJE);
+  sh.getRange('D:D').setNumberFormat('@');
+  const vrijednosti = sh.getDataRange().getValues();
+  const i = vrijednosti.findIndex((r, k) => k > 0 && String(r[0]).trim().toLowerCase() === ime.toLowerCase());
+  if (i > 0) {
+    sh.getRange(i + 1, 4).setValue(sifra);
+    sh.getRange(i + 1, 6).setValue('DA');
+  } else {
+    const r3 = ui.prompt('Nova osoba', ime + ' nije u listu Osoblje. Uloga (vlasnik, admin ili frizer):', ui.ButtonSet.OK_CANCEL);
+    if (r3.getSelectedButton() !== ui.Button.OK) return;
+    sh.appendRow([ime, r3.getResponseText().trim().toLowerCase() || 'frizer', '', sifra, '', 'DA']);
+  }
+  const os = ucitajOsoblje();
+  const osoba = os.osoblje.find(x => x.ime.toLowerCase() === ime.toLowerCase());
+  ui.alert(osoba
+    ? 'Gotovo. ' + osoba.ime + ' (' + osoba.uloga + ') se prijavljuje na grasaksalon.me/panel imenom "' + osoba.ime + '" i ovom šifrom.'
+    : 'Šifra je upisana, ali ' + ime + ' još ne može u panel:\n' + os.greske.join('\n'));
 }
 
 function kal_() {
@@ -396,9 +432,21 @@ const ZAKONSKI_PRAZNICI = [
 const ULOGE = ['vlasnik', 'admin', 'frizer'];
 const ZAGLAVLJE_VAUCERI = ['Datum', 'Vaucer', 'Dijete', 'Kupac', 'Telefon', 'Napomena', 'Status'];
 
+/**
+ * Tabela salona. Iz same tabele (meni, onOpen) važi tabela u kojoj je skripta i njen ID se pamti;
+ * web aplikacija (sajt, panel) koristi zapamćeni ID. Tako sajt i meni uvijek čitaju istu tabelu.
+ */
 function tabela_() {
-  const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-  return id ? SpreadsheetApp.openById(id) : SpreadsheetApp.getActive();
+  const props = PropertiesService.getScriptProperties();
+  let aktivna = null;
+  try { aktivna = SpreadsheetApp.getActive(); } catch (e) { aktivna = null; }
+  if (aktivna) {
+    if (props.getProperty('SHEET_ID') !== aktivna.getId()) props.setProperty('SHEET_ID', aktivna.getId());
+    return aktivna;
+  }
+  const id = props.getProperty('SHEET_ID');
+  if (!id) throw new Error('Skripta još nije povezana s tabelom: u tabeli pokrenite meni Grasak > 1. Postavi.');
+  return SpreadsheetApp.openById(id);
 }
 
 function kreirajListovePodesavanja_() {
@@ -457,6 +505,7 @@ function ucitajOsoblje(lokacije) {
 
 /** Meni: Kristina provjeri da li je sve ispravno upisano. */
 function provjeriPodesavanja() {
+  const naziv = tabela_().getName();
   const p = ucitajPodesavanja();
   const os = ucitajOsoblje(p.lokacije);
   const nr = ucitajNeradne(p.lokacije);
@@ -474,6 +523,7 @@ function provjeriPodesavanja() {
   linije.push('', 'Neradni dani u narednih godinu dana: ' +
     (Object.keys(sl).sort().map(d => d.slice(8, 10) + '.' + d.slice(5, 7) + '. ' + sl[d]).join(', ') || 'nema'));
   if (p.greske.length) linije.push('', 'ISPRAVITI:', ...p.greske.map(g => '• ' + g));
+  linije.unshift('Tabela koju koriste sajt i panel: ' + naziv, '');
   SpreadsheetApp.getUi().alert(p.greske.length ? 'Podešavanja - ima grešaka' : 'Podešavanja su ispravna', linije.join('\n'), SpreadsheetApp.getUi().ButtonSet.OK);
 }
 
@@ -625,7 +675,6 @@ function neradniUPeriodu(od, do_, praznici, posebni, lokNaziv) {
 function provjeriSifru(s) {
   if (s.length < 8) return 'šifra mora imati najmanje 8 znakova';
   if (s.length > 40) return 'šifra može imati najviše 40 znakova';
-  if (!/[A-Za-zČĆŠŽĐčćšžđ]/.test(s) || !/\d/.test(s)) return 'šifra mora imati i slova i brojeve';
   if (/^[=+\-@]/.test(s)) return 'šifra ne smije počinjati znakom = + - @';
   return '';
 }
