@@ -210,9 +210,9 @@ export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
                 <Polje oznaka="Lokacija">
                   <Izbor vrijednost={o.lokacija} opcije={naziviLok} prazno="Sve lokacije" onChange={(v) => izmijeni({ lokacija: v })} disabled={o.uloga === 'vlasnik'} />
                 </Polje>
-                <Polje oznaka={o.imaPin ? 'Novi PIN (prazno = ostaje stari)' : 'PIN (4-8 cifara)'}>
+                <Polje oznaka={o.imaPin ? 'Novi PIN (prazno = ostaje stari)' : 'PIN (6-8 cifara)'}>
                   <input className={inp} type="password" inputMode="numeric" autoComplete="new-password" maxLength={8} value={o.pin || ''}
-                    placeholder={o.imaPin ? '••••' : 'npr. 4 cifre'} onChange={(e) => izmijeni({ pin: e.target.value.replace(/\D/g, '') })} />
+                    placeholder={o.imaPin ? '••••••' : '6 cifara'} onChange={(e) => izmijeni({ pin: e.target.value.replace(/\D/g, '') })} />
                 </Polje>
                 <Polje oznaka="Email (sedmični izvještaj)"><input className={inp} type="email" value={o.email} onChange={(e) => izmijeni({ email: e.target.value })} /></Polje>
                 <div className="flex items-end gap-2 pb-2">
@@ -224,7 +224,7 @@ export default function PodesavanjaPanel({ pin, onSacuvano, onOdjava }: {
             </div>
           )
         })}
-        <p className="text-xs text-ink/50">Frizer vidi dan i upisuje termine. Admin vidi i izvještaje. Vlasnik vidi sve i mijenja podešavanja. Svako ima svoj PIN.</p>
+        <p className="text-xs text-ink/50">Frizer vidi dan i upisuje termine. Admin vidi i izvještaje. Vlasnik vidi sve i mijenja podešavanja. Svako ima svoj PIN od 6 do 8 cifara; posle 10 pogrešnih pokušaja prijava se zaključa na 15 minuta, a vlasnik dobija email.</p>
       </Sekcija>
 
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-grass-tint bg-white/95 p-3 backdrop-blur print:hidden">

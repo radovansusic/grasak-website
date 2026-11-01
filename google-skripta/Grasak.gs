@@ -267,6 +267,15 @@ function tekstPodsjetnika(vrijeme, frizer, tel) {
     '. Radujemo se! Otkazivanje: ' + (tel || CFG.TEL_SALONA);
 }
 
+/**
+ * Tekst koji upisuje korisnik: jedan red, bez zagrada (osim ako su dozvoljene),
+ * bez znakova na početku koji bi u tabeli postali formula (= + - @).
+ */
+function cistTekst(v, n, saZagradama) {
+  return String(v == null ? '' : v).replace(saZagradama ? /[\r\n\t]/g : /[()\r\n\t]/g, ' ')
+    .replace(/\s+/g, ' ').trim().replace(/^[=+\-@\s]+/, '').slice(0, n);
+}
+
 /** "Nikola - Šišanje (Ana Petrović)" -> {frizer, usluga, klijent} */
 function rastaviNaslov(naslov) {
   const m = String(naslov || '').match(/^\s*([^-()]+?)\s+-\s+([^()]+?)\s*(?:\((.*)\))?\s*$/);
@@ -326,7 +335,7 @@ function bezDijakritika(s) {
  * List "Praznici": Praznik | Datum (dan.mjesec.) | Dana | Neradni (DA/NE) - svake godine; unaprijed upisani državni praznici CG
  * List "Neradni dani": Datum | Razlog | Lokacija (prazno = sve) - dani koje vlasnik proglasi neradnim
  * List "Osoblje":  Ime | Uloga (vlasnik/admin/frizer) | Lokacija (prazno = sve) | PIN | Email | Aktivan
- *   PIN je lična šifra za panel grasaksalon.me/osoblje (najmanje 4 cifre, svako svoju).
+ *   PIN je lična šifra za panel grasaksalon.me/osoblje (6 do 8 cifara, svako svoju).
  *
  * Nova lokacija = novi red u "Lokacije". Novi frizer = novi red u "Frizeri".
  * Promjena se vidi u aplikaciji odmah, bez ponovnog objavljivanja.
@@ -485,7 +494,7 @@ function sastaviOsoblje(redovi, lokacije) {
     }
     const pin = String(r[3] == null ? '' : r[3]).trim();
     if (!/\d/.test(pin)) { bezPina.push(ime); return; } // prazno ili "UPISATI PIN": nema pristup panelu
-    if (!/^\d{4,8}$/.test(pin)) { greske.push(red + 'PIN mora imati 4 do 8 cifara'); return; }
+    if (!/^\d{6,8}$/.test(pin)) { greske.push(red + 'PIN mora imati 6 do 8 cifara'); return; }
     if (pinovi[pin]) { greske.push(red + 'isti PIN kao ' + pinovi[pin] + ' - svako mora imati svoj'); return; }
     pinovi[pin] = ime;
     osoblje.push({ ime: ime, uloga: uloga, lokacijaId: lokacijaId, lokacijaNaziv: lokacijaNaziv, pin: pin,
@@ -634,6 +643,10 @@ function doPost(e) {
   if (String(z.akcija || '').indexOf('osoblje_') === 0) {
     try { return json_(osobljeAkcija_(z)); } catch (err) { return json_({ ok: false, poruka: String(err.message || err) }); }
   }
+  // zaštita od zloupotrebe javnog linka: najviše 30 upisa (termini + vaučeri) u 10 minuta
+  if ((z.akcija === 'zakazi' || z.akcija === 'vaucer') && !ogranicenje_('javni_upis', 30, 600)) {
+    return json_({ ok: false, poruka: 'Previše zahtjeva u kratkom roku. Pokušajte za nekoliko minuta ili pozovite salon.' });
+  }
   if (z.akcija === 'vaucer') {
     try { return json_(vaucer_(z)); } catch (err) { return json_({ ok: false, poruka: String(err.message || err) }); }
   }
@@ -648,6 +661,15 @@ function doPost(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** Brojač u kešu: false kad se u periodu pređe max. */
+function ogranicenje_(kljuc, max, sekundi) {
+  const c = CacheService.getScriptCache();
+  const n = Number(c.get(kljuc) || 0);
+  if (n >= max) return false;
+  c.put(kljuc, String(n + 1), sekundi);
+  return true;
 }
 
 function json_(o) {
@@ -721,13 +743,16 @@ function zakazi_(z) {
   const lok = lokacija_(z.lok);
   const u = usluga_(z.usluga);
   const telefon = normalizujTelefon(z.telefon);
-  const cist = (v, n) => String(v || '').replace(/[()\r\n]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
-  const dijete = cist(z.dijete, 60);
-  const roditelj = cist(z.roditelj, 60);
-  const uzrast = cist(z.uzrast, 10);
-  const napomena = cist(z.napomena, 300);
+  const dijete = cistTekst(z.dijete, 60);
+  const roditelj = cistTekst(z.roditelj, 60);
+  const uzrast = cistTekst(z.uzrast, 10);
+  const napomena = cistTekst(z.napomena, 300);
   if (!dijete || !roditelj) return { ok: false, poruka: 'Upišite ime i prezime djeteta i roditelja.' };
   if (telefon.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Upišite ispravan broj telefona.' };
+  // jedan broj telefona: najviše 3 buduća termina preko sajta (zaštita od lažnog zauzimanja)
+  const danasIso = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');
+  const aktivnih = citajTermine_(CFG.TZ).filter(r => r.telefon === telefon && r.datum >= danasIso && r.status === 'zakazan').length;
+  if (aktivnih >= 3) return { ok: false, poruka: 'Za ovaj broj već postoje 3 zakazana termina. Za više termina pozovite salon.' };
 
   const slot = slotoviZaDan_(z.lok, z.osoba, z.usluga, z.datum).find(s => s.vrijeme === z.vrijeme);
   if (!slot || !slot.slobodno) return { ok: false, poruka: 'Termin je upravo zauzet. Izaberite drugi.' };
@@ -747,12 +772,13 @@ function zakazi_(z) {
 
 /** Narudžba poklon vaučera: red u listu "Vaučeri" + SMS kupcu. Kristina se javlja kupcu za preuzimanje. */
 function vaucer_(z) {
-  const cist = (v, n) => String(v || '').replace(/[\r\n]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
-  const vrsta = cist(z.vrsta, 60), dijete = cist(z.dijete, 60), kupac = cist(z.kupac, 60), napomena = cist(z.napomena, 300);
+  const vrsta = cistTekst(z.vrsta, 60, true), dijete = cistTekst(z.dijete, 60, true), kupac = cistTekst(z.kupac, 60, true),
+    napomena = cistTekst(z.napomena, 300, true);
   const telefon = normalizujTelefon(z.telefon);
   if (!vrsta || !dijete || !kupac) return { ok: false, poruka: 'Popunite vrstu vaučera, ime djeteta i vaše ime.' };
   if (telefon.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Upišite ispravan broj telefona.' };
-  const sh = tabela_().getSheetByName(LIST_VAUCERI) || tabela_().insertSheet(LIST_VAUCERI);
+  let sh = tabela_().getSheetByName(LIST_VAUCERI);
+  if (!sh) { sh = tabela_().insertSheet(LIST_VAUCERI); sh.getRange('A:G').setNumberFormat('@'); }
   if (sh.getLastRow() === 0) sh.appendRow(ZAGLAVLJE_VAUCERI);
   sh.appendRow([sadaTekst_(), vrsta, dijete, kupac, telefon, napomena, 'novo']);
   posaljiSms(telefon, CFG.SALON + ': primili smo narudzbu poklon vaucera za ' + bezDijakritika(dijete) +
@@ -800,7 +826,7 @@ function generisiSlotove(radno, korak, trajanje, zauzeti, najranije) {
  * Sve akcije idu preko POST-a (PIN se nikad ne šalje u adresi).
  */
 
-const PIN_MAX_GRESAKA = 20;   // pogrešnih PIN-ova u 15 minuta, za sve zajedno - zaštita od pogađanja
+const PIN_MAX_GRESAKA = 10;   // pogrešnih PIN-ova u 15 minuta, za sve zajedno - zaštita od pogađanja
 
 function osobljeAkcija_(z) {
   const p = ucitajPodesavanja();
@@ -842,10 +868,22 @@ function prijava_(pin, lokacije) {
   const o = ucitajOsoblje(lokacije).osoblje.find(x => x.pin === String(pin || '').trim());
   if (!o) {
     cache.put('pin_greske', String(greske + 1), 900);
-    Utilities.sleep(800);
+    if (greske + 1 === PIN_MAX_GRESAKA) upozoriVlasnika_(lokacije);
+    Utilities.sleep(1000);
     throw new Error('Pogrešan PIN.');
   }
   return o;
+}
+
+/** Email vlasniku kad neko više puta pogriješi PIN (moguće pogađanje). */
+function upozoriVlasnika_(lokacije) {
+  try {
+    ucitajOsoblje(lokacije).osoblje.filter(x => x.uloga === 'vlasnik' && /@/.test(x.email)).forEach(x => {
+      MailApp.sendEmail(x.email, 'Grašak: zaključana prijava u panel',
+        'U posljednjih 15 minuta upisano je ' + PIN_MAX_GRESAKA + ' pogrešnih PIN-ova u panel za osoblje (grasaksalon.me/osoblje). ' +
+        'Prijava je zaključana 15 minuta. Ako to niste bili vi ili vaše osoblje, promijenite PIN-ove u Podešavanjima.');
+    });
+  } catch (e) { console.log('Upozorenje nije poslato: ' + e); }
 }
 
 function dozvoljeneLokacije_(o, p) {
@@ -871,7 +909,7 @@ function provjeriDatum_(d) {
 }
 
 function cist_(v, n) {
-  return String(v || '').replace(/[()\r\n]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+  return cistTekst(v, n);
 }
 
 /* ---------- pregled dana ---------- */
@@ -1007,7 +1045,7 @@ function citajPodesavanjaZaEkran_() {
     }),
     neradniDani: citajList_(LIST_NERADNI, 3).map(r => ({ datum: parsirajDatum(r[0]) || t(r[0]), razlog: t(r[1]), lokacija: t(r[2]) })),
     osoblje: citajList_(LIST_OSOBLJE, 6).map((r, i) => ({
-      red: i, ime: t(r[0]), uloga: t(r[1]).toLowerCase(), lokacija: t(r[2]), imaPin: /^\d{4,8}$/.test(t(r[3])),
+      red: i, ime: t(r[0]), uloga: t(r[1]).toLowerCase(), lokacija: t(r[2]), imaPin: /^\d{6,8}$/.test(t(r[3])),
       email: t(r[4]), aktivan: da(r[5]),
     })),
   };
@@ -1016,10 +1054,11 @@ function citajPodesavanjaZaEkran_() {
 /** Provjeri sve kao "Provjeri podesavanja", pa upiši u tabelu. Prazan PIN = ostaje stari. */
 function sacuvajPodesavanja_(o, s) {
   if (!s || typeof s !== 'object') return { ok: false, poruka: 'Neispravni podaci.' };
-  const t = (v, n) => String(v == null ? '' : v).replace(/[\r\n]/g, ' ').trim().slice(0, n);
+  const t = (v, n) => cistTekst(v, n, true);                                          // bez formula u tabeli
+  const tel = (v, n) => String(v == null ? '' : v).replace(/[^\d+ /-]/g, '').trim().slice(0, n);  // telefon smije početi s +
   const niz = x => (Array.isArray(x) ? x.slice(0, 200) : []);
   const stari = citajList_(LIST_OSOBLJE, 6);
-  const lok = niz(s.lokacije).map(l => [t(l.naziv, 60), t(l.adresa, 120), t(l.telefon, 30)]
+  const lok = niz(s.lokacije).map(l => [t(l.naziv, 60), t(l.adresa, 120), tel(l.telefon, 30)]
     .concat(niz(l.dani).concat(['', '', '', '', '', '', '']).slice(0, 7).map(d => t(d, 20)))).filter(r => r[0]);
   const friz = niz(s.frizeri).map(f => [t(f.ime, 40), t(f.lokacija, 60), f.aktivan === false ? 'NE' : 'DA']).filter(r => r[0]);
   const usl = niz(s.usluge).map(u => [t(u.naziv, 60), Number(u.trajanje) || 0, u.aktivna === false ? 'NE' : 'DA']).filter(r => r[0]);

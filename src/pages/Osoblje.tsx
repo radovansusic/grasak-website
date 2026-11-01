@@ -145,12 +145,12 @@ function Prijava({ onPrijava, greska, cekam }: { onPrijava: (pin: string) => Pro
     <form onSubmit={posalji} className="mx-auto mt-10 max-w-sm rounded-3xl bg-white p-6 text-center shadow-xl shadow-ink/10">
       <img src="/brand/grasak-logo-zuta.svg" alt="Grašak" className="mx-auto h-28 w-28" />
       <h1 className="mt-3 font-display text-2xl font-extrabold text-ink">Prijava za osoblje</h1>
-      <p className="mt-1 text-sm text-ink/60">Upišite svoj PIN.</p>
+      <p className="mt-1 text-sm text-ink/60">Upišite svoj PIN (6 do 8 cifara).</p>
       <input value={unos} onChange={(e) => setUnos(e.target.value.replace(/\D/g, ''))} inputMode="numeric" autoComplete="one-time-code"
         type="password" maxLength={8} placeholder="PIN" autoFocus
         className="mt-4 w-full rounded-2xl border-2 border-grass-tint px-4 py-3 text-center text-2xl tracking-[0.5em] text-ink outline-none focus:border-grass" />
       {greska && <p className="mt-3 rounded-xl bg-coral/10 p-2 text-sm text-ink">{greska}</p>}
-      <button disabled={unos.length < 4 || salje || cekam}
+      <button disabled={unos.length < 6 || salje || cekam}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-grass py-3 font-bold text-white disabled:opacity-50">
         {(salje || cekam) && <Loader2 className="h-5 w-5 animate-spin" />} Uđi
       </button>

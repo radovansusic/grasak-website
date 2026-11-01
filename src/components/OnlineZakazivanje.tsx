@@ -215,6 +215,7 @@ export default function OnlineZakazivanje() {
               <input name="roditelj" required maxLength={60} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
               <input name="telefon" required type="tel" inputMode="tel" placeholder="069 123 456" autoComplete="tel" className={inputCls} />
               <textarea name="napomena" maxLength={300} rows={2} placeholder={tr('zakazi.note')} className={inputCls + ' sm:col-span-2'} />
+              <p className="text-xs text-ink/50 sm:col-span-2">{tr('zakazi.privacy')}</p>
               {poruka && <p className="rounded-xl bg-coral/10 p-3 text-ink sm:col-span-2">{poruka}</p>}
               <button disabled={salje} className="flex items-center justify-center gap-2 rounded-full bg-coral px-8 py-4 text-lg font-bold text-white shadow-lg shadow-coral/30 disabled:opacity-60 sm:col-span-2">
                 {salje ? <Loader2 className="h-5 w-5 animate-spin" /> : <CalendarCheck className="h-5 w-5" />}

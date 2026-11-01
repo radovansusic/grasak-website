@@ -73,6 +73,7 @@ export default function VaucerNarudzba() {
               <input name="kupac" required maxLength={60} placeholder={tr('vaucerForma.buyer')} autoComplete="name" className={inputCls} />
               <input name="telefon" required type="tel" inputMode="tel" placeholder="069 123 456" autoComplete="tel" className={inputCls} />
               <textarea name="napomena" maxLength={300} rows={2} placeholder={tr('vaucerForma.note')} className={inputCls} />
+              <p className="text-xs text-ink/50">{tr('zakazi.privacy')}</p>
               {poruka && <p className="rounded-xl bg-coral/10 p-3 text-ink">{poruka}</p>}
               <button disabled={salje} className="mt-2 flex items-center justify-center gap-2 rounded-full bg-coral px-8 py-4 text-lg font-bold text-white shadow-lg shadow-coral/30 disabled:opacity-60">
                 {salje ? <Loader2 className="h-5 w-5 animate-spin" /> : <Gift className="h-5 w-5" />}
