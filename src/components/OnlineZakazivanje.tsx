@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from 'react'
 import { motion } from 'framer-motion'
 import { CalendarCheck, Loader2, PartyPopper } from 'lucide-react'
 import { useLang } from '@/i18n/LanguageContext'
+import { t as prevodi } from '@/i18n/translations'
 import { sendBookingEmail } from '@/lib/booking'
 import MjesecniKalendar, { type StanjeDana } from '@/components/MjesecniKalendar'
 import {
@@ -12,6 +13,10 @@ import {
 
 /** Online zakazivanje: lokacija > frizer > usluga > dan (mjesečni kalendar) > termin (30 min) > podaci.
  *  Termin se upisuje u kalendar salona; salon dobija email i obavještenje u panelu. */
+/** Usluge stižu iz tabele na crnogorskom; poznate se prikazuju prevodom sa stranice cjenovnika, salonu ide original. */
+const USLUGE_SA_CJENOVNIKA = ['b1name', 'b2name', 'b3name', 'firstTitle', 'pk1name', 'pk2name', 'pk3name', 'e1name', 'e2name']
+const cnrUsluge = prevodi.cnr.usluge as Record<string, string>
+const kljucUsluge = (naziv: string) => USLUGE_SA_CJENOVNIKA.find((k) => cnrUsluge[k] === naziv.trim())
 const cip = (aktivan: boolean) =>
   'rounded-full border-2 px-5 py-2.5 font-bold transition-colors ' +
   (aktivan ? 'border-grass bg-grass text-white' : 'border-grass-tint bg-white text-ink hover:border-grass')
@@ -111,7 +116,7 @@ export default function OnlineZakazivanje() {
           Dijete: `${polje('dijete')} (${polje('uzrast') || '-'} god.)`, Roditelj: polje('roditelj'),
           Telefon: polje('telefon'), Napomena: polje('napomena') || '-', Izvor: 'Sajt - online zakazivanje (u kalendaru)',
         })
-        setUspjeh(`${d}.${m}. u ${vrijeme}, ${osoba}`)
+        setUspjeh(tr('zakazi.when', { datum: `${d}.${m}.`, vrijeme, osoba }))
         window.scrollTo({ top: 0, behavior: 'smooth' })
         setOsvjezenje((x) => x + 1) // zauzeti termin nestaje i za sljedeće zakazivanje
       } else {
@@ -190,13 +195,14 @@ export default function OnlineZakazivanje() {
         <div className="flex flex-wrap gap-2">
           {konfig.usluge.map((u) => (
             <button key={u.id} type="button" className={cip(usluga?.id === u.id)} onClick={() => setUsluga(u)}>
-              {u.naziv}{u.trajanje > konfig.korak && <span className="block text-xs font-semibold opacity-75">{u.trajanje} min</span>}
+              {kljucUsluge(u.naziv) ? tr('usluge.' + kljucUsluge(u.naziv)) : u.naziv}
+              {u.trajanje > konfig.korak && <span className="block text-xs font-semibold opacity-75">{u.trajanje} {tr('zakazi.min')}</span>}
             </button>
           ))}
         </div>
       </Korak>
       <Korak n={++n} naslov={tr('zakazi.day')}>
-        <MjesecniKalendar dani={dani} izabran={datum} stanje={stanjeDana} onIzbor={izaberiDan} en={lang === 'en'}
+        <MjesecniKalendar dani={dani} izabran={datum} stanje={stanjeDana} onIzbor={izaberiDan} jezik={lang}
           tekst={{ prev: tr('zakazi.prevMonth'), next: tr('zakazi.nextMonth'), free: tr('zakazi.legendFree'), busy: tr('zakazi.legendBusy'), today: tr('zakazi.today') }} />
         {kljucPeriod && !daniPeriod && !bezPerioda && (
           <p className="mt-2 flex items-center gap-2 text-sm text-ink/60"><Loader2 className="h-4 w-4 animate-spin" /> {tr('zakazi.loadingDays')}</p>

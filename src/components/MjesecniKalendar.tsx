@@ -1,14 +1,30 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { isoDatum } from '@/lib/zakazivanje'
+import type { Lang } from '@/i18n/translations'
 
 /** slobodno = ima termina, nepoznato = radni dan (slobodni termini još nisu učitani), popunjeno, zatvoreno = ne radi / praznik / van opsega */
 export type StanjeDana = 'slobodno' | 'nepoznato' | 'popunjeno' | 'zatvoreno'
 
-const MJESECI = ['januar', 'februar', 'mart', 'april', 'maj', 'jun', 'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar']
-const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-const DANI = ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned']
-const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const MJESECI: Record<Lang, string[]> = {
+  cnr: ['januar', 'februar', 'mart', 'april', 'maj', 'jun', 'jul', 'avgust', 'septembar', 'oktobar', 'novembar', 'decembar'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+  ru: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'],
+  tr: ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'],
+}
+const DANI: Record<Lang, string[]> = {
+  cnr: ['Pon', 'Uto', 'Sri', 'Čet', 'Pet', 'Sub', 'Ned'],
+  en: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+  ru: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+  tr: ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'],
+}
+const LOKAL: Record<Lang, string> = { cnr: 'sr-Latn-ME', en: 'en-GB', ru: 'ru-RU', tr: 'tr-TR' }
+
+/** "4. novembar" / "4 November" / "4 ноября" / "4 Kasım" - za čitače ekrana */
+function punDatum(d: Date, jezik: Lang): string {
+  if (jezik === 'cnr') return `${d.getDate()}. ${MJESECI.cnr[d.getMonth()]}`
+  try { return new Intl.DateTimeFormat(LOKAL[jezik], { day: 'numeric', month: 'long' }).format(d) } catch { return `${d.getDate()}. ${MJESECI[jezik][d.getMonth()]}` }
+}
 
 interface Props {
   /** dani u kojima se može zakazivati, od danas redom */
@@ -16,12 +32,12 @@ interface Props {
   izabran: string
   stanje: (d: Date) => { s: StanjeDana; opis?: string }
   onIzbor: (iso: string) => void
-  en: boolean
+  jezik: Lang
   tekst: { prev: string; next: string; free: string; busy: string; today: string }
 }
 
 /** Mjesečni kalendar: slobodni dani zeleni, popunjeni i neradni sivi; klik na dan bira datum. */
-export default function MjesecniKalendar({ dani, izabran, stanje, onIzbor, en, tekst }: Props) {
+export default function MjesecniKalendar({ dani, izabran, stanje, onIzbor, jezik, tekst }: Props) {
   const prvi = dani[0]
   const zadnji = dani[dani.length - 1]
   const mjeseci: [number, number][] = []
@@ -35,7 +51,7 @@ export default function MjesecniKalendar({ dani, izabran, stanje, onIzbor, en, t
   const danas = isoDatum(prvi)
   const pomak = (new Date(y, m, 1).getDay() + 6) % 7 // sedmica počinje ponedjeljkom
   const brojDana = new Date(y, m + 1, 0).getDate()
-  const nazivMjeseca = (en ? MONTHS : MJESECI)[m]
+  const nazivMjeseca = MJESECI[jezik][m]
 
   return (
     <div className="max-w-md">
@@ -51,7 +67,7 @@ export default function MjesecniKalendar({ dani, izabran, stanje, onIzbor, en, t
         </button>
       </div>
       <div className="grid grid-cols-7 gap-1.5 text-center text-xs font-bold uppercase text-ink/50">
-        {(en ? DAYS : DANI).map((d) => <span key={d} className="py-1">{d}</span>)}
+        {DANI[jezik].map((d) => <span key={d} className="py-1">{d}</span>)}
       </div>
       <div className="mt-1 grid grid-cols-7 gap-1.5">
         {Array.from({ length: pomak }, (_, i) => <span key={'p' + i} />)}
@@ -61,7 +77,7 @@ export default function MjesecniKalendar({ dani, izabran, stanje, onIzbor, en, t
           const { s, opis } = uOpsegu.has(iso) ? stanje(d) : { s: 'zatvoreno' as StanjeDana, opis: undefined }
           const moze = s === 'slobodno' || s === 'nepoznato'
           const izab = izabran === iso
-          const oznaka = `${i + 1}. ${nazivMjeseca}${iso === danas ? ', ' + tekst.today : ''}${opis ? ' - ' + opis : ''}`
+          const oznaka = `${punDatum(d, jezik)}${iso === danas ? ', ' + tekst.today : ''}${opis ? ' - ' + opis : ''}`
           return (
             <button key={iso} type="button" disabled={!moze} onClick={() => onIzbor(iso)} title={opis} aria-label={oznaka} aria-pressed={izab}
               className={'relative flex aspect-square items-center justify-center rounded-xl border-2 font-display text-lg font-extrabold transition-colors ' +
