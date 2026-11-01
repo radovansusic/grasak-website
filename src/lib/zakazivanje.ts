@@ -1,8 +1,11 @@
 /** Online zakazivanje - klijent za Google Apps Script API (kalendar salona grasaksalon@gmail.com).
- *  Adresa API-ja: Vercel env varijabla VITE_ZAKAZIVANJE_API. Bez nje stranica /zakazi
- *  prikazuje staru formu (WhatsApp + email), pa sajt radi i prije nego što se API postavi. */
+ *  Adresa je javna (poziva je svaki posjetilac sajta). Ostaje ista i poslije "New version" u Apps Script-u.
+ *  Može se pregaziti Vercel env varijablom VITE_ZAKAZIVANJE_API (npr. za probnu kopiju skripte). */
 
-export const API_URL: string = import.meta.env.VITE_ZAKAZIVANJE_API ?? ''
+const GRASAK_APPS_SCRIPT =
+  'https://script.google.com/macros/s/AKfycbwMCZOQN_8af5Ew3k6kWDa9z2s8PRc2zxr1dFUt_KZRap_JinC2B2DyBPlTYqNJTMMX/exec'
+
+export const API_URL: string = import.meta.env.VITE_ZAKAZIVANJE_API || GRASAK_APPS_SCRIPT
 
 export interface Usluga { id: string; naziv: string; trajanje: number }
 export interface Lokacija {
