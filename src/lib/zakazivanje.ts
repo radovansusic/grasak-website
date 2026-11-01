@@ -59,3 +59,16 @@ export async function zakazi(z: Zahtjev): Promise<{ ok: boolean; poruka: string 
 export function isoDatum(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+
+export interface Vaucer { vrsta: string; dijete: string; kupac: string; telefon: string; napomena: string }
+
+/** Bez API-ja narudžba ide samo emailom (FormSubmit), pa se vraća ok. */
+export async function naruciVaucer(v: Vaucer): Promise<{ ok: boolean; poruka: string }> {
+  if (!API_URL) return { ok: true, poruka: '' }
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ akcija: 'vaucer', ...v }),
+  })
+  return r.json()
+}

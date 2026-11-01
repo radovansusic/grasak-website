@@ -6,6 +6,7 @@ import ONama from './pages/ONama'
 import Galerija from './pages/Galerija'
 import Kontakt from './pages/Kontakt'
 import Zakazi from './pages/Zakazi'
+import VaucerNarudzba from './pages/VaucerNarudzba'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="galerija" element={<Galerija />} />
         <Route path="kontakt" element={<Kontakt />} />
         <Route path="zakazi" element={<Zakazi />} />
+        <Route path="vaucer" element={<VaucerNarudzba />} />
       </Route>
     </Routes>
   )

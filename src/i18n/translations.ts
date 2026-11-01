@@ -5,6 +5,15 @@ export interface Dict {
 }
 
 const cnr: Dict = {
+  vaucerForma: {
+    title: 'Poklon vaučer',
+    child: 'Na čije ime je vaučer (ime djeteta)',
+    buyer: 'Vaše ime i prezime',
+    note: 'Napomena (npr. kad vam treba) - nije obavezno',
+    submit: 'Naruči vaučer',
+    okTitle: 'Narudžba je primljena!',
+    okText: 'Javljamo vam se za preuzimanje. Vaučer dobijate upakovan, na ime djeteta.',
+  },
   zakazi: {
     title: 'Zakaži termin',
     sub: 'Izaberi frizera, dan i slobodan termin. Potvrda stiže SMS-om.',
@@ -421,6 +430,15 @@ const cnr: Dict = {
 }
 
 const en: Dict = {
+  vaucerForma: {
+    title: 'Gift voucher',
+    child: "Child's name on the voucher",
+    buyer: 'Your full name',
+    note: 'Note - optional',
+    submit: 'Order voucher',
+    okTitle: 'Order received!',
+    okText: 'We will contact you about pickup. The voucher comes gift-wrapped with the child\'s name.',
+  },
   zakazi: {
     title: 'Book an appointment',
     sub: 'Pick a stylist, a day and a free slot. Confirmation arrives by SMS.',

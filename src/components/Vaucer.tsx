@@ -163,7 +163,7 @@ export default function Vaucer() {
           className="mt-12 flex flex-wrap items-center justify-center gap-4"
         >
           <Link
-            to="/kontakt?vaucer=1"
+            to="/vaucer"
             className="flex items-center gap-2 rounded-full px-8 py-4 text-lg font-bold shadow-xl transition-transform hover:scale-105"
             style={{ backgroundColor: GOLD, color: '#22302A' }}
           >
