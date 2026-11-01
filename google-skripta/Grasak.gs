@@ -129,7 +129,7 @@ function redZaDogadjaj_(ev, lokPoFrizeru, tz) {
   r[KOL['Dijete']] = n.klijent;
   r[KOL['Uzrast']] = poljeIzOpisa(opis, 'Uzrast');
   r[KOL['Roditelj']] = poljeIzOpisa(opis, 'Roditelj');
-  r[KOL['Telefon']] = izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis);
+  r[KOL['Telefon']] = telefonZaTabelu(izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis));
   r[KOL['Napomena']] = poljeIzOpisa(opis, 'Napomena');
   r[KOL['Izvor']] = poljeIzOpisa(opis, 'Izvor') || 'kalendar';
   r[KOL['Status']] = ev.getTag('status') || 'zakazan';
@@ -384,6 +384,19 @@ function postaviPoljeUOpisu(opis, kljuc, vrijednost) {
 function izvuciTelefon(opis) {
   const m = String(opis || '').match(/(\+|00)?\d[\d\s\/().-]{6,}\d/);
   return m ? normalizujTelefon(m[0]) : '';
+}
+
+/** Tabela bi "+382..." pretvorila u broj i skinula "+": apostrof na početku je čuva kao tekst (ne vidi se). */
+function telefonZaTabelu(tel) {
+  return tel ? "'" + tel : '';
+}
+
+/** Broj iz tabele: i stari zapisi bez "+" (38269...) vraćaju se u oblik +38269... */
+function telefonIzTabele(v) {
+  const s = String(v == null ? '' : v).trim().replace(/^'/, '');
+  if (!s) return '';
+  if (/^382\d{7,9}$/.test(s)) return '+' + s;
+  return normalizujTelefon(s);
 }
 
 function normalizujTelefon(s) {
@@ -966,7 +979,7 @@ function vaucer_(z) {
   let sh = tabela_().getSheetByName(LIST_VAUCERI);
   if (!sh) { sh = tabela_().insertSheet(LIST_VAUCERI); sh.getRange('A:G').setNumberFormat('@'); }
   if (sh.getLastRow() === 0) sh.appendRow(ZAGLAVLJE_VAUCERI);
-  sh.appendRow([sadaTekst_(), vrsta, dijete, kupac, telefon, napomena, 'novo']);
+  sh.appendRow([sadaTekst_(), vrsta, dijete, kupac, telefonZaTabelu(telefon), napomena, 'novo']);
   posaljiSms(telefon, CFG.SALON + ': primili smo narudzbu poklon vaucera za ' + bezDijakritika(dijete) +
     '. Javljamo se za preuzimanje. ' + CFG.TEL_SALONA);
   return { ok: true, poruka: 'Narudžba je primljena. Javljamo vam se za preuzimanje.' };
@@ -1329,7 +1342,7 @@ function citajTermine_(tz) {
     datum: datumTekst(r[KOL['Datum']], tz), vrijeme: vrijemeTekst(r[KOL['Vrijeme']], tz),
     kraj: vrijemeTekst(r[KOL['Kraj']], tz), lokacija: String(r[KOL['Lokacija']] || ''),
     frizer: String(r[KOL['Frizer']] || ''), usluga: String(r[KOL['Usluga']] || ''),
-    telefon: String(r[KOL['Telefon']] || ''), izvor: String(r[KOL['Izvor']] || ''),
+    telefon: telefonIzTabele(r[KOL['Telefon']]), izvor: String(r[KOL['Izvor']] || ''),
     status: String(r[KOL['Status']] || 'zakazan'),
   })).filter(r => r.datum);
 }
