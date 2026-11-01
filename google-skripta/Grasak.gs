@@ -370,6 +370,7 @@ function provjeriPodesavanja() {
   linije.push('', 'Usluge: ' + p.usluge.map(u => u.naziv + ' ' + u.trajanje + ' min').join(', '));
   linije.push('', 'Osoblje (panel grasaksalon.me/osoblje): ' + (os.osoblje.map(o => o.ime + ' - ' + o.uloga +
     (o.lokacijaId ? ', ' + o.lokacijaNaziv : ', sve lokacije')).join('; ') || 'NIKO'));
+  if (os.bezPina.length) linije.push('Bez PIN-a (ne mogu u panel): ' + os.bezPina.join(', '));
   if (p.greske.length) linije.push('', 'ISPRAVITI:', ...p.greske.map(g => '• ' + g));
   SpreadsheetApp.getUi().alert(p.greske.length ? 'Podešavanja - ima grešaka' : 'Podešavanja su ispravna', linije.join('\n'), SpreadsheetApp.getUi().ButtonSet.OK);
 }
@@ -415,7 +416,7 @@ function sastaviPodesavanja(lokRedovi, frizRedovi, uslRedovi) {
 
 /** Osoblje za panel. Uloge: vlasnik (sve + izvještaji), admin (sve + izvještaji), frizer (dan i upis termina). */
 function sastaviOsoblje(redovi, lokacije) {
-  const greske = [], osoblje = [], pinovi = {};
+  const greske = [], osoblje = [], pinovi = {}, bezPina = [];
   redovi.forEach((r, i) => {
     const ime = String(r[0] || '').trim();
     if (!ime || String(r[5]).trim().toUpperCase() === 'NE') return;
@@ -429,13 +430,14 @@ function sastaviOsoblje(redovi, lokacije) {
       lokacijaId = l.id; lokacijaNaziv = l.naziv;
     }
     const pin = String(r[3] == null ? '' : r[3]).trim();
+    if (!/\d/.test(pin)) { bezPina.push(ime); return; } // prazno ili "UPISATI PIN": nema pristup panelu
     if (!/^\d{4,8}$/.test(pin)) { greske.push(red + 'PIN mora imati 4 do 8 cifara'); return; }
     if (pinovi[pin]) { greske.push(red + 'isti PIN kao ' + pinovi[pin] + ' - svako mora imati svoj'); return; }
     pinovi[pin] = ime;
     osoblje.push({ ime: ime, uloga: uloga, lokacijaId: lokacijaId, lokacijaNaziv: lokacijaNaziv, pin: pin,
                    email: String(r[4] || '').trim() });
   });
-  return { osoblje: osoblje, greske: greske };
+  return { osoblje: osoblje, greske: greske, bezPina: bezPina };
 }
 
 /** "9-19" -> ['09:00','19:00']; "ne radi"/prazno -> null; neispravno -> undefined */
@@ -680,6 +682,12 @@ function osobljeAkcija_(z) {
     case 'osoblje_izvjestaj':
       if (o.uloga === 'frizer') return { ok: false, poruka: 'Izvještaji su za vlasnika i administratore.' };
       return { ok: true, izvjestaj: izvjestajZaPeriod_(o, p, z.od, z.do, z.lok) };
+    case 'osoblje_podesavanja':
+      if (o.uloga !== 'vlasnik') return { ok: false, poruka: 'Podešavanja mijenja samo vlasnik.' };
+      return { ok: true, podesavanja: citajPodesavanjaZaEkran_() };
+    case 'osoblje_sacuvaj_podesavanja':
+      if (o.uloga !== 'vlasnik') return { ok: false, poruka: 'Podešavanja mijenja samo vlasnik.' };
+      return pisanje_(() => sacuvajPodesavanja_(o, z.podesavanja));
   }
   return { ok: false, poruka: 'Nepoznata akcija' };
 }
@@ -827,6 +835,74 @@ function dopisiNapomenu_(o, p, id, tekst) {
   ev.setDescription(postaviPoljeUOpisu(opis, 'Napomena', (stara ? stara + ' | ' : '') + t + ' (' + o.ime + ')'));
   upisiTermin_(ev);
   return { ok: true, poruka: 'Napomena je dopisana.' };
+}
+
+/* ---------- podešavanja iz aplikacije (samo vlasnik) ---------- */
+
+function citajList_(ime, kolona) {
+  const sh = tabela_().getSheetByName(ime);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, kolona).getValues().filter(r => String(r[0] == null ? '' : r[0]).trim());
+}
+
+function upisiList_(ime, redovi, kolona, tekstKolone) {
+  const ss = tabela_();
+  const sh = ss.getSheetByName(ime) || ss.insertSheet(ime);
+  if (tekstKolone) sh.getRange(tekstKolone).setNumberFormat('@');
+  const zadnji = sh.getLastRow();
+  if (zadnji > 1) sh.getRange(2, 1, zadnji - 1, kolona).clearContent();
+  if (redovi.length) sh.getRange(2, 1, redovi.length, kolona).setValues(redovi);
+}
+
+/** Podešavanja kako su upisana u tabeli; PIN-ovi se ne šalju, samo da li postoje. */
+function citajPodesavanjaZaEkran_() {
+  const t = v => (v == null ? '' : String(v)).trim();
+  const da = v => t(v).toUpperCase() !== 'NE';
+  return {
+    lokacije: citajList_(LIST_LOK, 10).map(r => ({ naziv: t(r[0]), adresa: t(r[1]), telefon: t(r[2]), dani: r.slice(3, 10).map(t) })),
+    frizeri: citajList_(LIST_FRIZ, 3).map(r => ({ ime: t(r[0]), lokacija: t(r[1]), aktivan: da(r[2]) })),
+    usluge: citajList_(LIST_USL, 3).map(r => ({ naziv: t(r[0]), trajanje: Number(r[1]) || 30, aktivna: da(r[2]) })),
+    osoblje: citajList_(LIST_OSOBLJE, 6).map((r, i) => ({
+      red: i, ime: t(r[0]), uloga: t(r[1]).toLowerCase(), lokacija: t(r[2]), imaPin: /^\d{4,8}$/.test(t(r[3])),
+      email: t(r[4]), aktivan: da(r[5]),
+    })),
+  };
+}
+
+/** Provjeri sve kao "Provjeri podesavanja", pa upiši u tabelu. Prazan PIN = ostaje stari. */
+function sacuvajPodesavanja_(o, s) {
+  if (!s || typeof s !== 'object') return { ok: false, poruka: 'Neispravni podaci.' };
+  const t = (v, n) => String(v == null ? '' : v).replace(/[\r\n]/g, ' ').trim().slice(0, n);
+  const niz = x => (Array.isArray(x) ? x.slice(0, 200) : []);
+  const stari = citajList_(LIST_OSOBLJE, 6);
+  const lok = niz(s.lokacije).map(l => [t(l.naziv, 60), t(l.adresa, 120), t(l.telefon, 30)]
+    .concat(niz(l.dani).concat(['', '', '', '', '', '', '']).slice(0, 7).map(d => t(d, 20)))).filter(r => r[0]);
+  const friz = niz(s.frizeri).map(f => [t(f.ime, 40), t(f.lokacija, 60), f.aktivan === false ? 'NE' : 'DA']).filter(r => r[0]);
+  const usl = niz(s.usluge).map(u => [t(u.naziv, 60), Number(u.trajanje) || 0, u.aktivna === false ? 'NE' : 'DA']).filter(r => r[0]);
+  const osb = niz(s.osoblje).map(x => {
+    const stariPin = Number.isInteger(x.red) && stari[x.red] ? t(stari[x.red][3], 8) : '';
+    return [t(x.ime, 40), t(x.uloga, 10).toLowerCase(), t(x.lokacija, 60), t(x.pin, 8) || stariPin,
+            t(x.email, 80), x.aktivan === false ? 'NE' : 'DA'];
+  }).filter(r => r[0]);
+
+  const p = sastaviPodesavanja(lok, friz, usl);
+  const os = sastaviOsoblje(osb, p.lokacije);
+  const greske = p.greske.concat(os.greske);
+  if (!p.lokacije.length) greske.push('Mora postojati bar jedna lokacija.');
+  if (!p.usluge.length) greske.push('Mora postojati bar jedna aktivna usluga.');
+  if (!os.osoblje.some(x => x.uloga === 'vlasnik')) greske.push('Mora ostati bar jedan aktivan vlasnik s PIN-om, inače niko ne može u podešavanja.');
+  if (greske.length) return { ok: false, poruka: 'Nije sačuvano. Ispravite:', greske: greske };
+
+  upisiList_(LIST_LOK, lok, 10, 'C:J');
+  upisiList_(LIST_FRIZ, friz, 3);
+  upisiList_(LIST_USL, usl, 3);
+  upisiList_(LIST_OSOBLJE, osb, 6, 'D:D');
+  return {
+    ok: true,
+    poruka: 'Sačuvano. Sajt i panel već rade s novim podešavanjima.' +
+      (os.bezPina.length ? ' Bez PIN-a (ne mogu u panel): ' + os.bezPina.join(', ') + '.' : ''),
+    odjava: !os.osoblje.some(x => x.pin === o.pin),
+  };
 }
 
 /* ---------- izvještaji ---------- */
