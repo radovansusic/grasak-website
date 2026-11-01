@@ -201,35 +201,57 @@ function posaljiPodsjetnike() {
 /* ---------- SMS ---------- */
 
 /**
- * Šalje SMS preko Android telefona salona (aplikacija "SMS Gateway for Android", sms-gate.app).
- * Script Properties: SMS_URL, SMS_USER, SMS_PASS. Bez SMS_URL radi probni režim (samo log).
+ * Šalje SMS preko Android telefona salona (aplikacija "SMS Gateway for Android", sms-gate.app, Cloud server).
+ * Script Properties (Project Settings > Script Properties): SMS_USER i SMS_PASS iz aplikacije.
+ * SMS_URL nije obavezan. Bez SMS_USER/SMS_PASS radi probni režim (samo log, ništa se ne šalje).
  */
+let ZADNJA_SMS_GRESKA = '';
+
 function posaljiSms(tel, tekst) {
   const p = PropertiesService.getScriptProperties();
-  const url = p.getProperty('SMS_URL');
-  if (!url) { console.log('PROBNI REZIM, SMS nije poslat: ' + tel + ' | ' + tekst); return false; }
-  try {
-    const odg = UrlFetchApp.fetch(url, {
-      method: 'post',
-      contentType: 'application/json',
-      headers: { Authorization: 'Basic ' +
-        Utilities.base64Encode(p.getProperty('SMS_USER') + ':' + p.getProperty('SMS_PASS')) },
-      payload: JSON.stringify({ message: tekst, phoneNumbers: [tel] }),
-      muteHttpExceptions: true,
-    });
-    const ok = odg.getResponseCode() < 300;
-    if (!ok) console.log('SMS greska ' + odg.getResponseCode() + ': ' + odg.getContentText());
-    return ok;
-  } catch (e) {
-    console.log('SMS greska: ' + e);
+  const user = p.getProperty('SMS_USER'), pass = p.getProperty('SMS_PASS');
+  if (!user || !pass) {
+    ZADNJA_SMS_GRESKA = 'SMS nije uključen (nema SMS_USER i SMS_PASS u Script Properties).';
+    console.log('PROBNI REZIM, SMS nije poslat: ' + tel + ' | ' + tekst);
     return false;
   }
+  const url = (p.getProperty('SMS_URL') || 'https://api.sms-gate.app/3rdparty/v1/messages').trim();
+  const stari = url.replace(/\/messages$/, '/message');
+  // novi format API-ja, pa stari (starije verzije servera)
+  const pokusaji = [[url, { textMessage: { text: tekst }, phoneNumbers: [tel] }], [url, { message: tekst, phoneNumbers: [tel] }]];
+  if (stari !== url) pokusaji.push([stari, { message: tekst, phoneNumbers: [tel] }]);
+  for (let i = 0; i < pokusaji.length; i++) {
+    try {
+      const odg = UrlFetchApp.fetch(pokusaji[i][0], {
+        method: 'post',
+        contentType: 'application/json',
+        headers: { Authorization: 'Basic ' + Utilities.base64Encode(user + ':' + pass) },
+        payload: JSON.stringify(pokusaji[i][1]),
+        muteHttpExceptions: true,
+      });
+      const kod = odg.getResponseCode();
+      if (kod < 300) { ZADNJA_SMS_GRESKA = ''; return true; }
+      ZADNJA_SMS_GRESKA = 'SMS server odgovorio ' + kod + ': ' + odg.getContentText().slice(0, 200);
+      console.log(ZADNJA_SMS_GRESKA);
+      if (kod === 401 || kod === 403) {
+        ZADNJA_SMS_GRESKA = 'Pogrešan SMS_USER ili SMS_PASS (prepišite ih iz aplikacije na telefonu).';
+        return false;
+      }
+    } catch (e) {
+      ZADNJA_SMS_GRESKA = 'SMS greška: ' + e;
+      console.log(ZADNJA_SMS_GRESKA);
+    }
+  }
+  return false;
 }
 
 function probniSms() {
-  const tel = SpreadsheetApp.getUi().prompt('Tvoj broj telefona:').getResponseText();
-  const ok = posaljiSms(normalizujTelefon(tel), CFG.SALON + ': probna poruka. Sistem radi.');
-  SpreadsheetApp.getUi().alert(ok ? 'Poslato.' : 'Nije poslato - vidi Executions log.');
+  const ui = SpreadsheetApp.getUi();
+  const tel = ui.prompt('Probni SMS', 'Upišite svoj broj telefona (npr. 069 123 456):', ui.ButtonSet.OK_CANCEL);
+  if (tel.getSelectedButton() !== ui.Button.OK) return;
+  const ok = posaljiSms(normalizujTelefon(tel.getResponseText()), CFG.SALON + ': probna poruka. SMS sistem radi.');
+  ui.alert(ok ? 'Poslato. Poruka stiže za par sekundi (telefon salona mora biti uključen i na internetu).'
+    : 'Nije poslato. ' + ZADNJA_SMS_GRESKA);
 }
 
 /* ---------- čiste funkcije (testirane) ---------- */
