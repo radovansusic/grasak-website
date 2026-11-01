@@ -157,13 +157,15 @@ export default function PodesavanjaPanel({ pristup, onSacuvano, onOdjava }: {
         <p className="text-xs text-ink/50">Tog dana sajt ne nudi termine, a u panelu piše razlog. Već zakazane termine pogledajte u pregledu dana i javite se roditeljima.</p>
       </Sekcija>
 
-      <Sekcija naslov="Frizeri" dodaj={() => promijeni({ frizeri: [...s.frizeri, { ime: '', lokacija: naziviLok[0] || '', aktivan: true }] })} dodajTekst="Dodaj frizera">
+      <Sekcija naslov="Frizeri" dodaj={() => promijeni({ frizeri: [...s.frizeri, { ime: '', lokacija: naziviLok[0] || '', aktivan: true, telefon: '' }] })} dodajTekst="Dodaj frizera">
         {s.frizeri.map((f, i) => {
           const izmijeni = (n: Partial<typeof f>) => promijeni({ frizeri: s.frizeri.map((x, j) => (j === i ? { ...x, ...n } : x)) })
           return (
-            <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-2">
+            <div key={i} className="grid grid-cols-2 items-end gap-2 border-b border-grass-tint pb-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:border-0 sm:pb-0">
               <Polje oznaka="Ime"><input className={inp} value={f.ime} disabled={f.postojeci} onChange={(e) => izmijeni({ ime: e.target.value })} /></Polje>
               <Polje oznaka="Lokacija"><Izbor vrijednost={f.lokacija} opcije={naziviLok} onChange={(v) => izmijeni({ lokacija: v })} /></Polje>
+              <Polje oznaka="Telefon za SMS"><input className={inp} type="tel" inputMode="tel" value={f.telefon || ''} placeholder="npr. 067 123 456"
+                onChange={(e) => izmijeni({ telefon: e.target.value })} /></Polje>
               <div className="flex items-center gap-2 pb-2">
                 <Prekidac ukljucen={f.aktivan} onChange={(v) => izmijeni({ aktivan: v })} />
                 {!f.postojeci && <Ukloni onClick={() => promijeni({ frizeri: s.frizeri.filter((_, j) => j !== i) })} />}
@@ -171,7 +173,7 @@ export default function PodesavanjaPanel({ pristup, onSacuvano, onOdjava }: {
             </div>
           )
         })}
-        <p className="text-xs text-ink/50">Frizer koji više ne radi: isključite prekidač (termini i izvještaji ostaju). Da bi frizer ulazio u panel, dodajte ga i u Osoblje sa šifrom.</p>
+        <p className="text-xs text-ink/50">Telefon za SMS: frizer dobija SMS kad mu neko zakaže ili otkaže termin (sajt, panel ili Google kalendar). Prazno = bez SMS-a. Frizer koji više ne radi: isključite prekidač (termini i izvještaji ostaju). Da bi frizer ulazio u panel, dodajte ga i u Tim sa šifrom.</p>
       </Sekcija>
 
       <Sekcija naslov="Usluge" dodaj={() => promijeni({ usluge: [...s.usluge, { naziv: '', trajanje: 30, aktivna: true }] })} dodajTekst="Dodaj uslugu">
