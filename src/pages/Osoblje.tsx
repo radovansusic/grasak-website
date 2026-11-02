@@ -108,6 +108,9 @@ export default function Osoblje() {
           Do tada ne rade: Sedmica, Lista, Klijenti, pomjeranje, pauze, istorija klijenta i nalozi roditelja. Dan, upis i otkazivanje rade.
         </p>
       )}
+      {vlasnik && konfig.nalog && (
+        <p className="mb-3 text-xs text-ink/50 print:hidden">Skripta radi kao {konfig.nalog}{konfig.kalendar && `, kalendar "${konfig.kalendar}"`}. Termini se upisuju i čitaju iz tog kalendara.</p>
+      )}
       <div className="mb-4 flex flex-wrap gap-2 print:hidden">
         <Tab aktivan={tab === 'dan'} onClick={() => setTab('dan')}><CalendarDays className="h-4 w-4" /> Dan</Tab>
         <Tab aktivan={tab === 'sedmica'} onClick={() => setTab('sedmica')}><CalendarRange className="h-4 w-4" /> Sedmica</Tab>

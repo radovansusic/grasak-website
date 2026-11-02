@@ -1293,8 +1293,11 @@ function dozvoljenaLok_(o, p, lokId) {
 }
 
 function konfigZaOsoblje_(o, p) {
+  let kalendar = '', nalog = '';
+  try { kalendar = kal_().getName(); nalog = Session.getEffectiveUser().getEmail(); } catch (e) { /* dijagnostika, nije obavezna */ }
   return {
     verzija: VERZIJA_SKRIPTE,
+    kalendar: kalendar, nalog: nalog,   // koji kalendar i koji Google nalog skripta koristi (vidi vlasnik u panelu)
     korak: APP.KORAK_MIN,
     usluge: p.usluge,
     lokacije: dozvoljeneLokacije_(o, p).map(l => ({ id: l.id, naziv: l.naziv, osobe: l.osobe, radno: l.radno })),
