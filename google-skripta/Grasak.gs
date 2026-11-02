@@ -1,5 +1,5 @@
-// Grašak - zakazivanje, vaučeri i admin panel. Sve u jednom fajlu: zalijepiti u Apps Script (Extensions > Apps Script).
-// Izvor: Kod.gs + Podesavanja.gs + Api.gs + Osoblje.gs
+// Grašak - zakazivanje, vaučeri, admin panel i CRM. Sve u jednom fajlu: zalijepiti u Apps Script (Extensions > Apps Script).
+// Izvor: Kod.gs + Podesavanja.gs + Api.gs + Osoblje.gs + Klijenti.gs
 
 /**
  * Grašak - zakazivanje: Google Calendar + Sheets + SMS podsjetnici.
@@ -41,6 +41,7 @@ function onOpen() {
     .addItem('Postavi sifru za panel', 'postaviSifruDijalog')
     .addItem('Provjeri podesavanja', 'provjeriPodesavanja')
     .addItem('Osvjezi termine sada', 'sinhronizuj')
+    .addItem('Osvjezi klijente (CRM)', 'osvjeziKlijente')
     .addItem('Posalji izvjestaj za proslu sedmicu', 'posaljiSedmicniIzvjestaj')
     .addItem('Posalji probni SMS meni', 'probniSms')
     .addToUi();
@@ -56,6 +57,7 @@ function postavi() {
   sh.setFrozenRows(1);
   const ob = ss.getSheetByName(LIST_OBAVJESTENJA);
   if (ob) ob.getRange('A:J').setNumberFormat('@'); // datum i vrijeme ostaju tekst, ne postaju datum
+  listKlijenata_();                                 // CRM list "Klijenti"
 
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('sinhronizuj').timeBased().everyHours(1).create();
@@ -223,6 +225,7 @@ function sinhronizujBezZakljucavanja_() {
   });
 
   if (redovi.length) sh.getRange(2, 1, redovi.length, ZAGLAVLJE.length).setValues(redovi);
+  try { azurirajKlijente_(); } catch (e) { console.log('Klijenti nisu osvježeni: ' + e); }   // CRM iz svježe tabele
 }
 
 function datumTekst(v, tz) {
@@ -510,12 +513,13 @@ function telefonIzTabele(v) {
   return normalizujTelefon(s);
 }
 
+/** "067 338 777" -> +38267338777 (CG); "+49..." i "0049..." ostaju strani; "38267338777" -> +38267338777. */
 function normalizujTelefon(s) {
   let t = String(s || '').replace(/[^\d+]/g, '');
   if (!t) return '';
   if (t.startsWith('00')) t = '+' + t.slice(2);
-  if (t.startsWith('0')) t = CFG.POZIVNI + t.slice(1);
-  if (!t.startsWith('+')) t = CFG.POZIVNI + t;
+  else if (t.startsWith('0')) t = CFG.POZIVNI + t.slice(1);
+  else if (!t.startsWith('+')) t = (new RegExp('^' + CFG.POZIVNI.slice(1) + '\\d{6,9}$').test(t) ? '+' : CFG.POZIVNI) + t;
   return t;
 }
 
@@ -636,8 +640,14 @@ function obrisiKes_() {
 /** Ručna izmjena listova s podešavanjima briše keš, pa sajt odmah vidi promjenu. */
 function onEdit(e) {
   try {
-    const ime = e && e.range ? e.range.getSheet().getName() : '';
+    if (!e || !e.range) return;
+    const sh = e.range.getSheet(), ime = sh.getName();
     if ([LIST_LOK, LIST_FRIZ, LIST_USL, LIST_OSOBLJE, LIST_PRAZNICI, LIST_NERADNI].indexOf(ime) >= 0) obrisiKes_();
+    // telefon ukucan rukom: "067 338 777" -> +38267338777 (list Klijenti kolona A, list Termini kolona Telefon)
+    const kolona = ime === LIST_KLIJENTI ? 1 : ime === LIST_TERMINI ? KOL['Telefon'] + 1 : 0;
+    if (kolona && e.range.getRow() > 1 && e.range.getColumn() <= kolona && e.range.getLastColumn() >= kolona) {
+      normalizujTelefoneUKoloni_(sh, kolona, e.range.getRow(), e.range.getNumRows());
+    }
   } catch (err) { /* ništa */ }
 }
 
@@ -1082,6 +1092,7 @@ function zakazi_(z) {
   zapisiObavjestenje_('novi', z.osoba, z.datum, z.vrijeme, u.naziv, dijete, 'sajt', roditelj);
   ev.setTag('obav', 'da');
   upisiTermin_(ev);
+  azurirajKlijenta_(telefon);
   return { ok: true, poruka: 'Termin je zakazan.', id: ev.getId(), kod: poljeIzOpisa(ev.getDescription(), 'Kod'), email: !!email };
 }
 
@@ -1118,6 +1129,7 @@ function otkaziSaSajta_(z) {
   zapisiObavjestenje_('otkazan', red[KOL['Frizer']], red[KOL['Datum']], red[KOL['Vrijeme']], red[KOL['Usluga']], red[KOL['Dijete']], 'sajt', red[KOL['Roditelj']]);
   posaljiEmailTermina_(t.ev, 'otkazan_roditelj');
   t.ev.deleteEvent();
+  azurirajKlijenta_(telefonIzTabele(red[KOL['Telefon']]));
   return { ok: true, poruka: 'Termin je otkazan. Hvala što ste javili na vrijeme.' };
 }
 
@@ -1132,6 +1144,7 @@ function vaucer_(z) {
   if (!sh) { sh = tabela_().insertSheet(LIST_VAUCERI); sh.getRange('A:G').setNumberFormat('@'); }
   if (sh.getLastRow() === 0) sh.appendRow(ZAGLAVLJE_VAUCERI);
   sh.appendRow([sadaTekst_(), vrsta, dijete, kupac, telefonZaTabelu(telefon), napomena, 'novo']);
+  azurirajKlijenta_(telefon);
   posaljiSms(telefon, CFG.SALON + ': primili smo narudzbu poklon vaucera za ' + bezDijakritika(dijete) +
     '. Javljamo se za preuzimanje. ' + CFG.TEL_SALONA);
   return { ok: true, poruka: 'Narudžba je primljena. Javljamo vam se za preuzimanje.' };
@@ -1204,6 +1217,10 @@ function osobljeAkcija_(z) {
       return { ok: true, klijent: klijentPregled_(o, p, z.telefon) };
     case 'osoblje_predstojeci':
       return { ok: true, termini: predstojeciTermini_(o, p, Number(z.dana) || 14) };
+    case 'osoblje_klijenti':
+      return Object.assign({ ok: true }, klijentiZaPanel_(o, z.q, z.filter));
+    case 'osoblje_klijent_sacuvaj':
+      return pisanje_(() => sacuvajKlijenta_(o, z));
     case 'osoblje_obavjestenja':
       return { ok: true, obavjestenja: obavjestenjaZa_(o, p, z.posle), sada: String(Date.now()) };
     case 'osoblje_izvjestaj':
@@ -1448,6 +1465,7 @@ function zakaziOsoblje_(o, p, z) {
   zapisiObavjestenje_('novi', z.osoba, z.datum, z.vrijeme, u.naziv, dijete, 'panel', o.ime);
   ev.setTag('obav', 'da');
   upisiTermin_(ev);
+  azurirajKlijenta_(telefon);
   return { ok: true, poruka: 'Upisano: ' + z.vrijeme + ', ' + z.osoba + ', ' + dijete + '.' };
 }
 
@@ -1464,6 +1482,7 @@ function terminZaIzmjenu_(o, p, id) {
 function promijeniStatus_(o, p, id, status) {
   if (STATUSI.indexOf(status) < 0) return { ok: false, poruka: 'Nepoznat status.' };
   const ev = terminZaIzmjenu_(o, p, id);
+  const tel = izvuciTelefon(poljeIzOpisa(ev.getDescription(), 'Telefon') || ev.getDescription());
   if (status === 'otkazan') {
     const red = redZaDogadjaj_(ev, lokPoFrizeru_(), CFG.TZ);
     red[KOL['Status']] = 'otkazan';
@@ -1474,10 +1493,12 @@ function promijeniStatus_(o, p, id, status) {
       posaljiEmailTermina_(ev, 'otkazan');
     }
     ev.deleteEvent(); // termin se oslobađa za sajt i za kalendar
+    azurirajKlijenta_(tel);
     return { ok: true, poruka: 'Termin je otkazan, vrijeme je ponovo slobodno.' };
   }
   ev.setTag('status', status);
   upisiTermin_(ev);
+  azurirajKlijenta_(tel);
   return { ok: true, poruka: status === 'nije_dosao' ? 'Označeno: nije došao.' : 'Termin je ponovo uredan.' };
 }
 
@@ -1526,6 +1547,7 @@ function pomjeriTermin_(o, p, z) {
   zapisiObavjestenje_('pomjeren', osoba, z.datum, z.vrijeme, n.usluga, n.klijent, 'panel', o.ime);
   posaljiEmailTermina_(ev, 'pomjeren');
   upisiTermin_(ev);
+  azurirajKlijenta_(izvuciTelefon(poljeIzOpisa(ev.getDescription(), 'Telefon') || ev.getDescription()));
   const [g, m, d] = z.datum.split('-');
   return { ok: true, poruka: 'Pomjereno na ' + d + '.' + m + '. u ' + z.vrijeme + (osoba !== n.frizer ? ', ' + osoba : '') + '.' };
 }
@@ -1683,6 +1705,7 @@ function citajTermine_(tz) {
     telefon: telefonIzTabele(r[KOL['Telefon']]), izvor: String(r[KOL['Izvor']] || ''),
     status: String(r[KOL['Status']] || 'zakazan'), dijete: String(r[KOL['Dijete']] || ''),
     roditelj: String(r[KOL['Roditelj']] || ''), kartica: String(r[KOL['Kartica']] || '').toLowerCase() === 'da',
+    email: String(r[KOL['Email']] || '').trim().toLowerCase(),
   })).filter(r => r.datum);
 }
 
@@ -1900,4 +1923,206 @@ function izvjestajHtml(iz) {
     '<p><b>Usluge:</b> ' + (iz.poUsluzi.map(x => x.naziv + ' ' + x.broj).join(', ') || '-') + '<br>' +
     '<b>Odakle termini:</b> ' + (iz.poIzvoru.map(x => x.naziv + ' ' + x.broj).join(', ') || '-') + '</p>' +
     '<p style="color:#888">Detalji: grasaksalon.me/panel > Izvještaj</p></div>';
+}
+
+/**
+ * Klijenti (CRM): list "Klijenti", jedan red po broju telefona.
+ * Gradi se sam iz termina i vaučera (poslije svakog upisa i svakog sata), a osoblje dopisuje
+ * Roditelj, Email, Djeca, Kartica, Marketing (da/ne) i Napomenu: to se čuva pri osvježavanju.
+ * Telefon: "067 338 777" -> +38267338777 (CG). "+49..." i "0049..." ostaju strani brojevi.
+ */
+
+const LIST_KLIJENTI = 'Klijenti';
+const ZAGLAVLJE_KLIJENTI = ['Telefon', 'Roditelj', 'Email', 'Djeca', 'Kartica', 'Posjete', 'Prva posjeta', 'Zadnja posjeta',
+  'Zadnja usluga', 'Predstoji', 'Nije došao', 'Otkazano', 'Vaučeri', 'Izvor', 'Marketing', 'Napomena', 'Azurirano'];
+const KK = ZAGLAVLJE_KLIJENTI.reduce((o, k, i) => { o[k] = i; return o; }, {});
+const MAX_KLIJENATA_PANEL = 300;
+
+function listKlijenata_() {
+  const ss = tabela_();
+  let sh = ss.getSheetByName(LIST_KLIJENTI);
+  if (!sh) {
+    sh = ss.insertSheet(LIST_KLIJENTI);
+    sh.getRange('A:Q').setNumberFormat('@');   // telefon ostaje +382..., datumi ostaju tekst
+    sh.getRange(1, 1, 1, ZAGLAVLJE_KLIJENTI.length).setValues([ZAGLAVLJE_KLIJENTI]).setFontWeight('bold').setBackground('#e7f5e4');
+    sh.setFrozenRows(1);
+  }
+  return sh;
+}
+
+/** Čista funkcija: termini (iz lista Termini) + vaučeri -> klijenti po telefonu, najskoriji prvi. */
+function sastaviKlijente(termini, vauceri, danas) {
+  const m = {};
+  const uzmi = tel => m[tel] || (m[tel] = {
+    telefon: tel, roditelj: '', email: '', djeca: {}, kartica: false, posjete: 0, prva: '', zadnja: '', zadnjaUsluga: '',
+    predstoji: 0, nijeDosao: 0, otkazano: 0, vauceri: 0, izvor: '',
+  });
+  termini.forEach(r => {
+    if (!r.telefon) return;
+    const k = uzmi(r.telefon);
+    if (r.roditelj) k.roditelj = r.roditelj;
+    if (r.email) k.email = r.email;
+    if (r.dijete) k.djeca[r.dijete] = true;
+    if (r.kartica) k.kartica = true;
+    if (!k.prva || r.datum < k.prva) { k.prva = r.datum; k.izvor = grupaIzvora_(r.izvor); }
+    if (r.status === 'otkazan') k.otkazano++;
+    else if (r.status === 'nije_dosao') k.nijeDosao++;
+    else if (r.datum < danas) { k.posjete++; if (r.datum >= k.zadnja) { k.zadnja = r.datum; k.zadnjaUsluga = r.usluga; } }
+    else k.predstoji++;
+  });
+  (vauceri || []).forEach(v => {
+    if (!v.telefon) return;
+    const k = uzmi(v.telefon);
+    k.vauceri++;
+    if (!k.roditelj && v.kupac) k.roditelj = v.kupac;
+    if (v.dijete) k.djeca[v.dijete] = true;
+    if (!k.prva && v.datum) { k.prva = v.datum; k.izvor = 'Vaučer'; }
+  });
+  return Object.keys(m).map(t => m[t]).sort((a, b) => (b.zadnja || b.prva).localeCompare(a.zadnja || a.prva));
+}
+
+function citajVaucere_() {
+  const sh = tabela_().getSheetByName(LIST_VAUCERI);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, ZAGLAVLJE_VAUCERI.length).getValues().map(r => ({
+    datum: datumTekst(r[0], CFG.TZ).slice(0, 10), vrsta: String(r[1] || ''), dijete: String(r[2] || ''),
+    kupac: String(r[3] || ''), telefon: telefonIzTabele(r[4]),
+  })).filter(v => v.telefon);
+}
+
+function citajRedoveKlijenata_(sh) {
+  const n = sh.getLastRow();
+  return n > 1 ? sh.getRange(2, 1, n - 1, ZAGLAVLJE_KLIJENTI.length).getValues() : [];
+}
+
+/** Red za tabelu: izračunato iz termina + ono što je osoblje ručno dopisalo u stari red. */
+function redKlijenta_(k, stari) {
+  const s = stari || [];
+  const t = i => String(s[i] == null ? '' : s[i]).trim();
+  const djeca = {};
+  Object.keys(k.djeca).forEach(d => { djeca[d] = true; });
+  t(KK['Djeca']).split(/\s*,\s*/).forEach(d => { if (d) djeca[d] = true; });
+  return [k.telefon, k.roditelj || t(KK['Roditelj']), k.email || t(KK['Email']), Object.keys(djeca).join(', '),
+    k.kartica || t(KK['Kartica']).toLowerCase() === 'da' ? 'da' : '', k.posjete, k.prva, k.zadnja, k.zadnjaUsluga,
+    k.predstoji, k.nijeDosao, k.otkazano, k.vauceri, k.izvor || t(KK['Izvor']) || 'ručno', t(KK['Marketing']), t(KK['Napomena']), sadaTekst_()];
+}
+
+/** Cijeli list iznova (svaki sat, Postavi, meni). Ručno dodati klijenti bez termina ostaju. Vraća broj klijenata. */
+function azurirajKlijente_() {
+  const sh = listKlijenata_();
+  const tz = CFG.TZ;
+  const danas = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const stari = {};
+  citajRedoveKlijenata_(sh).forEach(r => { const tel = telefonIzTabele(r[0]); if (tel) stari[tel] = r; });
+  const klijenti = sastaviKlijente(citajTermine_(tz), citajVaucere_(), danas);
+  const redovi = klijenti.map(k => redKlijenta_(k, stari[k.telefon]));
+  const ima = {};
+  klijenti.forEach(k => { ima[k.telefon] = true; });
+  Object.keys(stari).forEach(tel => { if (!ima[tel]) { const r = stari[tel].slice(); r[0] = tel; redovi.push(r); } });
+  const n = sh.getLastRow();
+  if (n > 1) sh.getRange(2, 1, n - 1, ZAGLAVLJE_KLIJENTI.length).clearContent();
+  sh.getRange('A:A').setNumberFormat('@');
+  if (redovi.length) sh.getRange(2, 1, redovi.length, ZAGLAVLJE_KLIJENTI.length).setValues(redovi);
+  return redovi.length;
+}
+
+/** Jedan klijent odmah poslije upisa, pomjeranja ili otkazivanja termina i poslije vaučera. Nikad ne ruši upis. */
+function azurirajKlijenta_(tel) {
+  try {
+    if (!tel) return;
+    const sh = listKlijenata_();
+    const tz = CFG.TZ;
+    const danas = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+    const k = sastaviKlijente(citajTermine_(tz).filter(r => r.telefon === tel), citajVaucere_().filter(v => v.telefon === tel), danas)[0];
+    if (!k) return;
+    const n = sh.getLastRow();
+    const telefoni = n > 1 ? sh.getRange(2, 1, n - 1, 1).getValues().map(x => telefonIzTabele(x[0])) : [];
+    const i = telefoni.indexOf(tel);
+    const red = redKlijenta_(k, i >= 0 ? sh.getRange(i + 2, 1, 1, ZAGLAVLJE_KLIJENTI.length).getValues()[0] : null);
+    if (i >= 0) sh.getRange(i + 2, 1, 1, red.length).setValues([red]); else sh.appendRow(red);
+  } catch (e) {
+    console.log('Klijent nije ažuriran: ' + e);
+  }
+}
+
+/** Meni: Grasak > Osvjezi klijente (CRM). */
+function osvjeziKlijente() {
+  const n = azurirajKlijente_();
+  SpreadsheetApp.getUi().alert('Klijenti: ' + n + ' brojeva telefona u listu "Klijenti".');
+}
+
+/** Telefoni ukucani rukom u tabelu: "067 338 777" -> +38267338777 (onEdit). */
+function normalizujTelefoneUKoloni_(sh, kolona, red, n) {
+  const r = sh.getRange(red, kolona, n, 1);
+  const stare = r.getValues();
+  let izmjena = false;
+  const nove = stare.map(x => {
+    const t = String(x[0] == null ? '' : x[0]).trim().replace(/^'/, '');
+    if (!t || /[a-zA-Z]/.test(t)) return [t];            // nije broj (npr. tekst) - ne dira se
+    const nt = normalizujTelefon(t);
+    const rez = nt.replace(/\D/g, '').length >= 8 ? nt : t;
+    if (rez !== String(x[0] == null ? '' : x[0])) izmjena = true;
+    return [rez];
+  });
+  if (izmjena) r.setNumberFormat('@').setValues(nove);
+}
+
+/* ---------- panel: baza klijenata (vlasnik i administratori) ---------- */
+
+function klijentIzReda_(r) {
+  const t = i => String(r[i] == null ? '' : r[i]).trim();
+  return {
+    telefon: telefonIzTabele(r[0]), roditelj: t(1), email: t(2), djeca: t(3), kartica: t(4).toLowerCase() === 'da',
+    posjete: Number(r[5]) || 0, prva: datumTekst(r[6], CFG.TZ), zadnja: datumTekst(r[7], CFG.TZ), zadnjaUsluga: t(8),
+    predstoji: Number(r[9]) || 0, nijeDosao: Number(r[10]) || 0, otkazano: Number(r[11]) || 0, vauceri: Number(r[12]) || 0,
+    izvor: t(13), marketing: t(14).toLowerCase(), napomena: t(15), azurirano: t(16),
+  };
+}
+
+/** Lista za panel: pretraga po telefonu, roditelju, djeci, emailu, napomeni; filter: kartica | predstoji | nije_dosao | bez_emaila | marketing. */
+function klijentiZaPanel_(o, q, filter) {
+  if (o.uloga === 'frizer') throw new Error('Baza klijenata je za vlasnika i administratore.');
+  const sh = tabela_().getSheetByName(LIST_KLIJENTI);
+  const upit = String(q || '').trim().toLowerCase();
+  const telUpit = upit.replace(/\D/g, '');
+  const sve = (sh ? citajRedoveKlijenata_(sh) : []).map(klijentIzReda_).filter(k => k.telefon);
+  const rez = sve.filter(k => {
+    if (filter === 'kartica' && !k.kartica) return false;
+    if (filter === 'predstoji' && !k.predstoji) return false;
+    if (filter === 'nije_dosao' && !k.nijeDosao) return false;
+    if (filter === 'bez_emaila' && k.email) return false;
+    if (filter === 'marketing' && k.marketing !== 'da') return false;
+    if (!upit) return true;
+    return (telUpit.length >= 3 && k.telefon.replace(/\D/g, '').indexOf(telUpit) >= 0) ||
+      [k.roditelj, k.djeca, k.email, k.napomena].join(' ').toLowerCase().indexOf(upit) >= 0;
+  });
+  return { ukupno: sve.length, nadjeno: rez.length, klijenti: rez.slice(0, MAX_KLIJENATA_PANEL) };
+}
+
+/** Upis ili izmjena iz panela: ručna polja. Nepoznat broj = novi klijent (npr. kad neko samo pita za cijenu). */
+function sacuvajKlijenta_(o, z) {
+  if (o.uloga === 'frizer') return { ok: false, poruka: 'Bazu klijenata mijenjaju vlasnik i administratori.' };
+  const tel = normalizujTelefon(z.telefon);
+  if (tel.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Upišite ispravan broj telefona.' };
+  const email = String(z.email || '').trim().toLowerCase().slice(0, 80);
+  if (email && !jeEmail(email)) return { ok: false, poruka: 'Email adresa nije ispravna.' };
+  const sh = listKlijenata_();
+  const n = sh.getLastRow();
+  const telefoni = n > 1 ? sh.getRange(2, 1, n - 1, 1).getValues().map(x => telefonIzTabele(x[0])) : [];
+  const i = telefoni.indexOf(tel);
+  const red = i >= 0 ? sh.getRange(i + 2, 1, 1, ZAGLAVLJE_KLIJENTI.length).getValues()[0] : ZAGLAVLJE_KLIJENTI.map(() => '');
+  red[0] = tel;
+  red[KK['Roditelj']] = cist_(z.roditelj, 60);
+  red[KK['Email']] = email;
+  red[KK['Djeca']] = cist_(z.djeca, 120);
+  red[KK['Kartica']] = (z.kartica === true || /^(da|true|1)$/i.test(String(z.kartica || ''))) ? 'da' : '';
+  red[KK['Marketing']] = /^(da|ne)$/i.test(String(z.marketing || '')) ? String(z.marketing).toLowerCase() : '';
+  red[KK['Napomena']] = cist_(z.napomena, 300);
+  if (i < 0) {
+    ['Posjete', 'Predstoji', 'Nije došao', 'Otkazano', 'Vaučeri'].forEach(kol => { red[KK[kol]] = 0; });
+    red[KK['Izvor']] = 'ručno (' + o.ime + ')';
+  }
+  red[KK['Azurirano']] = sadaTekst_();
+  if (i >= 0) sh.getRange(i + 2, 1, 1, red.length).setValues([red]); else sh.appendRow(red);
+  return { ok: true, poruka: i >= 0 ? 'Sačuvano.' : 'Novi klijent upisan.', klijent: klijentIzReda_(red) };
 }

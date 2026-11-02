@@ -65,6 +65,13 @@ export interface PredstojeciTermin {
   roditelj: string; telefon: string; kartica: boolean; napomena: string; status: string; izvor: string
 }
 
+/* ---- baza klijenata (CRM), list "Klijenti": jedan red po telefonu ---- */
+export interface KlijentRed {
+  telefon: string; roditelj: string; email: string; djeca: string; kartica: boolean
+  posjete: number; prva: string; zadnja: string; zadnjaUsluga: string; predstoji: number; nijeDosao: number; otkazano: number; vauceri: number
+  izvor: string; marketing: string; napomena: string; azurirano: string
+}
+
 /* ---- podešavanja (samo vlasnik) ---- */
 export interface LokacijaPod { naziv: string; adresa: string; telefon: string; dani: string[]; postojeca?: boolean }
 export interface FrizerPod { ime: string; lokacija: string; aktivan: boolean; postojeci?: boolean }
