@@ -88,7 +88,7 @@ export default function Osoblje() {
   }
   const otvoriDan = (d: string) => { setTab('dan'); setFokus(d + '#' + Date.now()) }
   const naPocetnu = () => { otvoriDan(isoDatum(new Date())); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-  const staraSkripta = konfig.verzija !== OCEKIVANA_VERZIJA_SKRIPTE
+  const staraSkripta = (konfig.verzija || '') < OCEKIVANA_VERZIJA_SKRIPTE   // novija skripta nikad nije problem
   const vratiTermine = async () => {
     if (!window.confirm('Vratiti u kalendar sve buduće termine iz tabele kojih tamo nema? Otkazani i prošli se ne diraju.')) return
     setVracanje('radi')

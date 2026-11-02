@@ -26,7 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-02b';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-02c';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -2069,7 +2069,7 @@ function redKlijenta_(k, stari) {
   const djeca = {};
   Object.keys(k.djeca).forEach(d => { djeca[d] = true; });
   t(KK['Djeca']).split(/\s*,\s*/).forEach(d => { if (d) djeca[d] = true; });
-  return [k.telefon, k.roditelj || t(KK['Roditelj']), k.email || t(KK['Email']), Object.keys(djeca).join(', '),
+  return [telefonZaTabelu(k.telefon), k.roditelj || t(KK['Roditelj']), k.email || t(KK['Email']), Object.keys(djeca).join(', '),
     k.kartica || t(KK['Kartica']).toLowerCase() === 'da' ? 'da' : '', k.posjete, k.prva, k.zadnja, k.zadnjaUsluga,
     k.predstoji, k.nijeDosao, k.otkazano, k.vauceri, t(KK['Izvor']) || k.izvor || 'ručno', t(KK['Marketing']), t(KK['Napomena']), sadaTekst_(),   // izvor = kako je prvi put došao (registracija ostaje)
     t(KK['Registrovan']), t(KK['PIN'])];   // nalog roditelja (Moj Grašak) ostaje
@@ -2097,7 +2097,7 @@ function azurirajKlijente_() {
   const redovi = klijenti.map(k => redKlijenta_(k, stari[k.telefon]));
   const ima = {};
   klijenti.forEach(k => { ima[k.telefon] = true; });
-  Object.keys(stari).forEach(tel => { if (!ima[tel]) { const r = stari[tel].slice(); r[0] = tel; redovi.push(r); } });
+  Object.keys(stari).forEach(tel => { if (!ima[tel]) { const r = stari[tel].slice(); r[0] = telefonZaTabelu(tel); redovi.push(r); } });
   const n = sh.getLastRow();
   if (n > 1) sh.getRange(2, 1, n - 1, ZAGLAVLJE_KLIJENTI.length).clearContent();
   sh.getRange('A:A').setNumberFormat('@');
@@ -2141,7 +2141,7 @@ function normalizujTelefoneUKoloni_(sh, kolona, red, n) {
     const nt = normalizujTelefon(t);
     const rez = nt.replace(/\D/g, '').length >= 8 ? nt : t;
     if (rez !== String(x[0] == null ? '' : x[0])) izmjena = true;
-    return [rez];
+    return [rez.startsWith('+') ? telefonZaTabelu(rez) : rez];
   });
   if (izmjena) r.setNumberFormat('@').setValues(nove);
 }
@@ -2192,7 +2192,7 @@ function sacuvajKlijenta_(o, z) {
   const telefoni = n > 1 ? sh.getRange(2, 1, n - 1, 1).getValues().map(x => telefonIzTabele(x[0])) : [];
   const i = telefoni.indexOf(tel);
   const red = i >= 0 ? sh.getRange(i + 2, 1, 1, ZAGLAVLJE_KLIJENTI.length).getValues()[0] : ZAGLAVLJE_KLIJENTI.map(() => '');
-  red[0] = tel;
+  red[0] = telefonZaTabelu(tel);   // apostrof čuva + (inače tabela napravi broj bez plusa)
   red[KK['Roditelj']] = cist_(z.roditelj, 60);
   red[KK['Email']] = email;
   red[KK['Djeca']] = cist_(z.djeca, 120);
@@ -2290,7 +2290,7 @@ function registracijaRoditelja_(z) {
     ['Posjete', 'Predstoji', 'Nije došao', 'Otkazano', 'Vaučeri'].forEach(k => { red[KK[k]] = 0; });
     red[KK['Izvor']] = 'registracija';
   }
-  red[0] = tel;
+  red[0] = telefonZaTabelu(tel);
   red[KK['Roditelj']] = roditelj;
   if (email) red[KK['Email']] = email;
   const djeca = cistTekst(Array.isArray(z.djeca) ? z.djeca.join(', ') : z.djeca, 120);
