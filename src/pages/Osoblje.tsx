@@ -111,10 +111,10 @@ export default function Osoblje() {
       podnaslov={`${profil.ime} · ${profil.uloga}`}
       onPocetna={naPocetnu}
     >
-      {staraSkripta && (
+      {staraSkripta && vlasnik && (
         <p className="mb-4 rounded-2xl bg-sun p-3 text-sm text-ink shadow print:hidden">
-          <span className="font-bold">Google skripta je starija od panela.</span> Zalijepite novu (Grasak.gs) i napravite New version, pa Grasak &gt; 1. Postavi.
-          Do tada ne rade: Sedmica, Lista, Klijenti, pomjeranje, pauze, istorija klijenta i nalozi roditelja. Dan, upis i otkazivanje rade.
+          <span className="font-bold">Google skripta je starija od panela.</span> Sa naloga grasaksalon@gmail.com zalijepite novu (Grasak.gs), Grasak &gt; 1. Postavi i Новая версия.
+          Dan, upis i otkazivanje rade i sada; najnovije sitnice prorade poslije lijepljenja.
         </p>
       )}
       {vlasnik && konfig.nalog && (
