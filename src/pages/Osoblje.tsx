@@ -41,6 +41,7 @@ export default function Osoblje() {
   const [tab, setTab] = useState<'dan' | 'sedmica' | 'lista' | 'klijenti' | 'izvjestaj' | 'podesavanja'>('dan')
   const [signal, setSignal] = useState(0)          // novo obavještenje -> osvježi pregled dana
   const [fokus, setFokus] = useState<string>('')   // tap na obavještenje -> taj dan
+  const [vracanje, setVracanje] = useState('')      // vlasnik: vraćanje termina iz tabele u kalendar
 
   useEffect(() => {
     document.title = 'Grašak panel'
@@ -88,7 +89,6 @@ export default function Osoblje() {
   const otvoriDan = (d: string) => { setTab('dan'); setFokus(d + '#' + Date.now()) }
   const naPocetnu = () => { otvoriDan(isoDatum(new Date())); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const staraSkripta = konfig.verzija !== OCEKIVANA_VERZIJA_SKRIPTE
-  const [vracanje, setVracanje] = useState('')
   const vratiTermine = async () => {
     if (!window.confirm('Vratiti u kalendar sve buduće termine iz tabele kojih tamo nema? Otkazani i prošli se ne diraju.')) return
     setVracanje('radi')
