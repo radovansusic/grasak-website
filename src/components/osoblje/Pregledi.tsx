@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2, Phone, Printer } from 'lucide-react
 import { osoblje, type KonfigOsoblje, type PredstojeciTermin, type Pristup, type Sedmica } from '@/lib/osoblje'
 import { isoDatum } from '@/lib/zakazivanje'
 import { KarticaZnak, Tab } from './zajednicko'
-import { kratakDatum, lijepDatum, pomjeri, ponedjeljak } from './pomocno'
+import { kratakDatum, lijepDatum, nazivTermina, pomjeri, ponedjeljak } from './pomocno'
 
 const NEMA_SKRIPTE = 'Ovaj pregled traži novu verziju Google skripte (Grasak.gs). Zalijepite je i napravite New version.'
 
@@ -151,7 +151,7 @@ export function ListaPanel({ pristup, konfig }: { pristup: Pristup; konfig: Konf
                 {lista.map((t) => (
                   <li key={t.id} className={'flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl px-3 py-2 text-sm ' + (t.kartica ? 'bg-sun/30' : 'bg-grass-tint') + (t.status === 'nije_dosao' ? ' line-through opacity-60' : '')}>
                     <span className="w-24 font-bold text-ink">{t.vrijeme}-{t.kraj}</span>
-                    <span className="flex items-center gap-1.5 font-bold text-ink">{t.dijete || 'bez imena'}{t.kartica && <KarticaZnak mala />}</span>
+                    <span className={'flex items-center gap-1.5 font-bold text-ink ' + (nazivTermina(t).izvor === 'dijete' ? '' : 'italic')}>{nazivTermina(t).tekst}{t.kartica && <KarticaZnak mala />}</span>
                     <span className="text-ink/70">{t.usluga}</span>
                     <span className="text-ink/70">{t.frizer}{viseLokacija && ` · ${t.lokacija}`}</span>
                     {t.roditelj && <span className="text-ink/60">{t.roditelj}</span>}

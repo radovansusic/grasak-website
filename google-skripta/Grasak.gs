@@ -26,7 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-02d';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-02e';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -518,6 +518,8 @@ function cistTekst(v, n, saZagradama) {
 function rastaviNaslov(naslov) {
   const m = String(naslov || '').match(/^\s*([^-()]+?)\s+-\s+(.+?)\s*(?:\(([^()]*)\))?\s*$/);
   if (!m) return null;
+  // "Mali tim (2 djece)" bez imena: zagrada sa brojem djece pripada usluzi, nije ime
+  if (m[3] && /^\d+\s*(djece|dijete|djeteta|children|детей)$/i.test(m[3].trim())) return { frizer: m[1], usluga: m[2] + ' (' + m[3].trim() + ')', klijent: '' };
   return { frizer: m[1], usluga: m[2], klijent: m[3] || '' };
 }
 

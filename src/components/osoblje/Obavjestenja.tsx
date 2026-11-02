@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bell, BellRing, CalendarClock, CalendarPlus, CalendarX, X } from 'lucide-react'
 import { osoblje, type Obavjestenje, type Pristup } from '@/lib/osoblje'
+import { jeIme } from './pomocno'
 
 const DANI = ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub']
 const PERIOD_MS = 30000
@@ -38,7 +39,7 @@ function Ikona({ o, cls }: { o: Obavjestenje; cls: string }) {
   return <CalendarPlus className={cls + ' text-grass'} />
 }
 function tekstObavjestenja(o: Obavjestenje): string {
-  return [kadaTermin(o), o.dijete || 'bez imena', o.usluga].filter(Boolean).join(' · ')
+  return [kadaTermin(o), jeIme(o.dijete, o.usluga) ? o.dijete : '', o.usluga].filter(Boolean).join(' · ')
 }
 
 async function sistemsko(o: Obavjestenje) {

@@ -13,7 +13,7 @@ import { BlokadaDetalji, PauzaForma } from '@/components/osoblje/Pauza'
 import { ListaPanel, SedmicaPanel } from '@/components/osoblje/Pregledi'
 import KlijentiPanel from '@/components/osoblje/Klijenti'
 import { Prozor, Tab } from '@/components/osoblje/zajednicko'
-import { inputCls, lijepDatum, pomjeri, proslo } from '@/components/osoblje/pomocno'
+import { OZNAKA_IZVORA, inputCls, lijepDatum, nazivTermina, pomjeri, proslo } from '@/components/osoblje/pomocno'
 import { API_URL, isoDatum } from '@/lib/zakazivanje'
 import {
   OCEKIVANA_VERZIJA_SKRIPTE, osoblje,
@@ -87,6 +87,8 @@ export default function Osoblje() {
     osoblje<{ konfig: KonfigOsoblje }>('prijava', pristup).then((r) => { if (r.ok) setKonfig(r.konfig) }).catch(() => {})
   }
   const otvoriDan = (d: string) => { setTab('dan'); setFokus(d + '#' + Date.now()) }
+  // klik na tab u kom si = na vrh (kao Instagram); prelazak na drugi tab počinje od vrha
+  const idiNa = (t: typeof tab) => { if (t !== tab) setTab(t); window.scrollTo({ top: 0, behavior: t === tab ? 'smooth' : 'auto' }) }
   const naPocetnu = () => { otvoriDan(isoDatum(new Date())); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const staraSkripta = (konfig.verzija || '') < OCEKIVANA_VERZIJA_SKRIPTE   // novija skripta nikad nije problem
   const vratiTermine = async () => {
@@ -125,12 +127,12 @@ export default function Osoblje() {
         </div>
       )}
       <div className="mb-4 flex flex-wrap gap-2 print:hidden">
-        <Tab aktivan={tab === 'dan'} onClick={() => setTab('dan')}><CalendarDays className="h-4 w-4" /> Dan</Tab>
-        <Tab aktivan={tab === 'sedmica'} onClick={() => setTab('sedmica')}><CalendarRange className="h-4 w-4" /> Sedmica</Tab>
-        {admin && <Tab aktivan={tab === 'lista'} onClick={() => setTab('lista')}><ListChecks className="h-4 w-4" /> Lista</Tab>}
-        {admin && <Tab aktivan={tab === 'klijenti'} onClick={() => setTab('klijenti')}><Users className="h-4 w-4" /> Klijenti</Tab>}
-        {admin && <Tab aktivan={tab === 'izvjestaj'} onClick={() => setTab('izvjestaj')}><BarChart3 className="h-4 w-4" /> Izvještaj</Tab>}
-        {vlasnik && <Tab aktivan={tab === 'podesavanja'} onClick={() => setTab('podesavanja')}><Settings className="h-4 w-4" /> Podešavanja</Tab>}
+        <Tab aktivan={tab === 'dan'} onClick={() => idiNa('dan')}><CalendarDays className="h-4 w-4" /> Dan</Tab>
+        <Tab aktivan={tab === 'sedmica'} onClick={() => idiNa('sedmica')}><CalendarRange className="h-4 w-4" /> Sedmica</Tab>
+        {admin && <Tab aktivan={tab === 'lista'} onClick={() => idiNa('lista')}><ListChecks className="h-4 w-4" /> Lista</Tab>}
+        {admin && <Tab aktivan={tab === 'klijenti'} onClick={() => idiNa('klijenti')}><Users className="h-4 w-4" /> Klijenti</Tab>}
+        {admin && <Tab aktivan={tab === 'izvjestaj'} onClick={() => idiNa('izvjestaj')}><BarChart3 className="h-4 w-4" /> Izvještaj</Tab>}
+        {vlasnik && <Tab aktivan={tab === 'podesavanja'} onClick={() => idiNa('podesavanja')}><Settings className="h-4 w-4" /> Podešavanja</Tab>}
       </div>
       {tab === 'sedmica' ? <SedmicaPanel pristup={pristup} konfig={konfig} onOtvoriDan={otvoriDan} />
         : tab === 'lista' && admin ? <ListaPanel pristup={pristup} konfig={konfig} />
@@ -167,15 +169,15 @@ function Okvir({ children, desno, podnaslov, onPocetna }: { children: ReactNode;
 function NaVrh() {
   const [vidljivo, setVidljivo] = useState(false)
   useEffect(() => {
-    const naSkrol = () => setVidljivo(window.scrollY > 300)
+    const naSkrol = () => setVidljivo(window.scrollY > 200)
     window.addEventListener('scroll', naSkrol, { passive: true })
     return () => window.removeEventListener('scroll', naSkrol)
   }, [])
   if (!vidljivo) return null
   return (
     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Na vrh"
-      className="fixed bottom-5 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-grass-darkest text-white shadow-lg shadow-grass-darkest/30 print:hidden">
-      <ArrowUp className="h-5 w-5" />
+      className="fixed bottom-5 right-4 z-40 flex h-14 items-center gap-1.5 rounded-full bg-grass-darkest px-5 font-bold text-white shadow-xl shadow-grass-darkest/40 active:scale-95 print:hidden">
+      <ArrowUp className="h-6 w-6" /> Na vrh
     </button>
   )
 }
@@ -388,10 +390,14 @@ function Celija({ o, vrijeme, proslo, onIzbor }: { o: OsobaDan; vrijeme: string;
         {(s.termini || []).map((i) => {
           const t = o.termini[i]
           const nijeDosao = t.status === 'nije_dosao'
+          const ime = nazivTermina(t)
           return (
             <button key={t.id} onClick={() => onIzbor({ tip: 'termin', osoba: o.ime, termin: t })}
               className={'w-full rounded-lg px-2 py-1.5 text-left ' + (nijeDosao ? 'bg-coral/20 text-ink line-through' : t.kartica ? 'bg-sun text-ink' : 'bg-grass text-white')}>
-              <span className="flex items-center gap-1 text-sm font-bold"><span className="truncate">{t.dijete || 'bez imena'}</span>{t.kartica && <CreditCard className="h-3.5 w-3.5 shrink-0" aria-label="kartica Veseli Grašak" />}</span>
+              <span className="flex items-center gap-1 text-sm font-bold" title={ime.izvor === 'dijete' ? undefined : 'Ime djeteta nije upisano: ' + OZNAKA_IZVORA[ime.izvor]}>
+                <span className={'truncate ' + (ime.izvor === 'dijete' ? '' : 'italic')}>{ime.tekst}</span>
+                {t.kartica && <CreditCard className="h-3.5 w-3.5 shrink-0" aria-label="kartica Veseli Grašak" />}
+              </span>
               <span className="block truncate text-[11px] opacity-90">{t.usluga} · {t.od}-{t.do}</span>
             </button>
           )
@@ -487,7 +493,8 @@ function DetaljiTermina({ pristup, konfig, lokId, datum, osoba, t, onZatvori, on
   const red = (k: string, v: ReactNode) => v ? <div className="flex gap-3 border-b border-grass-tint py-1.5 text-sm"><span className="w-24 shrink-0 text-ink/50">{k}</span><span className="text-ink">{v}</span></div> : null
   const izvor = t.izvor === 'sajt' ? 'sajt (roditelj)' : t.izvor.startsWith('telefon') ? 'upisalo osoblje: ' + t.izvor.replace(/^telefon - /, '') : 'Google kalendar'
   return (
-    <Prozor naslov={t.dijete || 'Termin'} onZatvori={onZatvori}>
+    <Prozor naslov={nazivTermina(t).tekst} onZatvori={onZatvori}>
+      {nazivTermina(t).izvor !== 'dijete' && <p className="-mt-2 mb-2 text-xs text-ink/50">Ime djeteta nije upisano, naziv je uzet: {OZNAKA_IZVORA[nazivTermina(t).izvor]}.</p>}
       <div className="mb-4">
         {red('Vrijeme', `${t.od} - ${t.do} · ${osoba}`)}
         {red('Usluga', t.usluga)}

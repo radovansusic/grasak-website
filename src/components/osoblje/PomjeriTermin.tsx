@@ -3,7 +3,7 @@ import { CalendarClock, Loader2 } from 'lucide-react'
 import { osoblje, type DanOsoblje, type KonfigOsoblje, type Pristup, type TerminOsoblje } from '@/lib/osoblje'
 import { isoDatum } from '@/lib/zakazivanje'
 import { Prozor } from './zajednicko'
-import { inputCls, lijepDatum, proslo } from './pomocno'
+import { inputCls, lijepDatum, nazivTermina, proslo } from './pomocno'
 
 /** Pomjeranje termina: novi dan i sat (i drugi frizer iste lokacije), podaci o djetetu ostaju, roditelj dobija email. */
 export default function PomjeriTermin({ pristup, konfig, lokId, osoba, t, datum: pocetni, onZatvori, onGotovo }: {
@@ -46,7 +46,7 @@ export default function PomjeriTermin({ pristup, konfig, lokId, osoba, t, datum:
   }
 
   return (
-    <Prozor naslov={`Pomjeri · ${t.dijete || 'termin'}`} onZatvori={onZatvori}>
+    <Prozor naslov={`Pomjeri · ${nazivTermina(t).tekst}`} onZatvori={onZatvori}>
       <p className="-mt-2 mb-3 text-sm text-ink/60">Sada: {t.od}, {osoba} · {t.usluga}. Podaci o djetetu ostaju, roditelj dobija email ako ga je ostavio.</p>
       <label className="block text-sm font-bold text-ink">Novi dan
         <input type="date" value={datum} min={danas} onChange={(e) => { if (e.target.value) { setDatum(e.target.value); setVrijeme('') } }} className={inputCls + ' mt-1'} />
