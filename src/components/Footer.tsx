@@ -13,6 +13,7 @@ export default function Footer() {
     { to: '/galerija', label: tr('nav.galerija') },
     { to: '/zakazi', label: tr('nav.book') },
     { to: '/kontakt', label: tr('nav.kontakt') },
+    { to: '/moj', label: tr('moj.title') },
   ]
   return (
     <footer className="relative bg-grass-darkest text-white/85">

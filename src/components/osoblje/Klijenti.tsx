@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { Check, Download, Loader2, Mail, Phone, Search, UserPlus } from 'lucide-react'
+import { Check, Download, KeyRound, Loader2, Mail, Phone, Search, UserPlus } from 'lucide-react'
 import { osoblje, type KlijentRed, type Pristup } from '@/lib/osoblje'
 import { KarticaZnak, Prozor, Tab } from './zajednicko'
 import { inputCls, kratakDatum } from './pomocno'
@@ -9,6 +9,7 @@ const NEMA_SKRIPTE = 'Baza klijenata traži novu verziju Google skripte (Grasak.
 const FILTERI: { v: string; oznaka: string }[] = [
   { v: '', oznaka: 'Svi' }, { v: 'kartica', oznaka: 'Kartica VG' }, { v: 'predstoji', oznaka: 'Ima termin' },
   { v: 'nije_dosao', oznaka: 'Izostajali' }, { v: 'bez_emaila', oznaka: 'Bez emaila' }, { v: 'marketing', oznaka: 'Marketing da' },
+  { v: 'nalog', oznaka: 'Sa nalogom' },
 ]
 
 /** Baza klijenata (CRM): pretraga, kartica klijenta, ručni upis, CSV. Vlasnik i administratori. */
@@ -93,6 +94,7 @@ export default function KlijentiPanel({ pristup }: { pristup: Pristup }) {
                       {k.predstoji > 0 && <span className="font-bold text-grass-deep">ima termin</span>}
                       {k.nijeDosao > 0 && <span className="font-bold text-coral">izostao {k.nijeDosao}x</span>}
                       {k.vauceri > 0 && <span>vaučer {k.vauceri}</span>}
+                      {k.nalog && <span className="rounded-full bg-grass-tint px-2 py-0.5 font-bold text-grass-deep">nalog</span>}
                       {k.marketing === 'ne' && <span>bez poruka</span>}
                     </span>
                   </button>
@@ -110,6 +112,16 @@ export default function KlijentiPanel({ pristup }: { pristup: Pristup }) {
 function KlijentKartica({ pristup, k, onZatvori, onSacuvano }: { pristup: Pristup; k: KlijentRed | null; onZatvori: () => void; onSacuvano: (t: string) => void }) {
   const [salje, setSalje] = useState(false)
   const [greska, setGreska] = useState('')
+  const [pinPoruka, setPinPoruka] = useState('')
+  const noviPin = async () => {
+    if (!k || !window.confirm(`Novi PIN za ${k.roditelj || k.telefon}? Stari prestaje da važi, recite roditelju novi.`)) return
+    setSalje(true); setGreska('')
+    try {
+      const r = await osoblje<{ pin: string }>('klijent_pin', pristup, { telefon: k.telefon })
+      if (r.ok) setPinPoruka(r.poruka || 'Novi PIN: ' + r.pin)
+      else setGreska(r.poruka || 'Nije uspjelo.')
+    } catch { setGreska('Nema veze sa serverom.') } finally { setSalje(false) }
+  }
   const posalji = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
@@ -148,6 +160,14 @@ function KlijentKartica({ pristup, k, onZatvori, onSacuvano }: { pristup: Pristu
             {brojka('Vaučeri', k.vauceri)}
             {brojka('Izvor', k.izvor)}
             {brojka('Ažurirano', k.azurirano.slice(0, 10))}
+          </div>
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl bg-grass-tint px-3 py-2 text-sm text-ink">
+            <KeyRound className="h-4 w-4 text-grass-deep" />
+            <span>{k.nalog ? `Nalog Moj Grašak od ${k.registrovan ? k.registrovan.slice(0, 10) : '-'}` : 'Bez naloga na sajtu'}</span>
+            <button type="button" disabled={salje} onClick={() => void noviPin()} className="ml-auto rounded-full bg-white px-3 py-1 text-xs font-bold text-ink shadow-sm disabled:opacity-50">
+              {k.nalog ? 'Novi PIN' : 'Napravi nalog (PIN)'}
+            </button>
+            {pinPoruka && <p className="w-full rounded-lg bg-sun px-3 py-2 font-bold text-ink">{pinPoruka}</p>}
           </div>
         </>
       )}

@@ -70,6 +70,7 @@ export interface KlijentRed {
   telefon: string; roditelj: string; email: string; djeca: string; kartica: boolean
   posjete: number; prva: string; zadnja: string; zadnjaUsluga: string; predstoji: number; nijeDosao: number; otkazano: number; vauceri: number
   izvor: string; marketing: string; napomena: string; azurirano: string
+  registrovan?: string; nalog?: boolean   // nalog roditelja (Moj Grašak)
 }
 
 /* ---- podešavanja (samo vlasnik) ---- */

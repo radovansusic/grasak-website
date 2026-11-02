@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import type { FormEvent, ReactNode } from 'react'
 import { motion } from 'framer-motion'
-import { CalendarCheck, CalendarPlus, Check, Copy, Loader2, PartyPopper } from 'lucide-react'
+import { CalendarCheck, CalendarPlus, Check, Copy, Loader2, PartyPopper, UserPlus } from 'lucide-react'
 import { useLang } from '@/i18n/LanguageContext'
 import { t as prevodi } from '@/i18n/translations'
 import { sendBookingEmail } from '@/lib/booking'
 import MjesecniKalendar, { type StanjeDana } from '@/components/MjesecniKalendar'
+import { citajMoj, pisiPrefill } from '@/lib/moj'
 import {
   isoDatum, linkOtkazivanja, napraviIcs, preuzmiIcs, ucitajKonfig, ucitajPeriod, ucitajSlotove, zakazi,
   type Konfig, type Lokacija, type Slot, type Usluga,
@@ -55,6 +57,8 @@ export default function OnlineZakazivanje() {
   const [poruka, setPoruka] = useState('')
   const formaRef = useRef<HTMLDivElement>(null)
   const terminiRef = useRef<HTMLDivElement>(null)
+  const dijeteRef = useRef<HTMLInputElement>(null)
+  const [moj] = useState(citajMoj)   // nalog roditelja: podaci se sami popune
 
   useEffect(() => {
     ucitajKonfig()
@@ -123,6 +127,7 @@ export default function OnlineZakazivanje() {
           Email: polje('email') || '-', Kartica: f.get('kartica') === 'on' ? 'Veseli Grašak' : '-',
         })
         setUspjeh({ tekst: tr('zakazi.when', { datum: `${d}.${m}.`, vrijeme, osoba }), datum, vrijeme, osoba, usluga, lok, id: r.id, kod: r.kod, email: polje('email') })
+        if (!moj) pisiPrefill({ roditelj: polje('roditelj'), telefon: polje('telefon'), email: polje('email'), dijete: polje('dijete'), kartica: f.get('kartica') === 'on' })
         setKopirano(false)
         window.scrollTo({ top: 0, behavior: 'smooth' })
         setOsvjezenje((x) => x + 1) // zauzeti termin nestaje i za sljedeće zakazivanje
@@ -169,6 +174,12 @@ export default function OnlineZakazivanje() {
                 {kopirano ? <Check className="h-3.5 w-3.5 text-grass" /> : <Copy className="h-3.5 w-3.5" />} {kopirano ? tr('zakazi.copied') : tr('zakazi.copyLink')}
               </button>
             </div>
+          </div>
+        )}
+        {!moj && (
+          <div className="mt-5 rounded-2xl border-2 border-grass-tint p-4 text-left">
+            <p className="text-sm text-ink/70">{tr('moj.createAfter')}</p>
+            <Link to="/moj?novi=1" className="mt-2 inline-flex items-center gap-2 rounded-full bg-grass px-4 py-2 text-sm font-bold text-white"><UserPlus className="h-4 w-4" /> {tr('moj.createBtn')}</Link>
           </div>
         )}
         <button onClick={() => { setUspjeh(null); setDatum(''); }} className="mt-6 rounded-full bg-grass px-6 py-3 font-bold text-white">
@@ -270,13 +281,27 @@ export default function OnlineZakazivanje() {
           <Korak n={++n} naslov={tr('zakazi.details')}>
             <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
               <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
-              <input name="dijete" required maxLength={60} placeholder={tr('zakazi.child')} className={inputCls} />
+              {moj && (
+                <p className="flex flex-wrap items-center gap-2 rounded-2xl bg-grass-tint px-4 py-2 text-sm text-ink sm:col-span-2">
+                  <span>{tr('moj.loggedAs', { ime: moj.profil.roditelj })}</span>
+                  <Link to="/moj" className="font-bold text-grass-deep underline">{tr('moj.title')}</Link>
+                </p>
+              )}
+              {moj && moj.profil.djeca.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                  <span className="text-sm text-ink/60">{tr('moj.pickChild')}</span>
+                  {moj.profil.djeca.map((d) => (
+                    <button key={d} type="button" onClick={() => { if (dijeteRef.current) dijeteRef.current.value = d }} className="rounded-full border-2 border-grass-tint bg-white px-3 py-1 text-sm font-bold text-ink hover:border-grass">{d}</button>
+                  ))}
+                </div>
+              )}
+              <input ref={dijeteRef} name="dijete" required maxLength={60} defaultValue={moj && moj.profil.djeca.length === 1 ? moj.profil.djeca[0] : ''} placeholder={tr('zakazi.child')} className={inputCls} />
               <input name="uzrast" maxLength={10} inputMode="numeric" placeholder={tr('zakazi.age')} className={inputCls} />
-              <input name="roditelj" required maxLength={60} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
-              <input name="telefon" required type="tel" inputMode="tel" placeholder="069 123 456" autoComplete="tel" className={inputCls} />
-              <input name="email" type="email" inputMode="email" maxLength={80} placeholder={tr('zakazi.email')} autoComplete="email" className={inputCls + ' sm:col-span-2'} />
+              <input name="roditelj" required maxLength={60} defaultValue={moj?.profil.roditelj || ''} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
+              <input name="telefon" required type="tel" inputMode="tel" defaultValue={moj?.profil.telefon || ''} placeholder="069 123 456" autoComplete="tel" className={inputCls} />
+              <input name="email" type="email" inputMode="email" maxLength={80} defaultValue={moj?.profil.email || ''} placeholder={tr('zakazi.email')} autoComplete="email" className={inputCls + ' sm:col-span-2'} />
               <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-sun bg-sun/30 px-4 py-3 font-bold text-ink sm:col-span-2">
-                <input name="kartica" type="checkbox" className="h-5 w-5 accent-grass" /> {tr('zakazi.loyalty')}
+                <input name="kartica" type="checkbox" defaultChecked={!!moj?.profil.kartica} className="h-5 w-5 accent-grass" /> {tr('zakazi.loyalty')}
               </label>
               <textarea name="napomena" maxLength={300} rows={2} placeholder={tr('zakazi.note')} className={inputCls + ' sm:col-span-2'} />
               <p className="text-xs text-ink/50 sm:col-span-2">{tr('zakazi.privacy')}</p>

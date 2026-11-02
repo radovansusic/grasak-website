@@ -11,6 +11,7 @@ const Kontakt = lazy(() => import('./pages/Kontakt'))
 const Zakazi = lazy(() => import('./pages/Zakazi'))
 const VaucerNarudzba = lazy(() => import('./pages/VaucerNarudzba'))
 const Osoblje = lazy(() => import('./pages/Osoblje'))
+const MojGrasak = lazy(() => import('./pages/MojGrasak'))
 
 function Ucitavanje() {
   return <div className="flex min-h-[60vh] items-center justify-center text-ink/50">Učitavam...</div>
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="kontakt" element={<Kontakt />} />
           <Route path="zakazi" element={<Zakazi />} />
           <Route path="vaucer" element={<VaucerNarudzba />} />
+          <Route path="moj" element={<MojGrasak />} />
         </Route>
       </Routes>
     </Suspense>

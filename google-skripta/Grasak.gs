@@ -1,5 +1,5 @@
-// Grašak - zakazivanje, vaučeri, admin panel i CRM. Sve u jednom fajlu: zalijepiti u Apps Script (Extensions > Apps Script).
-// Izvor: Kod.gs + Podesavanja.gs + Api.gs + Osoblje.gs + Klijenti.gs
+// Grašak - zakazivanje, vaučeri, admin panel, CRM i nalog roditelja. Sve u jednom fajlu: zalijepiti u Apps Script (Extensions > Apps Script).
+// Izvor: Kod.gs + Podesavanja.gs + Api.gs + Osoblje.gs + Klijenti.gs + Moj.gs
 
 /**
  * Grašak - zakazivanje: Google Calendar + Sheets + SMS podsjetnici.
@@ -919,6 +919,13 @@ function doPost(e) {
   if (String(z.akcija || '').indexOf('osoblje_') === 0) {
     try { return json_(osobljeAkcija_(z)); } catch (err) { return json_({ ok: false, poruka: String(err.message || err) }); }
   }
+  // Moj Grašak: nalog roditelja (telefon + PIN); registracija i prijava pod istim limitom kao upisi
+  if (String(z.akcija || '').indexOf('moj_') === 0) {
+    if ((z.akcija === 'moj_registracija' || z.akcija === 'moj_prijava') && !ogranicenje_('javni_upis', 30, 600)) {
+      return json_({ ok: false, poruka: 'Previše zahtjeva u kratkom roku. Pokušajte za nekoliko minuta.' });
+    }
+    try { return json_(mojAkcija_(z)); } catch (err) { return json_({ ok: false, poruka: String(err.message || err) }); }
+  }
   // zaštita od zloupotrebe javnog linka: najviše 30 upisa (termini + vaučeri) u 10 minuta
   if ((z.akcija === 'zakazi' || z.akcija === 'vaucer' || z.akcija === 'otkazi') && !ogranicenje_('javni_upis', 30, 600)) {
     return json_({ ok: false, poruka: 'Previše zahtjeva u kratkom roku. Pokušajte za nekoliko minuta ili pozovite salon.' });
@@ -1118,17 +1125,21 @@ function terminZaRoditelja_(id, kod) {
   };
 }
 
-/** Roditelj otkazuje sam: red u tabeli = otkazan, zvonce frizeru, email potvrda, događaj nestaje iz kalendara. */
+/** Roditelj otkazuje preko linka iz potvrde (id + kod). */
 function otkaziSaSajta_(z) {
-  const t = terminPoKodu_(z.id, z.kod);
-  if (t.ev.getStartTime() <= new Date()) return { ok: false, poruka: 'Termin je već prošao, ne može se otkazati.' };
-  const red = redZaDogadjaj_(t.ev, lokPoFrizeru_(), CFG.TZ);
+  return otkaziDogadjajRoditelj_(terminPoKodu_(z.id, z.kod).ev);
+}
+
+/** Roditelj otkazuje sam (link ili nalog): red u tabeli = otkazan, zvonce frizeru, email potvrda, događaj nestaje iz kalendara. */
+function otkaziDogadjajRoditelj_(ev) {
+  if (ev.getStartTime() <= new Date()) return { ok: false, poruka: 'Termin je već prošao, ne može se otkazati.' };
+  const red = redZaDogadjaj_(ev, lokPoFrizeru_(), CFG.TZ);
   red[KOL['Status']] = 'otkazan';
   red[KOL['Napomena']] = (red[KOL['Napomena']] ? red[KOL['Napomena']] + ' | ' : '') + 'otkazao roditelj preko sajta';
   upisiRed_(red);
   zapisiObavjestenje_('otkazan', red[KOL['Frizer']], red[KOL['Datum']], red[KOL['Vrijeme']], red[KOL['Usluga']], red[KOL['Dijete']], 'sajt', red[KOL['Roditelj']]);
-  posaljiEmailTermina_(t.ev, 'otkazan_roditelj');
-  t.ev.deleteEvent();
+  posaljiEmailTermina_(ev, 'otkazan_roditelj');
+  ev.deleteEvent();
   azurirajKlijenta_(telefonIzTabele(red[KOL['Telefon']]));
   return { ok: true, poruka: 'Termin je otkazan. Hvala što ste javili na vrijeme.' };
 }
@@ -1221,6 +1232,8 @@ function osobljeAkcija_(z) {
       return Object.assign({ ok: true }, klijentiZaPanel_(o, z.q, z.filter));
     case 'osoblje_klijent_sacuvaj':
       return pisanje_(() => sacuvajKlijenta_(o, z));
+    case 'osoblje_klijent_pin':
+      return pisanje_(() => resetujPin_(o, z.telefon));
     case 'osoblje_obavjestenja':
       return { ok: true, obavjestenja: obavjestenjaZa_(o, p, z.posle), sada: String(Date.now()) };
     case 'osoblje_izvjestaj':
@@ -1934,7 +1947,7 @@ function izvjestajHtml(iz) {
 
 const LIST_KLIJENTI = 'Klijenti';
 const ZAGLAVLJE_KLIJENTI = ['Telefon', 'Roditelj', 'Email', 'Djeca', 'Kartica', 'Posjete', 'Prva posjeta', 'Zadnja posjeta',
-  'Zadnja usluga', 'Predstoji', 'Nije došao', 'Otkazano', 'Vaučeri', 'Izvor', 'Marketing', 'Napomena', 'Azurirano'];
+  'Zadnja usluga', 'Predstoji', 'Nije došao', 'Otkazano', 'Vaučeri', 'Izvor', 'Marketing', 'Napomena', 'Azurirano', 'Registrovan', 'PIN'];
 const KK = ZAGLAVLJE_KLIJENTI.reduce((o, k, i) => { o[k] = i; return o; }, {});
 const MAX_KLIJENATA_PANEL = 300;
 
@@ -1943,7 +1956,7 @@ function listKlijenata_() {
   let sh = ss.getSheetByName(LIST_KLIJENTI);
   if (!sh) {
     sh = ss.insertSheet(LIST_KLIJENTI);
-    sh.getRange('A:Q').setNumberFormat('@');   // telefon ostaje +382..., datumi ostaju tekst
+    sh.getRange('A:S').setNumberFormat('@');   // telefon ostaje +382..., datumi ostaju tekst
     sh.getRange(1, 1, 1, ZAGLAVLJE_KLIJENTI.length).setValues([ZAGLAVLJE_KLIJENTI]).setFontWeight('bold').setBackground('#e7f5e4');
     sh.setFrozenRows(1);
   }
@@ -2004,7 +2017,19 @@ function redKlijenta_(k, stari) {
   t(KK['Djeca']).split(/\s*,\s*/).forEach(d => { if (d) djeca[d] = true; });
   return [k.telefon, k.roditelj || t(KK['Roditelj']), k.email || t(KK['Email']), Object.keys(djeca).join(', '),
     k.kartica || t(KK['Kartica']).toLowerCase() === 'da' ? 'da' : '', k.posjete, k.prva, k.zadnja, k.zadnjaUsluga,
-    k.predstoji, k.nijeDosao, k.otkazano, k.vauceri, k.izvor || t(KK['Izvor']) || 'ručno', t(KK['Marketing']), t(KK['Napomena']), sadaTekst_()];
+    k.predstoji, k.nijeDosao, k.otkazano, k.vauceri, t(KK['Izvor']) || k.izvor || 'ručno', t(KK['Marketing']), t(KK['Napomena']), sadaTekst_(),   // izvor = kako je prvi put došao (registracija ostaje)
+    t(KK['Registrovan']), t(KK['PIN'])];   // nalog roditelja (Moj Grašak) ostaje
+}
+
+function nadjiKlijenta_(sh, tel) {
+  const n = sh.getLastRow();
+  const telefoni = n > 1 ? sh.getRange(2, 1, n - 1, 1).getValues().map(x => telefonIzTabele(x[0])) : [];
+  const i = telefoni.indexOf(tel);
+  return { i: i, red: i >= 0 ? sh.getRange(i + 2, 1, 1, ZAGLAVLJE_KLIJENTI.length).getValues()[0] : null };
+}
+
+function upisiKlijenta_(sh, i, red) {
+  if (i >= 0) sh.getRange(i + 2, 1, 1, red.length).setValues([red]); else sh.appendRow(red);
 }
 
 /** Cijeli list iznova (svaki sat, Postavi, meni). Ručno dodati klijenti bez termina ostaju. Vraća broj klijenata. */
@@ -2076,6 +2101,7 @@ function klijentIzReda_(r) {
     posjete: Number(r[5]) || 0, prva: datumTekst(r[6], CFG.TZ), zadnja: datumTekst(r[7], CFG.TZ), zadnjaUsluga: t(8),
     predstoji: Number(r[9]) || 0, nijeDosao: Number(r[10]) || 0, otkazano: Number(r[11]) || 0, vauceri: Number(r[12]) || 0,
     izvor: t(13), marketing: t(14).toLowerCase(), napomena: t(15), azurirano: t(16),
+    registrovan: t(17), nalog: !!t(18),   // otisak PIN-a se nikad ne šalje
   };
 }
 
@@ -2092,6 +2118,7 @@ function klijentiZaPanel_(o, q, filter) {
     if (filter === 'nije_dosao' && !k.nijeDosao) return false;
     if (filter === 'bez_emaila' && k.email) return false;
     if (filter === 'marketing' && k.marketing !== 'da') return false;
+    if (filter === 'nalog' && !k.nalog) return false;
     if (!upit) return true;
     return (telUpit.length >= 3 && k.telefon.replace(/\D/g, '').indexOf(telUpit) >= 0) ||
       [k.roditelj, k.djeca, k.email, k.napomena].join(' ').toLowerCase().indexOf(upit) >= 0;
@@ -2125,4 +2152,203 @@ function sacuvajKlijenta_(o, z) {
   red[KK['Azurirano']] = sadaTekst_();
   if (i >= 0) sh.getRange(i + 2, 1, 1, red.length).setValues([red]); else sh.appendRow(red);
   return { ok: true, poruka: i >= 0 ? 'Sačuvano.' : 'Novi klijent upisan.', klijent: klijentIzReda_(red) };
+}
+
+/**
+ * Moj Grašak: nalog roditelja na sajtu (grasaksalon.me/moj) = telefon + PIN (4-6 cifara).
+ * Roditelj vidi i otkazuje svoje termine, brže zakazuje (podaci se sami popune), mijenja podatke.
+ * Nalog je red u listu Klijenti (CRM, najniži nivo): kolone Registrovan i PIN (čuva se samo otisak, ne PIN).
+ * Zaboravljen PIN: osoblje u panelu (Klijenti > kartica > Novi PIN) ili link iz emaila nije potreban.
+ */
+
+const PIN_MAX_POKUSAJA = 10;   // po broju telefona, 15 minuta
+
+function tajna_() {
+  const p = PropertiesService.getScriptProperties();
+  let t = p.getProperty('TOKEN_TAJNA');
+  if (!t) { t = Utilities.getUuid() + Utilities.getUuid(); p.setProperty('TOKEN_TAJNA', t); }
+  return t;
+}
+
+function hex_(bajtovi) {
+  return bajtovi.map(b => ((b + 256) % 256).toString(16).padStart(2, '0')).join('');
+}
+
+function pinOtisak_(telefon, pin) {
+  return hex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, telefon + ':' + String(pin) + ':' + tajna_(), Utilities.Charset.UTF_8));
+}
+
+/** Token za telefon: važi dok se PIN ne promijeni, sajt ga pamti umjesto PIN-a. */
+function tokenZa_(telefon, otisak) {
+  return hex_(Utilities.computeHmacSha256Signature(telefon + '|' + otisak, tajna_(), Utilities.Charset.UTF_8));
+}
+
+function provjeriPin(pin) {
+  return /^\d{4,6}$/.test(String(pin || '')) ? '' : 'PIN mora imati 4 do 6 cifara.';
+}
+
+function noviPin_() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function spojiDjecu_(stara, nova) {
+  const m = {};
+  [stara, nova].forEach(s => String(s || '').split(/\s*,\s*/).forEach(d => { if (d.trim()) m[d.trim()] = true; }));
+  return Object.keys(m).join(', ');
+}
+
+function profilIzReda_(red) {
+  const k = klijentIzReda_(red);
+  return {
+    telefon: k.telefon, roditelj: k.roditelj, email: k.email, djeca: k.djeca ? k.djeca.split(/\s*,\s*/).filter(Boolean) : [],
+    kartica: k.kartica, marketing: k.marketing, registrovan: k.registrovan,
+  };
+}
+
+function mojAkcija_(z) {
+  switch (z.akcija) {
+    case 'moj_registracija': return pisanje_(() => registracijaRoditelja_(z));
+    case 'moj_prijava': return prijavaRoditelja_(z);
+    case 'moj_pregled': return mojPregled_(z);
+    case 'moj_sacuvaj': return pisanje_(() => mojSacuvaj_(z));
+    case 'moj_otkazi': return pisanje_(() => mojOtkazi_(z));
+  }
+  return { ok: false, poruka: 'Nepoznata akcija' };
+}
+
+/** Novi nalog. Ako broj već ima nalog, roditelj se prijavljuje ili zove salon za novi PIN. */
+function registracijaRoditelja_(z) {
+  const tel = normalizujTelefon(z.telefon);
+  if (tel.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Upišite ispravan broj telefona.' };
+  const g = provjeriPin(z.pin);
+  if (g) return { ok: false, poruka: g };
+  const roditelj = cistTekst(z.roditelj, 60);
+  if (!roditelj) return { ok: false, poruka: 'Upišite ime i prezime.' };
+  const email = String(z.email || '').trim().toLowerCase().slice(0, 80);
+  if (email && !jeEmail(email)) return { ok: false, poruka: 'Email adresa nije ispravna.' };
+  const sh = listKlijenata_();
+  const r = nadjiKlijenta_(sh, tel);
+  if (r.red && String(r.red[KK['PIN']] || '').trim()) {
+    return { ok: false, poruka: 'Za ovaj broj nalog već postoji. Prijavite se PIN-om, a ako ste ga zaboravili pozovite salon.' };
+  }
+  const red = r.red ? r.red.slice() : ZAGLAVLJE_KLIJENTI.map(() => '');
+  if (!r.red) {
+    ['Posjete', 'Predstoji', 'Nije došao', 'Otkazano', 'Vaučeri'].forEach(k => { red[KK[k]] = 0; });
+    red[KK['Izvor']] = 'registracija';
+  }
+  red[0] = tel;
+  red[KK['Roditelj']] = roditelj;
+  if (email) red[KK['Email']] = email;
+  const djeca = cistTekst(Array.isArray(z.djeca) ? z.djeca.join(', ') : z.djeca, 120);
+  if (djeca) red[KK['Djeca']] = spojiDjecu_(red[KK['Djeca']], djeca);
+  if (z.kartica === true || /^(da|true|1)$/i.test(String(z.kartica || ''))) red[KK['Kartica']] = 'da';
+  if (/^(da|ne)$/i.test(String(z.marketing || ''))) red[KK['Marketing']] = String(z.marketing).toLowerCase();
+  red[KK['Registrovan']] = sadaTekst_();
+  red[KK['PIN']] = pinOtisak_(tel, z.pin);
+  red[KK['Azurirano']] = sadaTekst_();
+  upisiKlijenta_(sh, r.i, red);
+  return { ok: true, poruka: 'Nalog je napravljen.', token: tokenZa_(tel, red[KK['PIN']]), profil: profilIzReda_(red) };
+}
+
+function prijavaRoditelja_(z) {
+  const tel = normalizujTelefon(z.telefon);
+  const c = CacheService.getScriptCache();
+  const kljuc = 'pin_' + tel.replace(/\D/g, '');
+  const greske = Number(c.get(kljuc) || 0);
+  if (greske >= PIN_MAX_POKUSAJA) return { ok: false, poruka: 'Previše pogrešnih pokušaja. Sačekajte 15 minuta.' };
+  const sh = tabela_().getSheetByName(LIST_KLIJENTI);
+  const r = sh ? nadjiKlijenta_(sh, tel) : { red: null };
+  const otisak = r.red ? String(r.red[KK['PIN']] || '').trim() : '';
+  if (!otisak || provjeriPin(z.pin) || pinOtisak_(tel, z.pin) !== otisak) {
+    c.put(kljuc, String(greske + 1), 900);
+    Utilities.sleep(500);
+    return { ok: false, poruka: otisak ? 'Pogrešan PIN.' : 'Za ovaj broj još nema naloga. Napravite ga ispod.' };
+  }
+  return { ok: true, token: tokenZa_(tel, otisak), profil: profilIzReda_(r.red) };
+}
+
+function roditeljIzTokena_(z) {
+  const tel = normalizujTelefon(z.telefon);
+  const sh = tabela_().getSheetByName(LIST_KLIJENTI);
+  const r = sh ? nadjiKlijenta_(sh, tel) : { i: -1, red: null };
+  const otisak = r.red ? String(r.red[KK['PIN']] || '').trim() : '';
+  if (!otisak || !z.token || tokenZa_(tel, otisak) !== String(z.token)) throw new Error('Prijava je istekla. Prijavite se ponovo.');
+  return { tel: tel, sh: sh, i: r.i, red: r.red };
+}
+
+/** Moji termini (iz kalendara, 60 dana) i posljednjih 10 posjeta (iz tabele). */
+function mojPregled_(z) {
+  const r = roditeljIzTokena_(z);
+  const tz = CFG.TZ;
+  const sada = new Date();
+  const lokPoFrizeru = lokPoFrizeru_();
+  const termini = [];
+  kal_().getEvents(sada, new Date(sada.getTime() + 60 * 864e5)).forEach(ev => {
+    const n = rastaviNaslov(ev.getTitle());
+    if (!n || jeBlokada(n.usluga) || ev.isAllDayEvent() || ev.getTag('status') === 'otkazan') return;
+    const opis = ev.getDescription();
+    if (izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis) !== r.tel) return;
+    const lok = lokPoFrizeru[n.frizer.toLowerCase()] || {};
+    termini.push({
+      id: ev.getId(), datum: Utilities.formatDate(ev.getStartTime(), tz, 'yyyy-MM-dd'),
+      vrijeme: Utilities.formatDate(ev.getStartTime(), tz, 'HH:mm'), kraj: Utilities.formatDate(ev.getEndTime(), tz, 'HH:mm'),
+      osoba: n.frizer, usluga: n.usluga, dijete: n.klijent, lokacija: lok.naziv || '', adresa: lok.adresa || '',
+      kartica: !!poljeIzOpisa(opis, 'Kartica'),
+    });
+  });
+  termini.sort((a, b) => (a.datum + a.vrijeme).localeCompare(b.datum + b.vrijeme));
+  const danas = Utilities.formatDate(sada, tz, 'yyyy-MM-dd');
+  const posjete = citajTermine_(tz).filter(x => x.telefon === r.tel && x.datum < danas && x.status !== 'otkazan')
+    .sort((a, b) => b.datum.localeCompare(a.datum)).slice(0, 10)
+    .map(x => ({ datum: x.datum, vrijeme: x.vrijeme, usluga: x.usluga, dijete: x.dijete, frizer: x.frizer, status: x.status }));
+  return { ok: true, profil: profilIzReda_(r.red), termini: termini, posjete: posjete };
+}
+
+/** Moji podaci: ime, email, djeca, kartica, marketing, novi PIN. Kartica se ne skida sama (to radi salon). */
+function mojSacuvaj_(z) {
+  const r = roditeljIzTokena_(z);
+  const red = r.red.slice();
+  const roditelj = cistTekst(z.roditelj, 60);
+  if (roditelj) red[KK['Roditelj']] = roditelj;
+  const email = String(z.email || '').trim().toLowerCase().slice(0, 80);
+  if (email && !jeEmail(email)) return { ok: false, poruka: 'Email adresa nije ispravna.' };
+  red[KK['Email']] = email;
+  red[KK['Djeca']] = cistTekst(Array.isArray(z.djeca) ? z.djeca.join(', ') : z.djeca, 120);
+  if (z.kartica === true || /^(da|true|1)$/i.test(String(z.kartica || ''))) red[KK['Kartica']] = 'da';
+  if (/^(da|ne)$/i.test(String(z.marketing || ''))) red[KK['Marketing']] = String(z.marketing).toLowerCase();
+  let token = String(z.token);
+  if (z.noviPin) {
+    const g = provjeriPin(z.noviPin);
+    if (g) return { ok: false, poruka: g };
+    red[KK['PIN']] = pinOtisak_(r.tel, z.noviPin);
+    token = tokenZa_(r.tel, red[KK['PIN']]);
+  }
+  red[KK['Azurirano']] = sadaTekst_();
+  upisiKlijenta_(r.sh, r.i, red);
+  return { ok: true, poruka: 'Sačuvano.', token: token, profil: profilIzReda_(red) };
+}
+
+function mojOtkazi_(z) {
+  const r = roditeljIzTokena_(z);
+  const ev = kal_().getEventById(String(z.id || ''));
+  if (!ev) return { ok: false, poruka: 'Termin nije pronađen ili je već otkazan.' };
+  const opis = ev.getDescription();
+  if (izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis) !== r.tel) return { ok: false, poruka: 'Ovo nije vaš termin.' };
+  return otkaziDogadjajRoditelj_(ev);
+}
+
+/** Panel (vlasnik i admin): novi PIN za roditelja koji ga je zaboravio. Vidi se jednom, kaže se roditelju. */
+function resetujPin_(o, telefon) {
+  if (o.uloga === 'frizer') return { ok: false, poruka: 'PIN mijenjaju vlasnik i administratori.' };
+  const tel = normalizujTelefon(telefon);
+  const sh = listKlijenata_();
+  const r = nadjiKlijenta_(sh, tel);
+  if (!r.red) return { ok: false, poruka: 'Klijent nije u bazi.' };
+  const pin = noviPin_();
+  const red = r.red.slice();
+  red[KK['PIN']] = pinOtisak_(tel, pin);
+  if (!String(red[KK['Registrovan']] || '').trim()) red[KK['Registrovan']] = sadaTekst_();
+  red[KK['Azurirano']] = sadaTekst_();
+  upisiKlijenta_(sh, r.i, red);
+  return { ok: true, pin: pin, poruka: 'Novi PIN: ' + pin + '. Recite ga roditelju, vidi se samo sada.' };
 }
