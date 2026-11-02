@@ -446,7 +446,7 @@ function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, radno, onZa
             </button>
           ))}
         </div>
-        <input name="dijete" required maxLength={60} placeholder="Ime djeteta *" className={inputCls} autoFocus />
+        <input name="dijete" maxLength={60} placeholder="Ime djeteta (nije obavezno)" className={inputCls} autoFocus />
         <input name="telefon" type="tel" inputMode="tel" placeholder="Telefon roditelja" className={inputCls} />
         <input name="roditelj" maxLength={60} placeholder="Ime roditelja" className={inputCls} />
         <input name="email" type="email" inputMode="email" maxLength={80} placeholder="Email roditelja (potvrda i podsjetnik)" className={inputCls} />

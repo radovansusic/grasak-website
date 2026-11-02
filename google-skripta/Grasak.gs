@@ -26,7 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-02c';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-02d';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -403,7 +403,7 @@ function posaljiEmailTermina_(ev, vrsta) {
     const roditelj = poljeIzOpisa(opis, 'Roditelj');
     const link = linkOtkazivanja_(ev);
     const pozdrav = 'Poštovani ' + (roditelj || 'roditelju') + ',\n\n';
-    const detalji = 'Dijete: ' + n.klijent + '\nUsluga: ' + n.usluga + '\nKad: ' + kad + '\nFrizer: ' + n.frizer +
+    const detalji = (n.klijent ? 'Dijete: ' + n.klijent + '\n' : '') + 'Usluga: ' + n.usluga + '\nKad: ' + kad + '\nFrizer: ' + n.frizer +
       '\nGdje: ' + [lok.naziv, lok.adresa].filter(Boolean).join(', ') + '\n\n';
     const otkaz = (link ? 'Ako ne možete doći, otkažite na vrijeme: ' + link + '\nili pozovite ' : 'Ako ne možete doći, pozovite ') + tel + '.\n\n';
     const kraj = 'Vidimo se u Grašku!\n' + CFG.SAJT;
@@ -421,10 +421,10 @@ function posaljiEmailTermina_(ev, vrsta) {
       prilog = icsZaTermin_(ev, lok);
     } else if (vrsta === 'otkazan') {
       naslov = 'Grašak: termin ' + kratko + ' je otkazan';
-      tijelo = pozdrav + 'termin ' + kad + ' (' + n.klijent + ', ' + n.usluga + ') je otkazan.\n\nNovi termin: ' + CFG.SAJT + '/zakazi ili ' + tel + '.\n\n' + kraj;
+      tijelo = pozdrav + 'termin ' + kad + ' (' + [n.klijent, n.usluga].filter(Boolean).join(', ') + ') je otkazan.\n\nNovi termin: ' + CFG.SAJT + '/zakazi ili ' + tel + '.\n\n' + kraj;
     } else {
       naslov = 'Grašak: termin ' + kratko + ' je otkazan na vaš zahtjev';
-      tijelo = pozdrav + 'otkazali ste termin ' + kad + ' (' + n.klijent + ', ' + n.usluga + ').\n\nNovi termin: ' + CFG.SAJT + '/zakazi ili ' + tel + '.\n\n' + kraj;
+      tijelo = pozdrav + 'otkazali ste termin ' + kad + ' (' + [n.klijent, n.usluga].filter(Boolean).join(', ') + ').\n\nNovi termin: ' + CFG.SAJT + '/zakazi ili ' + tel + '.\n\n' + kraj;
     }
     const poruka = { to: email, subject: naslov, body: tijelo, name: CFG.EMAIL_IME };
     if (prilog) poruka.attachments = [Utilities.newBlob(prilog, 'text/calendar', 'grasak-termin.ics')];
@@ -1118,7 +1118,7 @@ function zakazi_(z) {
   const roditelj = cistTekst(z.roditelj, 60);
   const uzrast = cistTekst(z.uzrast, 10);
   const napomena = cistTekst(z.napomena, 300);
-  if (!dijete || !roditelj) return { ok: false, poruka: 'Upišite ime i prezime djeteta i roditelja.' };
+  if (!roditelj) return { ok: false, poruka: 'Upišite ime i prezime roditelja.' };   // ime djeteta nije obavezno
   if (telefon.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Upišite ispravan broj telefona.' };
   const email = String(z.email || '').trim().toLowerCase().slice(0, 80);
   if (email && !jeEmail(email)) return { ok: false, poruka: 'Email adresa nije ispravna (ili je ostavite praznu).' };
@@ -1134,7 +1134,7 @@ function zakazi_(z) {
   const tz = CFG.TZ;
   const pocetak = Utilities.parseDate(z.datum + ' ' + z.vrijeme, tz, 'yyyy-MM-dd HH:mm');
   const kraj = new Date(pocetak.getTime() + u.trajanje * 60000);
-  const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + ' (' + dijete + ')', pocetak, kraj, {
+  const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + (dijete ? ' (' + dijete + ')' : ''), pocetak, kraj, {
     description: 'Roditelj: ' + roditelj + '\nTelefon: ' + telefon + '\nUzrast: ' + (uzrast || '-') +
       '\nNapomena: ' + (napomena || '-') + '\nKartica: ' + (kartica ? 'da' : '-') + '\nEmail: ' + (email || '-') +
       '\nKod: ' + napraviKod_() + '\nIzvor: sajt',
@@ -1505,8 +1505,7 @@ function zakaziOsoblje_(o, p, z) {
   if (!u) return { ok: false, poruka: 'Izaberite uslugu.' };
   provjeriDatum_(z.datum);
   if (!/^\d{2}:\d{2}$/.test(String(z.vrijeme || ''))) return { ok: false, poruka: 'Neispravno vrijeme.' };
-  const dijete = cist_(z.dijete, 60);
-  if (!dijete) return { ok: false, poruka: 'Upišite ime djeteta.' };
+  const dijete = cist_(z.dijete, 60);   // nije obavezno: termin bez imena je "bez imena"
   const telefon = cist_(z.telefon, 30) ? normalizujTelefon(z.telefon) : '';
   if (telefon && telefon.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Broj telefona nije ispravan.' };
   const email = String(z.email || '').trim().toLowerCase().slice(0, 80);
@@ -1519,7 +1518,7 @@ function zakaziOsoblje_(o, p, z) {
   }
   const tz = CFG.TZ;
   const pocetak = Utilities.parseDate(z.datum + ' ' + z.vrijeme, tz, 'yyyy-MM-dd HH:mm');
-  const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + ' (' + dijete + ')', pocetak,
+  const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + (dijete ? ' (' + dijete + ')' : ''), pocetak,
     new Date(pocetak.getTime() + u.trajanje * 60000), {
       description: 'Roditelj: ' + (cist_(z.roditelj, 60) || '-') + '\nTelefon: ' + (telefon || '-') +
         '\nUzrast: ' + (cist_(z.uzrast, 10) || '-') + '\nNapomena: ' + (cist_(z.napomena, 300) || '-') +
@@ -1533,7 +1532,7 @@ function zakaziOsoblje_(o, p, z) {
   ev.setTag('obav', 'da');
   upisiTermin_(ev);
   azurirajKlijenta_(telefon);
-  return { ok: true, poruka: 'Upisano: ' + z.vrijeme + ', ' + z.osoba + ', ' + dijete + '.' };
+  return { ok: true, poruka: 'Upisano: ' + z.vrijeme + ', ' + z.osoba + (dijete ? ', ' + dijete : '') + '.' };
 }
 
 function terminZaIzmjenu_(o, p, id) {

@@ -301,7 +301,7 @@ export default function OnlineZakazivanje() {
                   ))}
                 </div>
               )}
-              <input name="dijete" required maxLength={60} value={podaci.dijete} onChange={upisi('dijete')} placeholder={tr('zakazi.child')} className={inputCls} />
+              <input name="dijete" maxLength={60} value={podaci.dijete} onChange={upisi('dijete')} placeholder={tr('zakazi.child')} className={inputCls} />
               <input name="uzrast" maxLength={10} inputMode="numeric" value={podaci.uzrast} onChange={upisi('uzrast')} placeholder={tr('zakazi.age')} className={inputCls} />
               <input name="roditelj" required maxLength={60} value={podaci.roditelj} onChange={upisi('roditelj')} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
               <input name="telefon" required type="tel" inputMode="tel" value={podaci.telefon} onChange={upisi('telefon')} placeholder="069 123 456" autoComplete="tel" className={inputCls} />
