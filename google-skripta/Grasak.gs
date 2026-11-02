@@ -26,7 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-02a';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-02b';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -1281,6 +1281,9 @@ function osobljeAkcija_(z) {
       return pisanje_(() => sacuvajKlijenta_(o, z));
     case 'osoblje_klijent_pin':
       return pisanje_(() => resetujPin_(o, z.telefon));
+    case 'osoblje_vrati_termine':
+      if (o.uloga !== 'vlasnik') return { ok: false, poruka: 'Ovo radi samo vlasnik.' };
+      return pisanje_(() => { const n = vratiTermineIzTabele_(); return { ok: true, poruka: n ? 'Vraćeno u kalendar: ' + n + ' termina.' : 'Svi budući termini iz tabele već su u kalendaru.', broj: n }; });
     case 'osoblje_obavjestenja':
       return { ok: true, obavjestenja: obavjestenjaZa_(o, p, z.posle), sada: String(Date.now()) };
     case 'osoblje_izvjestaj':

@@ -88,6 +88,13 @@ export default function Osoblje() {
   const otvoriDan = (d: string) => { setTab('dan'); setFokus(d + '#' + Date.now()) }
   const naPocetnu = () => { otvoriDan(isoDatum(new Date())); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const staraSkripta = konfig.verzija !== OCEKIVANA_VERZIJA_SKRIPTE
+  const [vracanje, setVracanje] = useState('')
+  const vratiTermine = async () => {
+    if (!window.confirm('Vratiti u kalendar sve buduće termine iz tabele kojih tamo nema? Otkazani i prošli se ne diraju.')) return
+    setVracanje('radi')
+    try { const r = await osoblje('vrati_termine', pristup); setVracanje(r.poruka || (r.ok ? 'Gotovo.' : 'Nije uspjelo.')); if (r.ok) setSignal((x) => x + 1) }
+    catch { setVracanje('Nema veze sa serverom.') }
+  }
   const dan = <DanPanel key={fokus || 'dan'} pristup={pristup} konfig={konfig} profil={profil} signal={signal} pocetniDatum={fokus.split('#')[0]} />
   return (
     <Okvir
@@ -109,7 +116,13 @@ export default function Osoblje() {
         </p>
       )}
       {vlasnik && konfig.nalog && (
-        <p className="mb-3 text-xs text-ink/50 print:hidden">Skripta radi kao {konfig.nalog}{konfig.kalendar && `, kalendar "${konfig.kalendar}"`}. Termini se upisuju i čitaju iz tog kalendara.</p>
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/50 print:hidden">
+          <span>Skripta radi kao {konfig.nalog}{konfig.kalendar && `, kalendar "${konfig.kalendar}"`}. Termini se upisuju i čitaju iz tog kalendara.</span>
+          <button onClick={() => void vratiTermine()} disabled={vracanje === 'radi'} className="rounded-full bg-white px-3 py-1 font-bold text-ink shadow-sm disabled:opacity-50">
+            {vracanje === 'radi' ? 'Vraćam...' : 'Vrati termine iz tabele u kalendar'}
+          </button>
+          {vracanje && vracanje !== 'radi' && <span className="font-bold text-grass-deep">{vracanje}</span>}
+        </div>
       )}
       <div className="mb-4 flex flex-wrap gap-2 print:hidden">
         <Tab aktivan={tab === 'dan'} onClick={() => setTab('dan')}><CalendarDays className="h-4 w-4" /> Dan</Tab>
