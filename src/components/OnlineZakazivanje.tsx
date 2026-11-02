@@ -57,8 +57,13 @@ export default function OnlineZakazivanje() {
   const [poruka, setPoruka] = useState('')
   const formaRef = useRef<HTMLDivElement>(null)
   const terminiRef = useRef<HTMLDivElement>(null)
-  const dijeteRef = useRef<HTMLInputElement>(null)
   const [moj] = useState(citajMoj)   // nalog roditelja: podaci se sami popune
+  // podaci roditelja žive ovdje, ne u formi: ostaju i kad se promijeni dan, termin ili usluga
+  const [podaci, setPodaci] = useState(() => ({
+    dijete: moj && moj.profil.djeca.length === 1 ? moj.profil.djeca[0] : '', uzrast: '', roditelj: moj?.profil.roditelj || '',
+    telefon: moj?.profil.telefon || '', email: moj?.profil.email || '', napomena: '', kartica: !!moj?.profil.kartica,
+  }))
+  const upisi = (k: keyof typeof podaci) => (e: { target: { value: string } }) => setPodaci((p) => ({ ...p, [k]: e.target.value }))
 
   useEffect(() => {
     ucitajKonfig()
@@ -108,14 +113,14 @@ export default function OnlineZakazivanje() {
     if (!lok || !usluga) return
     const f = new FormData(e.currentTarget)
     if (f.get('website')) return // honeypot protiv botova
-    const polje = (k: string) => String(f.get(k) || '').trim()
+    const polje = (k: string) => String(podaci[k as keyof typeof podaci] ?? '').trim()
     setSalje(true); setPoruka('')
     try {
       const r = await zakazi({
         lok: lok.id, osoba, usluga: usluga.id, datum, vrijeme,
         dijete: polje('dijete'), uzrast: polje('uzrast'), roditelj: polje('roditelj'),
         telefon: polje('telefon'), napomena: polje('napomena'),
-        email: polje('email'), kartica: f.get('kartica') === 'on',
+        email: polje('email'), kartica: podaci.kartica,
       })
       if (r.ok) {
         const [, m, d] = datum.split('-')
@@ -124,10 +129,11 @@ export default function OnlineZakazivanje() {
           Termin: `${d}.${m}. u ${vrijeme}`, Lokacija: lok.naziv, Frizer: osoba, Usluga: usluga.naziv,
           Dijete: `${polje('dijete')} (${polje('uzrast') || '-'} god.)`, Roditelj: polje('roditelj'),
           Telefon: polje('telefon'), Napomena: polje('napomena') || '-', Izvor: 'Sajt - online zakazivanje (u kalendaru)',
-          Email: polje('email') || '-', Kartica: f.get('kartica') === 'on' ? 'Veseli Grašak' : '-',
+          Email: polje('email') || '-', Kartica: podaci.kartica ? 'Veseli Grašak' : '-',
         })
         setUspjeh({ tekst: tr('zakazi.when', { datum: `${d}.${m}.`, vrijeme, osoba }), datum, vrijeme, osoba, usluga, lok, id: r.id, kod: r.kod, email: polje('email') })
-        if (!moj) pisiPrefill({ roditelj: polje('roditelj'), telefon: polje('telefon'), email: polje('email'), dijete: polje('dijete'), kartica: f.get('kartica') === 'on' })
+        if (!moj) pisiPrefill({ roditelj: polje('roditelj'), telefon: polje('telefon'), email: polje('email'), dijete: polje('dijete'), kartica: podaci.kartica })
+        setPodaci((p) => ({ ...p, dijete: '', uzrast: '', napomena: '' }))   // za sljedeće zakazivanje ostaju roditelj, telefon, email
         setKopirano(false)
         window.scrollTo({ top: 0, behavior: 'smooth' })
         setOsvjezenje((x) => x + 1) // zauzeti termin nestaje i za sljedeće zakazivanje
@@ -291,19 +297,19 @@ export default function OnlineZakazivanje() {
                 <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
                   <span className="text-sm text-ink/60">{tr('moj.pickChild')}</span>
                   {moj.profil.djeca.map((d) => (
-                    <button key={d} type="button" onClick={() => { if (dijeteRef.current) dijeteRef.current.value = d }} className="rounded-full border-2 border-grass-tint bg-white px-3 py-1 text-sm font-bold text-ink hover:border-grass">{d}</button>
+                    <button key={d} type="button" onClick={() => setPodaci((p) => ({ ...p, dijete: d }))} className={'rounded-full border-2 px-3 py-1 text-sm font-bold ' + (podaci.dijete === d ? 'border-grass bg-grass text-white' : 'border-grass-tint bg-white text-ink hover:border-grass')}>{d}</button>
                   ))}
                 </div>
               )}
-              <input ref={dijeteRef} name="dijete" required maxLength={60} defaultValue={moj && moj.profil.djeca.length === 1 ? moj.profil.djeca[0] : ''} placeholder={tr('zakazi.child')} className={inputCls} />
-              <input name="uzrast" maxLength={10} inputMode="numeric" placeholder={tr('zakazi.age')} className={inputCls} />
-              <input name="roditelj" required maxLength={60} defaultValue={moj?.profil.roditelj || ''} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
-              <input name="telefon" required type="tel" inputMode="tel" defaultValue={moj?.profil.telefon || ''} placeholder="069 123 456" autoComplete="tel" className={inputCls} />
-              <input name="email" type="email" inputMode="email" maxLength={80} defaultValue={moj?.profil.email || ''} placeholder={tr('zakazi.email')} autoComplete="email" className={inputCls + ' sm:col-span-2'} />
+              <input name="dijete" required maxLength={60} value={podaci.dijete} onChange={upisi('dijete')} placeholder={tr('zakazi.child')} className={inputCls} />
+              <input name="uzrast" maxLength={10} inputMode="numeric" value={podaci.uzrast} onChange={upisi('uzrast')} placeholder={tr('zakazi.age')} className={inputCls} />
+              <input name="roditelj" required maxLength={60} value={podaci.roditelj} onChange={upisi('roditelj')} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
+              <input name="telefon" required type="tel" inputMode="tel" value={podaci.telefon} onChange={upisi('telefon')} placeholder="069 123 456" autoComplete="tel" className={inputCls} />
+              <input name="email" type="email" inputMode="email" maxLength={80} value={podaci.email} onChange={upisi('email')} placeholder={tr('zakazi.email')} autoComplete="email" className={inputCls + ' sm:col-span-2'} />
               <label className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-sun bg-sun/30 px-4 py-3 font-bold text-ink sm:col-span-2">
-                <input name="kartica" type="checkbox" defaultChecked={!!moj?.profil.kartica} className="h-5 w-5 accent-grass" /> {tr('zakazi.loyalty')}
+                <input name="kartica" type="checkbox" checked={podaci.kartica} onChange={(e) => setPodaci((p) => ({ ...p, kartica: e.target.checked }))} className="h-5 w-5 accent-grass" /> {tr('zakazi.loyalty')}
               </label>
-              <textarea name="napomena" maxLength={300} rows={2} placeholder={tr('zakazi.note')} className={inputCls + ' sm:col-span-2'} />
+              <textarea name="napomena" maxLength={300} rows={2} value={podaci.napomena} onChange={upisi('napomena')} placeholder={tr('zakazi.note')} className={inputCls + ' sm:col-span-2'} />
               <p className="text-xs text-ink/50 sm:col-span-2">{tr('zakazi.privacy')}</p>
               {poruka && <p className="rounded-xl bg-coral/10 p-3 text-ink sm:col-span-2">{poruka}</p>}
               <button disabled={salje} className="flex items-center justify-center gap-2 rounded-full bg-coral px-8 py-4 text-lg font-bold text-white shadow-lg shadow-coral/30 disabled:opacity-60 sm:col-span-2">

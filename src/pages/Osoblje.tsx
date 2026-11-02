@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ArrowUp } from 'lucide-react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   BarChart3, Ban, CalendarClock, CalendarDays, CalendarRange, Check, ChevronLeft, ChevronRight, Coffee, CreditCard, Download,
@@ -15,7 +16,7 @@ import { Prozor, Tab } from '@/components/osoblje/zajednicko'
 import { inputCls, lijepDatum, pomjeri, proslo } from '@/components/osoblje/pomocno'
 import { API_URL, isoDatum } from '@/lib/zakazivanje'
 import {
-  osoblje,
+  OCEKIVANA_VERZIJA_SKRIPTE, osoblje,
   type DanOsoblje, type Pristup, type Izvjestaj, type KonfigOsoblje, type OsobaDan, type Profil, type TerminOsoblje,
 } from '@/lib/osoblje'
 
@@ -85,6 +86,8 @@ export default function Osoblje() {
     osoblje<{ konfig: KonfigOsoblje }>('prijava', pristup).then((r) => { if (r.ok) setKonfig(r.konfig) }).catch(() => {})
   }
   const otvoriDan = (d: string) => { setTab('dan'); setFokus(d + '#' + Date.now()) }
+  const naPocetnu = () => { otvoriDan(isoDatum(new Date())); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const staraSkripta = konfig.verzija !== OCEKIVANA_VERZIJA_SKRIPTE
   const dan = <DanPanel key={fokus || 'dan'} pristup={pristup} konfig={konfig} profil={profil} signal={signal} pocetniDatum={fokus.split('#')[0]} />
   return (
     <Okvir
@@ -97,7 +100,14 @@ export default function Osoblje() {
         </div>
       }
       podnaslov={`${profil.ime} · ${profil.uloga}`}
+      onPocetna={naPocetnu}
     >
+      {staraSkripta && (
+        <p className="mb-4 rounded-2xl bg-sun p-3 text-sm text-ink shadow print:hidden">
+          <span className="font-bold">Google skripta je starija od panela.</span> Zalijepite novu (Grasak.gs) i napravite New version, pa Grasak &gt; 1. Postavi.
+          Do tada ne rade: Sedmica, Lista, Klijenti, pomjeranje, pauze, istorija klijenta i nalozi roditelja. Dan, upis i otkazivanje rade.
+        </p>
+      )}
       <div className="mb-4 flex flex-wrap gap-2 print:hidden">
         <Tab aktivan={tab === 'dan'} onClick={() => setTab('dan')}><CalendarDays className="h-4 w-4" /> Dan</Tab>
         <Tab aktivan={tab === 'sedmica'} onClick={() => setTab('sedmica')}><CalendarRange className="h-4 w-4" /> Sedmica</Tab>
@@ -116,21 +126,41 @@ export default function Osoblje() {
   )
 }
 
-function Okvir({ children, desno, podnaslov }: { children: ReactNode; desno?: ReactNode; podnaslov?: string }) {
+function Okvir({ children, desno, podnaslov, onPocetna }: { children: ReactNode; desno?: ReactNode; podnaslov?: string; onPocetna?: () => void }) {
   return (
     <div className="min-h-screen bg-grass-tint/50 pb-16 font-sans">
       <header className="sticky top-0 z-30 bg-grass-darkest px-4 py-3 text-white shadow-md print:static print:bg-white print:text-ink print:shadow-none">
         <div className="mx-auto flex max-w-5xl items-center gap-3">
-          <img src="/brand/grasak-znak.svg" alt="" className="h-10 w-10 rounded-full bg-white p-0.5" />
-          <div className="flex-1 leading-tight">
-            <div className="font-display text-lg font-extrabold">Grašak panel</div>
-            {podnaslov && <div className="text-xs opacity-80">{podnaslov}</div>}
-          </div>
+          <button type="button" onClick={onPocetna} disabled={!onPocetna} className="flex flex-1 items-center gap-3 text-left" title="Danas, na vrh">
+            <img src="/brand/grasak-znak.svg" alt="" className="h-10 w-10 rounded-full bg-white p-0.5" />
+            <span className="flex-1 leading-tight">
+              <span className="block font-display text-lg font-extrabold">Grašak panel</span>
+              {podnaslov && <span className="block text-xs opacity-80">{podnaslov}</span>}
+            </span>
+          </button>
           {desno}
         </div>
       </header>
       <main className="mx-auto max-w-5xl px-3 pt-4 sm:px-4">{children}</main>
+      <NaVrh />
     </div>
+  )
+}
+
+/** Plutajuće dugme: nazad na vrh (pregled dana je dugačak, da se ne skroluje nazad). */
+function NaVrh() {
+  const [vidljivo, setVidljivo] = useState(false)
+  useEffect(() => {
+    const naSkrol = () => setVidljivo(window.scrollY > 300)
+    window.addEventListener('scroll', naSkrol, { passive: true })
+    return () => window.removeEventListener('scroll', naSkrol)
+  }, [])
+  if (!vidljivo) return null
+  return (
+    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Na vrh"
+      className="fixed bottom-5 right-4 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-grass-darkest text-white shadow-lg shadow-grass-darkest/30 print:hidden">
+      <ArrowUp className="h-5 w-5" />
+    </button>
   )
 }
 
@@ -225,7 +255,7 @@ function DanPanel({ pristup, konfig, profil, signal, pocetniDatum }: {
           ))}
         </div>
       )}
-      <div className="mb-3 flex items-center gap-2">
+      <div className="sticky top-[64px] z-20 -mx-3 mb-3 flex items-center gap-2 bg-grass-tint/95 px-3 py-2 backdrop-blur sm:-mx-4 sm:px-4 print:static">
         <button onClick={() => setDatum(pomjeri(datum, -1))} className="rounded-full bg-white p-2.5 shadow" aria-label="Prethodni dan"><ChevronLeft className="h-5 w-5" /></button>
         <label className="relative flex-1 rounded-2xl bg-white px-3 py-2 text-center shadow">
           <span className="block font-display text-lg font-extrabold capitalize text-ink">{lijepDatum(datum)}</span>

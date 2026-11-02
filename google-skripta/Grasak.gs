@@ -26,6 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
+const VERZIJA_SKRIPTE = '2026-11-02a';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -467,9 +468,9 @@ function cistTekst(v, n, saZagradama) {
     .replace(/\s+/g, ' ').trim().replace(/^[=+\-@\s]+/, '').slice(0, n);
 }
 
-/** "Nikola - Šišanje (Ana Petrović)" -> {frizer, usluga, klijent} */
+/** "Nikola - Šišanje (Ana Petrović)" -> {frizer, usluga, klijent}. Usluga smije imati zagrade: "Mali tim (2 djece) (Luka)". */
 function rastaviNaslov(naslov) {
-  const m = String(naslov || '').match(/^\s*([^-()]+?)\s+-\s+([^()]+?)\s*(?:\((.*)\))?\s*$/);
+  const m = String(naslov || '').match(/^\s*([^-()]+?)\s+-\s+(.+?)\s*(?:\(([^()]*)\))?\s*$/);
   if (!m) return null;
   return { frizer: m[1], usluga: m[2], klijent: m[3] || '' };
 }
@@ -1293,6 +1294,7 @@ function dozvoljenaLok_(o, p, lokId) {
 
 function konfigZaOsoblje_(o, p) {
   return {
+    verzija: VERZIJA_SKRIPTE,
     korak: APP.KORAK_MIN,
     usluge: p.usluge,
     lokacije: dozvoljeneLokacije_(o, p).map(l => ({ id: l.id, naziv: l.naziv, osobe: l.osobe, radno: l.radno })),

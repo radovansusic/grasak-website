@@ -4,7 +4,9 @@ import { API_URL, type Usluga } from './zakazivanje'
 export type Uloga = 'vlasnik' | 'admin' | 'frizer'
 export interface Profil { ime: string; uloga: Uloga }
 export interface LokacijaOsoblje { id: string; naziv: string; osobe: string[]; radno: Record<string, [string, string] | null> }
-export interface KonfigOsoblje { korak: number; usluge: Usluga[]; lokacije: LokacijaOsoblje[] }
+export interface KonfigOsoblje { korak: number; usluge: Usluga[]; lokacije: LokacijaOsoblje[]; verzija?: string }
+/** Verzija Google skripte koju ovaj panel očekuje (VERZIJA_SKRIPTE u Grasak.gs). */
+export const OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-02a'
 export interface TerminOsoblje {
   id: string; od: string; do: string; usluga: string; dijete: string; uzrast: string; roditelj: string
   telefon: string; napomena: string; izvor: string; status: 'zakazan' | 'nije_dosao' | 'otkazan'
