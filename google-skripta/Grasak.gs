@@ -43,6 +43,7 @@ function onOpen() {
     .addItem('Provjeri podesavanja', 'provjeriPodesavanja')
     .addItem('Osvjezi termine sada', 'sinhronizuj')
     .addItem('Osvjezi klijente (CRM)', 'osvjeziKlijente')
+    .addItem('Vrati termine iz tabele u kalendar', 'vratiTermineIzTabele')
     .addItem('Posalji izvjestaj za proslu sedmicu', 'posaljiSedmicniIzvjestaj')
     .addItem('Posalji probni SMS meni', 'probniSms')
     .addToUi();
@@ -235,6 +236,51 @@ function datumTekst(v, tz) {
 
 function vrijemeTekst(v, tz) {
   return v instanceof Date ? Utilities.formatDate(v, tz, 'HH:mm') : String(v || '');
+}
+
+/* ---------- spas: tabela -> kalendar ---------- */
+
+/** Meni: budući termini iz tabele kojih nema u kalendaru (obrisani ili drugi nalog) vraćaju se u kalendar, pa ih panel vidi. */
+function vratiTermineIzTabele() {
+  const n = vratiTermineIzTabele_();
+  SpreadsheetApp.getUi().alert(n ? 'Vraćeno u kalendar: ' + n + ' termina. Panel ih sada vidi.' : 'Svi budući termini iz tabele već su u kalendaru.');
+}
+
+function vratiTermineIzTabele_() {
+  const sh = tabela_().getSheetByName(LIST_TERMINI);
+  if (!sh || sh.getLastRow() < 2) return 0;
+  const tz = CFG.TZ;
+  const danas = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd');
+  const opseg = sh.getRange(2, 1, sh.getLastRow() - 1, ZAGLAVLJE.length);
+  const redovi = opseg.getValues();
+  let n = 0;
+  redovi.forEach(r => {
+    const datum = datumTekst(r[KOL['Datum']], tz), status = String(r[KOL['Status']] || 'zakazan');
+    if (!datum || datum < danas || status === 'otkazan') return;
+    if (r[0] && kal_().getEventById(String(r[0]))) return;   // već je u kalendaru
+    const vrijeme = vrijemeTekst(r[KOL['Vrijeme']], tz), kraj = vrijemeTekst(r[KOL['Kraj']], tz);
+    const frizer = String(r[KOL['Frizer']] || '').trim(), usluga = String(r[KOL['Usluga']] || '').trim(), dijete = String(r[KOL['Dijete']] || '').trim();
+    if (!/^\d{2}:\d{2}$/.test(vrijeme) || !frizer || !usluga) return;
+    const pocetak = Utilities.parseDate(datum + ' ' + vrijeme, tz, 'yyyy-MM-dd HH:mm');
+    const krajD = /^\d{2}:\d{2}$/.test(kraj) && kraj > vrijeme ? Utilities.parseDate(datum + ' ' + kraj, tz, 'yyyy-MM-dd HH:mm') : new Date(pocetak.getTime() + 30 * 60000);
+    const telefon = telefonIzTabele(r[KOL['Telefon']]);
+    const kartica = String(r[KOL['Kartica']] || '').toLowerCase() === 'da';
+    const ev = kal_().createEvent(frizer + ' - ' + usluga + (dijete ? ' (' + dijete + ')' : ''), pocetak, krajD, {
+      description: 'Roditelj: ' + (r[KOL['Roditelj']] || '-') + '\nTelefon: ' + (telefon || '-') + '\nUzrast: ' + (r[KOL['Uzrast']] || '-') +
+        '\nNapomena: ' + (r[KOL['Napomena']] || '-') + '\nKartica: ' + (kartica ? 'da' : '-') + '\nEmail: ' + (r[KOL['Email']] || '-') +
+        '\nKod: ' + napraviKod_() + '\nIzvor: ' + (r[KOL['Izvor']] || 'tabela'),
+    });
+    if (kartica) ev.setColor(CalendarApp.EventColor.YELLOW);
+    ev.setTag('obav', 'da');
+    if (status === 'nije_dosao') ev.setTag('status', 'nije_dosao');
+    if (r[KOL['Potvrda SMS']]) ev.setTag('potvrda', String(r[KOL['Potvrda SMS']]));
+    r[0] = ev.getId();
+    r[KOL['Telefon']] = telefonZaTabelu(telefon);
+    r[KOL['Azurirano']] = sadaTekst_();
+    n++;
+  });
+  if (n) opseg.setValues(redovi);
+  return n;
 }
 
 /* ---------- obavještenja u panelu ---------- */
