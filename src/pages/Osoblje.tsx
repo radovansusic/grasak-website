@@ -42,6 +42,7 @@ export default function Osoblje() {
   const [signal, setSignal] = useState(0)          // novo obavještenje -> osvježi pregled dana
   const [fokus, setFokus] = useState<string>('')   // tap na obavještenje -> taj dan
   const [vracanje, setVracanje] = useState('')      // vlasnik: vraćanje termina iz tabele u kalendar
+  const [bekap, setBekap] = useState('')            // vlasnik: ručni bekap
 
   useEffect(() => {
     document.title = 'Grašak panel'
@@ -124,6 +125,19 @@ export default function Osoblje() {
             {vracanje === 'radi' ? 'Vraćam...' : 'Vrati termine iz tabele u kalendar'}
           </button>
           {vracanje && vracanje !== 'radi' && <span className="font-bold text-grass-deep">{vracanje}</span>}
+        </div>
+      )}
+      {vlasnik && konfig.verzija && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink/50 print:hidden">
+          <span className={konfig.bekapGreska && !bekap ? 'font-bold text-coral' : ''}>
+            {konfig.bekap ? `Zadnji bekap tabele: ${konfig.bekap}` : 'Bekap tabele još nije napravljen'}
+            {konfig.bekapGreska && !bekap && ` (greška: ${konfig.bekapGreska})`}. Svaki dan, Drive folder "Grašak - bekap tabele", 30 dana.
+          </span>
+          <button disabled={bekap === 'radi'} onClick={() => {
+            setBekap('radi')
+            osoblje<{ bekap: string }>('bekap', pristup).then((r) => setBekap(r.poruka || (r.ok ? 'Gotovo.' : 'Nije uspjelo.'))).catch(() => setBekap('Nema veze sa serverom.'))
+          }} className="rounded-full bg-white px-3 py-1 font-bold text-ink shadow-sm disabled:opacity-50">{bekap === 'radi' ? 'Pravim bekap...' : 'Bekap sada'}</button>
+          {bekap && bekap !== 'radi' && <span className="font-bold text-grass-deep">{bekap}</span>}
         </div>
       )}
       <div className="mb-4 flex flex-wrap gap-2 print:hidden">

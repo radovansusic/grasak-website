@@ -26,7 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-02e';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-07a';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -44,6 +44,7 @@ function onOpen() {
     .addItem('Osvjezi termine sada', 'sinhronizuj')
     .addItem('Osvjezi klijente (CRM)', 'osvjeziKlijente')
     .addItem('Vrati termine iz tabele u kalendar', 'vratiTermineIzTabele')
+    .addItem('Napravi bekap sada', 'bekapSada')
     .addItem('Posalji izvjestaj za proslu sedmicu', 'posaljiSedmicniIzvjestaj')
     .addItem('Posalji probni SMS meni', 'probniSms')
     .addToUi();
@@ -65,6 +66,7 @@ function postavi() {
   ScriptApp.newTrigger('sinhronizuj').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('posaljiPodsjetnike').timeBased().everyDays(1).atHour(CFG.SAT_PODSJETNIKA).inTimezone(CFG.TZ).create();
   ScriptApp.newTrigger('posaljiSedmicniIzvjestaj').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).inTimezone(CFG.TZ).create();
+  ScriptApp.newTrigger('dnevniBekap').timeBased().everyDays(1).atHour(3).inTimezone(CFG.TZ).create();
   sinhronizuj();
 }
 
@@ -236,6 +238,87 @@ function datumTekst(v, tz) {
 
 function vrijemeTekst(v, tz) {
   return v instanceof Date ? Utilities.formatDate(v, tz, 'HH:mm') : String(v || '');
+}
+
+/* ---------- bekap: cijela tabela kao Excel u Drive, svaki dan, čuva se 30 dana ---------- */
+
+const BEKAP_FOLDER = 'Grašak - bekap tabele';
+const BEKAP_DANA = 30;
+
+function folderBekapa_() {
+  const it = DriveApp.getFoldersByName(BEKAP_FOLDER);
+  return it.hasNext() ? it.next() : DriveApp.createFolder(BEKAP_FOLDER);
+}
+
+/** .xlsx kopija cijele tabele (svi listovi, bez skripte) u folder "Grašak - bekap tabele"; stariji od 30 dana idu u otpad. */
+function napraviBekap_() {
+  const ss = tabela_();
+  const tz = CFG.TZ;
+  const odg = UrlFetchApp.fetch('https://docs.google.com/spreadsheets/d/' + ss.getId() + '/export?format=xlsx', {
+    headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, muteHttpExceptions: true,
+  });
+  if (odg.getResponseCode() !== 200) throw new Error('izvoz tabele nije uspio (' + odg.getResponseCode() + ')');
+  const folder = folderBekapa_();
+  const fajl = folder.createFile(odg.getBlob().setName('Grasak bekap ' + Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH-mm') + '.xlsx'));
+  const granica = Date.now() - BEKAP_DANA * 864e5;
+  let obrisano = 0;
+  const fajlovi = folder.getFiles();
+  while (fajlovi.hasNext()) {
+    const f = fajlovi.next();
+    if (f.getId() !== fajl.getId() && /^Grasak bekap /.test(f.getName()) && f.getDateCreated().getTime() < granica) { f.setTrashed(true); obrisano++; }
+  }
+  const p = PropertiesService.getScriptProperties();
+  const kad = Utilities.formatDate(new Date(), tz, 'yyyy-MM-dd HH:mm');
+  p.setProperties({ ZADNJI_BEKAP: kad, ZADNJI_BEKAP_MS: String(Date.now()), BEKAP_GRESKA: '' });
+  return { naziv: fajl.getName(), url: fajl.getUrl(), obrisano: obrisano, kad: kad };
+}
+
+function javiVlasniku_(naslov, tekst) {
+  try {
+    ucitajOsoblje(ucitajPodesavanja().lokacije).osoblje.filter(x => x.uloga === 'vlasnik' && /@/.test(x.email))
+      .forEach(x => MailApp.sendEmail(x.email, naslov, tekst));
+  } catch (e) { console.log('Email vlasniku nije poslat: ' + e); }
+}
+
+/** Okidač svaki dan u 3h. Ako ne uspije, vlasnik dobija email. */
+function dnevniBekap() {
+  try { napraviBekap_(); } catch (e) {
+    PropertiesService.getScriptProperties().setProperty('BEKAP_GRESKA', String(e.message || e));
+    javiVlasniku_('Grašak: bekap tabele nije napravljen', 'Dnevni bekap tabele "Grašak - termini" nije napravljen: ' + (e.message || e) +
+      '\n\nPokušajte u tabeli: Grasak > Napravi bekap sada (sa naloga salona).');
+  }
+}
+
+/**
+ * Rezerva bez okidača: zove se kad je panel otvoren (zvonce, u pozadini). Ako je zadnji bekap stariji od 24h, pravi ga.
+ * Poslije greške čeka sat vremena prije novog pokušaja.
+ */
+function bekapAkoTreba_() {
+  try {
+    const p = PropertiesService.getScriptProperties();
+    const sada = Date.now();
+    if (sada - Number(p.getProperty('ZADNJI_BEKAP_MS') || 0) < 24 * 3600e3) return;
+    if (sada - Number(p.getProperty('BEKAP_POKUSAJ_MS') || 0) < 3600e3) return;
+    const c = CacheService.getScriptCache();
+    if (c.get('bekap_u_toku')) return;
+    c.put('bekap_u_toku', '1', 300);
+    p.setProperty('BEKAP_POKUSAJ_MS', String(sada));
+    try { napraviBekap_(); } finally { c.remove('bekap_u_toku'); }
+  } catch (e) {
+    PropertiesService.getScriptProperties().setProperty('BEKAP_GRESKA', String(e.message || e));
+    console.log('Bekap nije napravljen: ' + e);
+  }
+}
+
+/** Meni: Grasak > Napravi bekap sada. */
+function bekapSada() {
+  const ui = SpreadsheetApp.getUi();
+  try {
+    const r = napraviBekap_();
+    ui.alert('Bekap je napravljen: ' + r.naziv + '\nFolder na Drive-u: ' + BEKAP_FOLDER + (r.obrisano ? '\nObrisano starih (preko 30 dana): ' + r.obrisano : ''));
+  } catch (e) {
+    ui.alert('Bekap nije napravljen: ' + (e.message || e));
+  }
 }
 
 /* ---------- spas: tabela -> kalendar ---------- */
@@ -1287,7 +1370,11 @@ function osobljeAkcija_(z) {
       if (o.uloga !== 'vlasnik') return { ok: false, poruka: 'Ovo radi samo vlasnik.' };
       return pisanje_(() => { const n = vratiTermineIzTabele_(); return { ok: true, poruka: n ? 'Vraćeno u kalendar: ' + n + ' termina.' : 'Svi budući termini iz tabele već su u kalendaru.', broj: n }; });
     case 'osoblje_obavjestenja':
+      bekapAkoTreba_();   // dnevni bekap i bez okidača, dok je panel otvoren
       return { ok: true, obavjestenja: obavjestenjaZa_(o, p, z.posle), sada: String(Date.now()) };
+    case 'osoblje_bekap':
+      if (o.uloga !== 'vlasnik') return { ok: false, poruka: 'Bekap pravi samo vlasnik.' };
+      return (function () { try { const r = napraviBekap_(); return { ok: true, poruka: 'Bekap napravljen: ' + r.naziv, bekap: r.kad }; } catch (e) { return { ok: false, poruka: 'Bekap nije napravljen: ' + (e.message || e) }; } })();
     case 'osoblje_izvjestaj':
       if (o.uloga === 'frizer') return { ok: false, poruka: 'Izvještaji su za vlasnika i administratore.' };
       return { ok: true, izvjestaj: izvjestajZaPeriod_(o, p, z.od, z.do, z.lok) };
@@ -1349,6 +1436,8 @@ function konfigZaOsoblje_(o, p) {
   return {
     verzija: VERZIJA_SKRIPTE,
     kalendar: kalendar, nalog: nalog,   // koji kalendar i koji Google nalog skripta koristi (vidi vlasnik u panelu)
+    bekap: o.uloga === 'vlasnik' ? (PropertiesService.getScriptProperties().getProperty('ZADNJI_BEKAP') || '') : '',
+    bekapGreska: o.uloga === 'vlasnik' ? (PropertiesService.getScriptProperties().getProperty('BEKAP_GRESKA') || '') : '',
     korak: APP.KORAK_MIN,
     usluge: p.usluge,
     lokacije: dozvoljeneLokacije_(o, p).map(l => ({ id: l.id, naziv: l.naziv, osobe: l.osobe, radno: l.radno })),
