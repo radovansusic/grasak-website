@@ -33,6 +33,7 @@ export default function App() {
           <Route path="zakazi" element={<Zakazi />} />
           <Route path="vaucer" element={<VaucerNarudzba />} />
           <Route path="moj" element={<MojGrasak />} />
+          {/* /kutak, /kutak/<slug>, /kutak/tema/<rubrika>, /kutak/oznaka/<oznaka> (i /en, /ru, /tr) isporučuje Vercel funkcija api/kutak.js, ne ovaj ruter */}
         </Route>
       </Routes>
     </Suspense>

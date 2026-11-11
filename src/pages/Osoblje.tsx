@@ -3,7 +3,7 @@ import { ArrowUp } from 'lucide-react'
 import type { FormEvent, ReactNode } from 'react'
 import {
   BarChart3, Ban, CalendarClock, CalendarDays, CalendarRange, Check, ChevronLeft, ChevronRight, Coffee, CreditCard, Download,
-  ListChecks, Loader2, LogOut, Mail, MessageSquarePlus, Phone, Plus, Printer, RefreshCw, Settings, Users, UserX,
+  ListChecks, Loader2, LogOut, Mail, MessageSquarePlus, Newspaper, Phone, Plus, Printer, RefreshCw, Settings, Users, UserX,
 } from 'lucide-react'
 import PodesavanjaPanel from '@/components/osoblje/PodesavanjaPanel'
 import Zvono from '@/components/osoblje/Obavjestenja'
@@ -12,6 +12,7 @@ import Istorija from '@/components/osoblje/Istorija'
 import { BlokadaDetalji, PauzaForma } from '@/components/osoblje/Pauza'
 import { ListaPanel, SedmicaPanel } from '@/components/osoblje/Pregledi'
 import KlijentiPanel from '@/components/osoblje/Klijenti'
+import KutakPanel from '@/components/osoblje/KutakPanel'
 import { Prozor, Tab } from '@/components/osoblje/zajednicko'
 import { OZNAKA_IZVORA, inputCls, lijepDatum, nazivTermina, pomjeri, proslo } from '@/components/osoblje/pomocno'
 import { API_URL, isoDatum } from '@/lib/zakazivanje'
@@ -38,7 +39,7 @@ export default function Osoblje() {
   const [profil, setProfil] = useState<Profil | null>(null)
   const [konfig, setKonfig] = useState<KonfigOsoblje | null>(null)
   const [greska, setGreska] = useState('')
-  const [tab, setTab] = useState<'dan' | 'sedmica' | 'lista' | 'klijenti' | 'izvjestaj' | 'podesavanja'>('dan')
+  const [tab, setTab] = useState<'dan' | 'sedmica' | 'lista' | 'klijenti' | 'izvjestaj' | 'kutak' | 'podesavanja'>('dan')
   const [signal, setSignal] = useState(0)          // novo obavještenje -> osvježi pregled dana
   const [fokus, setFokus] = useState<string>('')   // tap na obavještenje -> taj dan
   const [vracanje, setVracanje] = useState('')      // vlasnik: vraćanje termina iz tabele u kalendar
@@ -146,12 +147,14 @@ export default function Osoblje() {
         {admin && <Tab aktivan={tab === 'lista'} onClick={() => idiNa('lista')}><ListChecks className="h-4 w-4" /> Lista</Tab>}
         {admin && <Tab aktivan={tab === 'klijenti'} onClick={() => idiNa('klijenti')}><Users className="h-4 w-4" /> Klijenti</Tab>}
         {admin && <Tab aktivan={tab === 'izvjestaj'} onClick={() => idiNa('izvjestaj')}><BarChart3 className="h-4 w-4" /> Izvještaj</Tab>}
+        {admin && <Tab aktivan={tab === 'kutak'} onClick={() => idiNa('kutak')}><Newspaper className="h-4 w-4" /> Kutak</Tab>}
         {vlasnik && <Tab aktivan={tab === 'podesavanja'} onClick={() => idiNa('podesavanja')}><Settings className="h-4 w-4" /> Podešavanja</Tab>}
       </div>
       {tab === 'sedmica' ? <SedmicaPanel pristup={pristup} konfig={konfig} onOtvoriDan={otvoriDan} />
         : tab === 'lista' && admin ? <ListaPanel pristup={pristup} konfig={konfig} />
           : tab === 'klijenti' && admin ? <KlijentiPanel pristup={pristup} />
           : tab === 'izvjestaj' && admin ? <IzvjestajPanel pristup={pristup} konfig={konfig} />
+            : tab === 'kutak' && admin ? <KutakPanel pristup={pristup} />
             : tab === 'podesavanja' && vlasnik ? <PodesavanjaPanel pristup={pristup} onSacuvano={osvjeziKonfig} onOdjava={odjava} />
               : dan}
     </Okvir>

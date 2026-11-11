@@ -3,10 +3,13 @@ import { motion } from 'framer-motion'
 import { Instagram, Facebook, MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react'
 import GrassDivider from './GrassDivider'
 import { useLang } from '@/i18n/LanguageContext'
+import { kutakPutanja, useKutakIma } from '@/lib/kutak'
+import { SALON } from '@/data/salon'
 
 export default function Footer() {
-  const { tr } = useLang()
-  const nav = [
+  const { tr, lang } = useLang()
+  const kutakIma = useKutakIma()
+  const nav: { to: string; label: string; puna?: boolean }[] = [
     { to: '/', label: tr('nav.home') },
     { to: '/usluge', label: tr('nav.usluge') },
     { to: '/o-nama', label: tr('nav.onama') },
@@ -15,6 +18,7 @@ export default function Footer() {
     { to: '/kontakt', label: tr('nav.kontakt') },
     { to: '/moj', label: tr('moj.title') },
   ]
+  if (kutakIma) nav.push({ to: kutakPutanja(lang), label: tr('nav.kutak'), puna: true })
   return (
     <footer className="relative bg-grass-darkest text-white/85">
       <div className="absolute inset-x-0 -top-[109px] h-[110px] md:-top-[159px] md:h-[160px]">
@@ -89,9 +93,13 @@ export default function Footer() {
           <ul className="mt-4 space-y-2 text-sm">
             {nav.map((l) => (
               <li key={l.to}>
-                <Link to={l.to} className="transition-colors hover:text-sun">
-                  {l.label}
-                </Link>
+                {l.puna ? (
+                  <a href={l.to} className="transition-colors hover:text-sun">{l.label}</a>
+                ) : (
+                  <Link to={l.to} className="transition-colors hover:text-sun">
+                    {l.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>
@@ -115,8 +123,8 @@ export default function Footer() {
             </li>
             <li className="flex gap-2">
               <Phone className="mt-0.5 h-4 w-4 shrink-0 text-sun" />
-              <a href="tel:+38269371111" className="hover:text-sun">
-                +382 69 371 111
+              <a href={'tel:' + SALON.telefonTel} className="hover:text-sun">
+                {SALON.telefon}
               </a>
             </li>
             <li className="flex gap-2">

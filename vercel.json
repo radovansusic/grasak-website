@@ -3,7 +3,17 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/kutak/rss.xml", "destination": "/api/kutak-rss" },
+    { "source": "/kutak", "destination": "/api/kutak" },
+    { "source": "/kutak/tema/:rubrika", "destination": "/api/kutak?tema=:rubrika" },
+    { "source": "/kutak/oznaka/:oznaka", "destination": "/api/kutak?oznaka=:oznaka" },
+    { "source": "/kutak/:slug", "destination": "/api/kutak?slug=:slug" },
+    { "source": "/:jez(en|ru|tr)/kutak", "destination": "/api/kutak?jez=:jez" },
+    { "source": "/:jez(en|ru|tr)/kutak/tema/:rubrika", "destination": "/api/kutak?jez=:jez&tema=:rubrika" },
+    { "source": "/:jez(en|ru|tr)/kutak/oznaka/:oznaka", "destination": "/api/kutak?jez=:jez&oznaka=:oznaka" },
+    { "source": "/:jez(en|ru|tr)/kutak/:slug", "destination": "/api/kutak?jez=:jez&slug=:slug" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {
