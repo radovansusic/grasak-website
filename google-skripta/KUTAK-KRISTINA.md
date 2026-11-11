@@ -12,6 +12,8 @@
 - Oznake: 2 do 4, najviše jedna oznaka uzrasta.
 - Savjet i Aktivnost traže 2 do 3 koraka u okviru "Šta možete uraditi danas". Vijest traži izvor (naziv i link).
 
+**Štiklir "I na Dječiji kutak"** (u istom dijelu, ispod koraka): objavljeni tekst stiže i na djecijikutak.me, samo na crnogorskom, za oko sat vremena. Sam je uključen za Za roditelje, Igraonica i Vijesti za porodice, a isključen za Šišanje i njega (možete uključiti). Za Iz Graška ne može: te tekstove vide samo posjetioci Graška. Iste provjere (zdravlje, djeca, brojke bez izvora) važe i za Kutak. Da tekst povučete sa Kutka: odštiklirajte i pritisnite **Objavi izmjene**, ili **Skloni sa sajta** (to ga skida i sa Graška). Tekst pišete i mijenjate samo ovdje, nikad na Kutku.
+
 **4. Pregledajte prevode.** Otvorite EN, RU i TR, pročitajte, ispravite šta treba. **Prevod izlazi samo ako ga potvrdite** štiklirom "Pročitano i potvrđeno: prevod". Ne potvrđen prevod ostaje sačuvan, ali ga niko ne vidi. Ako poslije potvrde promijenite crnogorski tekst, potvrde se poništavaju i prevode treba ponovo pročitati. Kad mijenjate već objavljen tekst koji ima objavljen prevod, panel pita: **Zadrži objavljene prevode** ili **Povuci prevode dok ih ne potvrdim**.
 
 **5. Pritisnite Provjera, pa Objavi.** Pitaće vas na kojim se jezicima objavljuje. Na sajtu je za nekoliko minuta. Greška ili pogrešan tekst: **Skloni** (tekst ostaje u tabeli, može se vratiti).

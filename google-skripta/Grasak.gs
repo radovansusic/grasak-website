@@ -26,7 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-11c';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-11d';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -1041,6 +1041,7 @@ function doGet(e) {
     if (p.akcija === 'termin') return json_(terminZaRoditelja_(p.id, p.kod));
     if (p.akcija === 'objave') return json_(objaveJavnaLista_());              // javno: samo objavljene
     if (p.akcija === 'objava') return json_(objaveJavnaJedna_(p.slug));
+    if (p.akcija === 'kutak') return json_(objaveKutakFeed_());                // javno: tekstovi za Dječiji kutak (djecijikutak.me), samo na_kutku
     return json_({ greska: 'Nepoznata akcija' });
   } catch (err) {
     return json_({ greska: String(err.message || err) });
@@ -3329,6 +3330,46 @@ function objaveJezikIzvora_(tekst) {
   return me >= 3 ? 'sr' : '';
 }
 
+/* ---------- Dječiji kutak (djecijikutak.me): oznaka "I na Dječiji kutak" ---------- */
+
+// Tekst iz ovih rubrika i vrsta ostaje samo na Grašku (termini, radionice, radno vrijeme su vezani za salon). Panel (src/data/kutakPravila.js) ima istu listu: test ih poredi.
+const OBJAVE_KUTAK_RUBRIKE_NE = ['iz-graska'];
+const OBJAVE_KUTAK_VRSTE_NE = ['iz-salona'];
+const OBJAVE_KUTAK_PROZOR_SATI = 2;   // Grašak usmjerava canonical na Kutak tek kutak_od: do tada Kutkova kopija možda još ne postoji (uvoz radi jednom na sat)
+
+/** Rubrika i vrsta koje smiju na Kutak; prazna vrijednost (nacrt bez izbora) nije zabrana. */
+function objaveKutakDozvoljeno_(rubrika, vrsta) {
+  return OBJAVE_KUTAK_RUBRIKE_NE.indexOf(String(rubrika || '')) === -1 && OBJAVE_KUTAK_VRSTE_NE.indexOf(String(vrsta || '')) === -1;
+}
+
+/** Ćelija "Na Kutku": vrijeme (ISO) kad je oznaka uključena, ili "da" kad je upisana rukom u tabelu; prazno, "ne" i "0" znače isključeno. */
+function objaveKutakOznaceno_(v) {
+  const t = String(v == null ? '' : v).trim().toLowerCase();
+  return !!t && t !== 'ne' && t !== '0' && t !== 'false';
+}
+
+/** Nova vrijednost ćelije: isključeno = prazno; uključeno zadržava vrijeme ranijeg uključenja, a novo uključenje upisuje `sada`. */
+function objaveKutakVrijednost_(zeljeno, staro, sada) {
+  if (!zeljeno) return '';
+  return objaveKutakOznaceno_(staro) ? String(staro).trim() : sada;
+}
+
+/** Tekst ide na Kutak samo kad je objavljen, označen i iz rubrike i vrste koje smiju. */
+function objaveNaKutku_(o) {
+  return !!o && o.status === 'objavljeno' && objaveKutakOznaceno_(o.kutak) && objaveKutakDozvoljeno_(o.rubrika, o.vrsta);
+}
+
+/**
+ * Od kada je Kutkova kopija očekivana (ISO, UTC): kasnije od uključenja oznake i od objave, plus prozor od 2 sata.
+ * Prazno kad se vrijeme ne može odrediti (npr. "da" upisano rukom, a tekst bez datuma objave): tada Grašak ne usmjerava canonical.
+ */
+function objaveKutakOd_(o) {
+  const vr = (s) => { const t = Date.parse(String(s || '').trim()); return isNaN(t) ? null : t; };
+  const a = vr(o.kutak), b = vr(o.objavljeno) !== null ? vr(o.objavljeno) : vr(o.datum);
+  const osnova = a !== null && b !== null ? Math.max(a, b) : (a !== null ? a : b);
+  return osnova === null ? '' : new Date(osnova + OBJAVE_KUTAK_PROZOR_SATI * 3600 * 1000).toISOString();
+}
+
 // ===== OBJAVE-CISTE-KRAJ =====
 
 /* ---------- skladište: list "Objave" ---------- */
@@ -3337,13 +3378,15 @@ const LIST_OBJAVE = 'Objave';
 // Redoslijed kolona je ugovor sa tabelom: nove kolone idu samo na kraj. listObjava_ dopisuje zaglavlje ako ga stara tabela nema.
 const ZAGLAVLJE_OBJAVE = ['Slug', 'Datum', 'Status', 'Autor', 'Vrsta', 'Izvor naziv', 'Izvor URL',
   'Naslov cnr', 'Tijelo cnr', 'Naslov en', 'Tijelo en', 'Naslov ru', 'Tijelo ru', 'Naslov tr', 'Tijelo tr', 'Azurirano', 'Napisao',
-  'Rubrika', 'Oznake', 'Koraci cnr', 'Koraci en', 'Koraci ru', 'Koraci tr', 'Potvrda en', 'Potvrda ru', 'Potvrda tr', 'Objavljeno', 'Izvor jezik', 'Zdravlje potvrda'];
+  'Rubrika', 'Oznake', 'Koraci cnr', 'Koraci en', 'Koraci ru', 'Koraci tr', 'Potvrda en', 'Potvrda ru', 'Potvrda tr', 'Objavljeno', 'Izvor jezik', 'Zdravlje potvrda', 'Na Kutku'];
 const OK_ = ZAGLAVLJE_OBJAVE.reduce((o, k, i) => { o[k] = i; return o; }, {});
 const OBJAVE_STATUSI = ['nacrt', 'objavljeno', 'sklonjeno'];
 const OBJAVE_AUTOR = 'Grašak';
 const OBJAVE_MAX = 300;
 const OBJAVE_KES_LISTA = 'kutak_lista';
 const OBJAVE_KES_JEDNA = 'kutak_p_';
+const OBJAVE_KES_KUTAK = 'kutak_feed';
+const OBJAVE_KUTAK_MAX = 50;   // najviše tekstova u jednom odgovoru za Kutak
 
 function listObjava_() {
   const ss = tabela_();
@@ -3378,6 +3421,7 @@ function objavaIzReda_(r) {
     tijelo: { cnr: t(r[OK_['Tijelo cnr']]), en: t(r[OK_['Tijelo en']]), ru: t(r[OK_['Tijelo ru']]), tr: t(r[OK_['Tijelo tr']]) },
     azurirano: t(r[OK_['Azurirano']]), napisao: t(r[OK_['Napisao']]),
     rubrika: t(r[OK_['Rubrika']]).trim(), oznake: objaveNizSlugova_(t(r[OK_['Oznake']])), koraci: koraci, potvrda: potvrda, objavljeno: t(r[OK_['Objavljeno']]), izvor_jezik: t(r[OK_['Izvor jezik']]).trim().toLowerCase(), zdravlje_potvrda: t(r[OK_['Zdravlje potvrda']]).trim(),
+    kutak: t(r[OK_['Na Kutku']]).trim(),
   };
 }
 
@@ -3392,6 +3436,7 @@ function redIzObjave_(ob) {
   ['en', 'ru', 'tr'].forEach(j => { red[OK_['Potvrda ' + j]] = ob.potvrda && ob.potvrda[j] ? 'da' : ''; });
   red[OK_['Azurirano']] = ob.azurirano || ''; red[OK_['Napisao']] = ob.napisao || '';
   red[OK_['Rubrika']] = ob.rubrika || ''; red[OK_['Oznake']] = (ob.oznake || []).join(','); red[OK_['Objavljeno']] = ob.objavljeno || ''; red[OK_['Izvor jezik']] = ob.izvor_jezik || ''; red[OK_['Zdravlje potvrda']] = ob.zdravlje_potvrda || '';
+  red[OK_['Na Kutku']] = ob.kutak || '';
   return red;
 }
 
@@ -3425,6 +3470,7 @@ function objaveKesObrisi_(slug) {
   try {
     const c = CacheService.getScriptCache();
     c.remove(OBJAVE_KES_LISTA);
+    c.remove(OBJAVE_KES_KUTAK);
     if (slug) c.remove(OBJAVE_KES_JEDNA + slug);
   } catch (e) { /* keš je samo ubrzanje */ }
 }
@@ -3461,6 +3507,9 @@ function objavaJavno_(o, saTekstom) {
     vrsta: o.vrsta, rubrika: o.rubrika, oznake: o.oznake.filter(s => !!objaveOznaka_(s)), zdravlje: objaveTrebaNapomenu_(o),
     izvor_naziv: o.izvor_naziv, izvor_url: o.izvor_url, izvor_jezik: o.izvor_jezik || '', jezici: jezici, naslov: naslov, opis: opis, recenica: recenica, minuta: minuta,
   };
+  const kutak = objaveNaKutku_(o);
+  odg.na_kutku = kutak;                       // javno: tekst živi na djecijikutak.me; Grašak tada nosi canonical na Kutak (tek od kutak_od)
+  odg.kutak_od = kutak ? objaveKutakOd_(o) : '';
   if (saTekstom) { odg.tijelo = tijelo; odg.koraci = koraci; }
   return odg;
 }
@@ -3472,6 +3521,38 @@ function objaveJavnaLista_() {
     .sort((a, b) => { const x = a.objavljeno || a.datum, y = b.objavljeno || b.datum; return x < y ? 1 : x > y ? -1 : 0; }).slice(0, OBJAVE_MAX).map(o => objavaJavno_(o, false));
   const odgovor = { ok: true, objave: lista, taksonomija: objaveTaksonomija_() };
   try { c.put(OBJAVE_KES_LISTA, JSON.stringify(odgovor), 300); } catch (e) { /* preveliko za keš */ }
+  return odgovor;
+}
+
+/**
+ * Javni odgovor za Dječiji kutak (akcija=kutak): samo objavljeni tekstovi sa oznakom "I na Dječiji kutak", samo crnogorski (jezik "me").
+ * Provjera se ponavlja i ovdje: tekst koji danas ne prolazi blokade (rizična tema, brojka bez izvora, lični podaci, zdravstvena tvrdnja bez druge potvrde)
+ * ne ide na Kutak, i javlja se u `povuceno`. `povuceno` = slugovi svih ostalih redova (sklonjeni, bez oznake, zadržani): uvoz na Kutku skida samo ono što je ovdje izričito navedeno.
+ * Tijelo je običan tekst po pasusima (prazan red između pasusa), isto kao u akcija=objava; uvoz ga pretvara u markdown i čisti.
+ */
+function objaveKutakFeed_() {
+  const c = CacheService.getScriptCache();
+  try { const k = c.get(OBJAVE_KES_KUTAK); if (k) return JSON.parse(k); } catch (e) { /* keš oštećen */ }
+  const sve = objaveSve_(true);
+  const objave = [], povuceno = [], zadrzano = [];
+  sve.slice().sort((a, b) => { const x = a.objavljeno || a.datum, y = b.objavljeno || b.datum; return x < y ? 1 : x > y ? -1 : 0; }).forEach(o => {
+    if (!objavaJeJavna_(o) || !objaveNaKutku_(o)) { povuceno.push(o.slug); return; }
+    const pr = objaveProvjeri_(o);
+    const cnrNalazi = pr.blokirano.filter(b => b.jezik === 'cnr');
+    const razlog = Object.keys(pr.greske).length ? 'provjera: ' + Object.keys(pr.greske).join(',') : cnrNalazi.length ? 'blokada: ' + cnrNalazi[0].pravilo.split(' (')[0]
+      : ((pr.zdravstvene || []).length && !o.zdravlje_potvrda ? 'zdravstvena tvrdnja bez druge potvrde' : '');
+    if (razlog) { povuceno.push(o.slug); zadrzano.push({ slug: o.slug, razlog: razlog }); return; }
+    if (objave.length >= OBJAVE_KUTAK_MAX) return;   // ostaje javno na Grašku; ulazi kad ga novije ne istisnu (nije u povuceno)
+    const j = objavaJavno_(o, true);
+    objave.push({
+      slug: o.slug, jezik: 'me', naslov: o.naslov.cnr, opis: j.opis.cnr, recenica: j.recenica.cnr, tijelo: o.tijelo.cnr, koraci: o.koraci.cnr,
+      rubrika: o.rubrika, vrsta: o.vrsta, oznake: j.oznake, oznake_nazivi: j.oznake.map(s => objaveOznaka_(s).naziv.cnr),
+      objavljeno: j.objavljeno, azurirano: j.azurirano, zdravlje: j.zdravlje, minuta: j.minuta.cnr,
+      izvor_naziv: o.izvor_naziv, izvor_url: o.izvor_url, na_kutku: true, kutak_od: j.kutak_od,
+    });
+  });
+  const odgovor = { ok: true, verzija: 1, jezik: 'me', generisano: new Date().toISOString(), objave: objave, povuceno: povuceno.slice(0, 500), zadrzano: zadrzano };
+  try { c.put(OBJAVE_KES_KUTAK, JSON.stringify(odgovor), 300); } catch (e) { /* preveliko za keš */ }
   return odgovor;
 }
 
@@ -3625,6 +3706,7 @@ function objaveUlazIzZahtjeva_(z) {
     izvor_jezik: objaveKodJezika_(u.izvor_jezik),
     naslov: nz, tijelo: tj, koraci: kr,
     potvrda: { en: pv.en === true, ru: pv.ru === true, tr: pv.tr === true },
+    na_kutku: u.na_kutku === true,   // panel: štiklir "I na Dječiji kutak"
   };
 }
 
@@ -3634,14 +3716,14 @@ function objaveAkcija_(o, z) {
     case 'osoblje_objave_lista': {
       const lista = objaveSve_().sort((a, b) => (a.azurirano < b.azurirano ? 1 : a.azurirano > b.azurirano ? -1 : 0)).slice(0, OBJAVE_MAX)
         .map(x => ({ slug: x.slug, naslov: x.naslov.cnr, status: x.status, datum: x.datum, azurirano: x.azurirano, vrsta: x.vrsta, rubrika: x.rubrika,
-          jezici: OBJAVE_JEZICI.filter(j => x.naslov[j] && x.tijelo[j]), javni_jezici: x.status === 'objavljeno' ? objaveJavniJezici_(x) : [] }));
+          jezici: OBJAVE_JEZICI.filter(j => x.naslov[j] && x.tijelo[j]), javni_jezici: x.status === 'objavljeno' ? objaveJavniJezici_(x) : [], na_kutku: objaveNaKutku_(x) }));
       const p = PropertiesService.getScriptProperties();
       return { ok: true, objave: lista, taksonomija: objaveTaksonomija_(), model: !!(String(p.getProperty('ANTHROPIC_API_KEY') || '').trim() || String(p.getProperty('DEEPSEEK_API_KEY') || '').trim()) };
     }
     case 'osoblje_objave_jedna': {
       const x = objavaPoSlugu_(z.slug);
       if (!x) return { ok: false, poruka: 'Tekst nije nađen.' };
-      return { ok: true, objava: { slug: x.slug, status: x.status, datum: x.datum, vrsta: x.vrsta, rubrika: x.rubrika, oznake: x.oznake, izvor_naziv: x.izvor_naziv, izvor_url: x.izvor_url, izvor_jezik: x.izvor_jezik, naslov: x.naslov, tijelo: x.tijelo, koraci: x.koraci, potvrda: x.potvrda, zdravlje_potvrda: x.zdravlje_potvrda || '' } };
+      return { ok: true, objava: { slug: x.slug, status: x.status, datum: x.datum, vrsta: x.vrsta, rubrika: x.rubrika, oznake: x.oznake, izvor_naziv: x.izvor_naziv, izvor_url: x.izvor_url, izvor_jezik: x.izvor_jezik, naslov: x.naslov, tijelo: x.tijelo, koraci: x.koraci, potvrda: x.potvrda, zdravlje_potvrda: x.zdravlje_potvrda || '', na_kutku: objaveKutakOznaceno_(x.kutak) } };
     }
     case 'osoblje_objave_nacrt': return objaveNacrt_(z);
     case 'osoblje_objave_pripremi': return objavePripremi_(z);
@@ -3847,6 +3929,9 @@ function objaveSacuvaj_(o, z) {
   if (!u.naslov.cnr && !u.tijelo.cnr) return { ok: false, poruka: 'Tekst je prazan.' };
   const nepoznato = objaveNepoznato_(u);
   if (nepoznato.length) return { ok: false, poruka: nepoznato.join(' ') + ' Dozvoljene su samo vrijednosti sa liste.', greske: { taksonomija: nepoznato.join(' ') } };
+  if (u.na_kutku && !objaveKutakDozvoljeno_(u.rubrika, u.vrsta)) {
+    return { ok: false, poruka: 'Tekst iz rubrike "Iz Graška" i vrste "Iz salona" ostaje samo na Grašku: isključite "I na Dječiji kutak".', greske: { na_kutku: 'Ova rubrika ili vrsta ne ide na Dječiji kutak.' } };
+  }
   const sve = objaveSve_();
   const stara = u.slug ? sve.find(x => x.slug === u.slug) : null;
   let slug = u.slug;
@@ -3887,14 +3972,14 @@ function objaveSacuvaj_(o, z) {
     if (pr.upozorenja.length && z.potvrda_upozorenja !== true) return { ok: false, poruka: 'Tekst nosi upozorenja: potvrdite ih.', upozorenja: pr.upozorenja, trebaPotvrda: true };
   }
   const zapisZdravlja = stanje === 'objavljeno' && (pr.zdravstvene || []).length ? objaveZapisZdravlja_(pr, o) : (stara ? stara.zdravlje_potvrda || '' : '');
-  const ob = { zdravlje_potvrda: zapisZdravlja, slug: slug, datum: stara ? stara.datum : '', objavljeno: stara ? stara.objavljeno : '', status: stanje, vrsta: u.vrsta, rubrika: u.rubrika, oznake: u.oznake, izvor_naziv: u.izvor_naziv, izvor_url: u.izvor_url, izvor_jezik: u.izvor_jezik,
+  const ob = { kutak: objaveKutakVrijednost_(u.na_kutku, stara ? stara.kutak : '', objaveSada_()), zdravlje_potvrda: zapisZdravlja, slug: slug, datum: stara ? stara.datum : '', objavljeno: stara ? stara.objavljeno : '', status: stanje, vrsta: u.vrsta, rubrika: u.rubrika, oznake: u.oznake, izvor_naziv: u.izvor_naziv, izvor_url: u.izvor_url, izvor_jezik: u.izvor_jezik,
     naslov: u.naslov, tijelo: u.tijelo, koraci: u.koraci, potvrda: u.potvrda, azurirano: objaveSada_(), napisao: stara ? stara.napisao || o.ime : o.ime };
   objaveUpisi_(ob, stara ? stara.red : 0);
   objaveKesObrisi_(slug);
   const poruka = (stanje === 'objavljeno' ? 'Izmjene su objavljene.' : 'Nacrt je sačuvan.') +
     (ponistene.length ? ' Crnogorski tekst je izmijenjen pa je potvrda povučena za prevod: ' + ponistene.map(j => j.toUpperCase()).join(', ') + (stanje === 'objavljeno' ? ' (sa sajta nestaje do nove potvrde).' : '. Pročitajte ga ponovo (ili ponovo prevedite) i potvrdite.') : '') +
     (u.izvor_url_odbacen ? ' Link izvora nije https adresa pa nije sačuvan.' : '');
-  return { ok: true, slug: slug, status: stanje, poruka: poruka, potvrda: u.potvrda, ponistene: ponistene, blokirano: pr.blokirano, upozorenja: pr.upozorenja, zdravstvene: pr.zdravstvene };
+  return { ok: true, slug: slug, status: stanje, poruka: poruka, na_kutku: objaveKutakOznaceno_(ob.kutak), potvrda: u.potvrda, ponistene: ponistene, blokirano: pr.blokirano, upozorenja: pr.upozorenja, zdravstvene: pr.zdravstvene };
 }
 
 /** Objava čita SAČUVAN tekst iz tabele (ne ono što je stiglo u zahtjevu), pa je provjera uvijek nad onim što će biti javno. */
@@ -3908,8 +3993,10 @@ function objaveObjavi_(o, z) {
   if (zd) return zd;
   if (pr.upozorenja.length && z.potvrda_upozorenja !== true) return { ok: false, poruka: 'Tekst nosi upozorenja: pročitajte ih pa potvrdite.', upozorenja: pr.upozorenja, trebaPotvrda: true };
   if ((pr.zdravstvene || []).length) x.zdravlje_potvrda = objaveZapisZdravlja_(pr, o);
+  const bilo = x.status;
   x.status = 'objavljeno';
   const sada = objaveSada_();
+  if (bilo === 'sklonjeno' && objaveKutakOznaceno_(x.kutak)) x.kutak = sada;   // ponovna objava poslije Skloni: novi prozor, jer je Kutkova kopija u međuvremenu skinuta
   if (!x.datum) x.datum = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');
   if (!x.objavljeno) x.objavljeno = sada;
   x.azurirano = sada;
@@ -3917,8 +4004,10 @@ function objaveObjavi_(o, z) {
   objaveKesObrisi_(x.slug);
   const javni = objaveJavniJezici_(x);
   const nepotvrdjeni = ['en', 'ru', 'tr'].filter(j => x.naslov[j] && x.tijelo[j] && javni.indexOf(j) === -1);
-  return { ok: true, slug: x.slug, status: 'objavljeno', jezici: javni, nepotvrdjeni: nepotvrdjeni,
+  const kutak = objaveNaKutku_(x);
+  return { ok: true, slug: x.slug, status: 'objavljeno', jezici: javni, nepotvrdjeni: nepotvrdjeni, na_kutku: kutak,
     poruka: 'Objavljeno. Na sajtu je vidljivo u roku od nekoliko minuta (' + javni.map(j => j.toUpperCase()).join(', ') + ').' +
+      (kutak ? ' Na Dječijem kutku (djecijikutak.me, samo crnogorski) stiže najkasnije za oko sat vremena.' : '') +
       (nepotvrdjeni.length ? ' Prevod nije objavljen za: ' + nepotvrdjeni.map(j => j.toUpperCase()).join(', ') + ' (nije potvrđen).' : '') };
 }
 

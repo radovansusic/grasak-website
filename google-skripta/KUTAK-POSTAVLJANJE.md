@@ -6,7 +6,31 @@ Javne adrese (strane pravi Vercel funkcija, stvarni HTML za Google): `/kutak` (l
 
 Grana je `p14-objave`. Ništa nije u `main` i ništa nije objavljeno dok se grana ne spoji.
 
-**Grana se spaja tek poslije koraka sa skriptom (koraci 1 do 5) i jednog probnog teksta (korak 6, tačke 1 do 4).** Razlog: spojena grana bez nove skripte ima panel koji traži verziju `2026-11-11c`, a sajt ne zna da li ima tekstova. Link "Graškov kutak" u meniju, podnožju i na početnoj strani pojavljuje se tek kad javni odgovor skripte vrati bar jedan objavljen tekst (provjera pri učitavanju, pamti se 10 minuta; ako skripta ne odgovara ili je stara, link se ne prikazuje). Strana `/kutak` bez tekstova daje 200 sa mirnom praznom stranom, a 503 samo kad skripta zaista ne odgovara (taj odgovor se ne kešira).
+**Grana se spaja tek poslije koraka sa skriptom (koraci 1 do 5) i jednog probnog teksta (korak 6, tačke 1 do 4).** Razlog: spojena grana bez nove skripte ima panel koji traži verziju `2026-11-11d`, a sajt ne zna da li ima tekstova. Link "Graškov kutak" u meniju, podnožju i na početnoj strani pojavljuje se tek kad javni odgovor skripte vrati bar jedan objavljen tekst (provjera pri učitavanju, pamti se 10 minuta; ako skripta ne odgovara ili je stara, link se ne prikazuje). Strana `/kutak` bez tekstova daje 200 sa mirnom praznom stranom, a 503 samo kad skripta zaista ne odgovara (taj odgovor se ne kešira).
+
+## I na Dječiji kutak (djecijikutak.me)
+
+Šta radi: u kartici Kutak, u dijelu "3. Rubrika, vrsta i oznake", štiklir **I na Dječiji kutak (djecijikutak.me)**. Kad je uključen, objavljeni crnogorski tekst stiže i na Dječiji kutak (blog), jednom na sat, bez ikakvog drugog koraka. Prevodi (EN, RU, TR) ne idu na Kutak: Kutak je jednojezičan. Kristina piše samo ovdje, nikad na Kutku.
+
+Zadane vrijednosti (po rubrici, dok ne klikne sama): uključeno za **Za roditelje, Igraonica, Vijesti za porodice**; isključeno za **Šišanje i njega** (može ručno); **nedostupno** za **Iz Graška** i za vrstu **Iz salona** (termini, radionice i radno vrijeme se odnose na salon), uz objašnjenje u panelu. Skripta to odbija i ako zahtjev stigne mimo panela. Pravila u kodu: `src/data/kutakPravila.js` (panel) i `OBJAVE_KUTAK_RUBRIKE_NE`, `OBJAVE_KUTAK_VRSTE_NE` u `Grasak.gs` (test ih poredi).
+
+Blokade se ne zaobilaze: zdravlje, ime djeteta, brojka ili statistika bez izvora, rizične teme i zdravstvena tvrdnja bez druge potvrde važe prije objave, a skripta ih ponavlja i pri pravljenju odgovora za Kutak (tekst koji danas ne prolazi se ne šalje i vodi se kao povučen).
+
+Šta se mijenja u tabeli: list "Objave" dobija kolonu **Na Kutku** (kolona 30, na kraju; dopisuje se sama pri koraku 2, meni Grasak > Postavi). U njoj je vrijeme kad je štiklir uključen; prazno znači isključeno. Ručno se može upisati "da" ili "ne", ali tekst iz Iz Graška ili Iz salona se ne šalje ni tada.
+
+Kad se tekst pojavljuje:
+- Skripta daje tekst na novoj javnoj adresi `?akcija=kutak` (keš do 5 minuta). Kutak ga preuzima jednom na sat. Dakle na Kutku u aplikaciji je najkasnije za oko sat vremena (do ~65 minuta) od klika na Objavi.
+- Gotov HTML za pretraživače i statički sitemap Kutka nastaju tek pri sljedećem deployu Kutka (vidi `docs/GRASAK-SYNC-POSTAVLJANJE.md` u repou Kutka). Do tada ga vide aplikacija i dinamički sitemap.
+- Javni odgovori skripte (`?akcija=objave` i `?akcija=objava&slug=`) dobijaju dva polja: `na_kutku` (true samo za objavljen, označen tekst iz dozvoljene rubrike) i `kutak_od` (kasnije od uključenja štiklira i objave, plus 2 sata).
+
+Šta se mijenja na Grašku za takav tekst: crnogorska strana `/kutak/<slug>` ostaje čitljiva, ali tek od `kutak_od` nosi `canonical` na `https://djecijikutak.me/blog/<slug>` (isti slug), nema `hreflang` i nije u Graškovom `sitemap.xml`; njegov doprinos ne računa rubrici ni oznaci za indeksiranje. Strane prevoda ostaju samoreferentne, bez `hreflang`. Do `kutak_od` canonical je Graškov, jer Kutkova kopija možda još ne postoji. RSS Graška i dalje ima taj tekst (nije mijenjano).
+
+Kako se povlači (bilo koje od ova dva):
+1. **Odštiklirati** na već objavljenom tekstu pa **Objavi izmjene**: tekst nestaje sa Kutka pri sljedećem uvozu (najkasnije za oko sat vremena), a Grašak opet nosi svoj canonical.
+2. **Skloni sa sajta**: nestaje sa Graška i sa Kutka (na Kutku postaje neobjavljen, ne briše se). Ponovna objava poslije Skloni otvara novi prozor od 2 sata.
+Brisanje reda u tabeli NE povlači tekst sa Kutka: koristite Skloni.
+
+Provjera poslije (uz korake iznad): u pregledniku `<adresa web appa>?akcija=kutak` daje JSON sa `ok: true`, `jezik: "me"`, nizom `objave` (samo označeni tekstovi, polja kao u `docs/GRASAK-SYNC-POSTAVLJANJE.md` u repou Kutka) i nizom `povuceno`; `?akcija=objave` ima `na_kutku` i `kutak_od` uz svaku objavu.
 
 ## Taksonomija: gdje se mijenja
 
@@ -18,7 +42,7 @@ Pravila: tačno jedna rubrika, jedna vrsta, 2 do 4 oznake (najviše jedna oznaka
 
 1. Otvoriti tabelu "Grašak - termini", pa Extensions > Apps Script.
 2. U fajlu `Grasak.gs` označiti sve (Ctrl+A) i zalijepiti cijeli sadržaj fajla `google-skripta/Grasak.gs` iz ove grane. Sačuvati (Ctrl+S).
-3. Nova verzija skripte nosi oznaku `2026-11-11c` (`VERZIJA_SKRIPTE`); panel je traži (`OCEKIVANA_VERZIJA_SKRIPTE` u `src/lib/osoblje.ts`).
+3. Nova verzija skripte nosi oznaku `2026-11-11d` (`VERZIJA_SKRIPTE`); panel je traži (`OCEKIVANA_VERZIJA_SKRIPTE` u `src/lib/osoblje.ts`).
 
 ## 2. List "Objave"
 
@@ -92,6 +116,7 @@ Stalni red "Ovaj tekst nije medicinski savjet. Za zdravstvena pitanja obratite s
 - Izgled u pregledniku: strane iz funkcije (dugmad u boji rubrike, kartice, okvir "Šta možete uraditi danas") i kartica Kutak u panelu nijesu otvarane u browseru; boje su provjerene računom kontrasta, ne okom.
 - Google: prihvatanje `hreflang` `sr-ME`, indeksiranje, Search Console.
 - Keš: do oko 10 minuta od objave do sajta (5 min skripta + 5 min Vercel).
+- Uvoz na Dječiji kutak (štiklir, `?akcija=kutak`, `na_kutku`, `kutak_od`, canonical): provjereno samo na lažnim servisima (`node scripts/objave-gs-smoke.mjs`) i čistim funkcijama; nije viđeno na pravom Apps Scriptu ni na pravoj Kutkovoj bazi. Canonical preko domena je za Google nagovještaj, ne naredba.
 - Javno čitanje (`?akcija=objave`) nikad ne pravi ni ne mijenja list "Objave"; samo korak 2 (meni Grasak > Postavi) i panel ga prave. Ako lista nema, javni odgovor je prazna lista.
 - Vremenski budžet 240 s i paralelni prevodi (`UrlFetchApp.fetchAll`) provjereni samo na lažnom servisu, ne na pravom Apps Scriptu.
 

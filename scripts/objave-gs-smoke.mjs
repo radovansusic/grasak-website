@@ -35,7 +35,7 @@ const ctx = vm.createContext({
   PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => props[k] ?? null, setProperty: (k, v) => { props[k] = v }, setProperties: (o) => Object.assign(props, o) }) },
   CacheService: { getScriptCache: () => ({ get: (k) => kes[k] ?? null, put: (k, v) => { kes[k] = v }, remove: (k) => { delete kes[k] } }) },
   LockService: { getScriptLock: () => ({ tryLock: () => true, releaseLock: () => {} }) },
-  Utilities: { formatDate: (d, tz, f) => (f.includes('HH') ? d.toISOString().replace('Z', '+00:00').slice(0, 25) : d.toISOString().slice(0, 10)), sleep: () => {}, getUuid: () => 'u' },
+  Utilities: { formatDate: (d, tz, f) => (f.includes('HH') ? d.toISOString().replace(/\.\d+Z$/, '+00:00') : d.toISOString().slice(0, 10)), sleep: () => {}, getUuid: () => 'u' },
   ContentService: { MimeType: { JSON: 'json' }, createTextOutput: (t) => ({ t, setMimeType() { return this } }) },
   UrlFetchApp: {
     fetch: (url, opt) => {
@@ -316,8 +316,8 @@ t('nacrt iz linka (ručni tok): dohvat samo preko UrlFetchApp sa provjerenom adr
 })
 
 
-t('verzija skripte 2026-11-11c; vremenski budžet 240 s', () => {
-  assert.equal(poziv('VERZIJA_SKRIPTE'), '2026-11-11c'); assert.equal(poziv('OBJAVE_BUDZET_MS'), 240000)
+t('verzija skripte 2026-11-11d; vremenski budžet 240 s', () => {
+  assert.equal(poziv('VERZIJA_SKRIPTE'), '2026-11-11d'); assert.equal(poziv('OBJAVE_BUDZET_MS'), 240000)
 })
 
 t('S3: telefon i e-pošta ne idu modelu; ime uz srodstvo zaustavlja poziv', () => {
@@ -370,6 +370,111 @@ t('V2 (d): zdravstvena tvrdnja uz izvor traži potvrdu druge osobe', () => {
     assert.ok(sama.ok, JSON.stringify(sama))
     assert.match(akcija('jedna', { slug: r.slug }).objava.zdravlje_potvrda, /Kristina .*20\d\d/)
   }
+})
+
+/* ---------- Dječiji kutak: oznaka "Na Kutku", javna polja, odgovor akcija=kutak ---------- */
+const AKT = 'Kad djeca ostanu kod kuće, a napolju pada kiša, dovoljan je jedan jastuk i malo mašte. Od jastuka se može napraviti ostrvo, a od tepiha more oko njega. Dijete preskače sa jastuka na jastuk i pazi da ne padne u more.\n\nIgra traje koliko hoće mališan, a roditelj može da doda male zadatke: da donese igračku sa ostrva ili da ponese prijatelja preko mora. Nema pobjednika, samo pažnja i smijeh.'
+const KOR_K = ['Složite tri jastuka na pod.', 'Pustite dijete da samo smisli pravila.']
+const kutakOb = (naslov, ekstra = {}) => ({
+  vrsta: 'aktivnost', rubrika: 'igraonica', oznake: ['igre-u-kuci', 'uzrast-3-6'], na_kutku: true,
+  naslov: { cnr: naslov, en: '', ru: '', tr: '' }, tijelo: { cnr: AKT, en: '', ru: '', tr: '' },
+  koraci: { cnr: KOR_K, en: [], ru: [], tr: [] }, potvrda: { en: false, ru: false, tr: false }, ...ekstra,
+})
+const sveRedovi = () => J(ctx.objaveSve_(true))
+const feed = () => J(ctx.objaveKutakFeed_())
+const objaviKutak = (naslov, ekstra) => {
+  const r = akcija('sacuvaj', { objava: kutakOb(naslov, ekstra), potvrda_upozorenja: true }); assert.ok(r.ok, JSON.stringify(r))
+  const p = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true }); assert.ok(p.ok, JSON.stringify(p))
+  return { r, p }
+}
+
+t('Kutak: Iz Graška i vrsta Iz salona ne mogu dobiti oznaku (sačuvaj odbija, nema upisa)', () => {
+  const prije = sveRedovi().length
+  for (const lose of [{ rubrika: 'iz-graska' }, { vrsta: 'iz-salona' }]) {
+    const x = akcija('sacuvaj', { objava: kutakOb('Radno vrijeme za praznike', lose), potvrda_upozorenja: true })
+    assert.equal(x.ok, false); assert.match(x.poruka, /ostaje samo na Grašku/); assert.ok(x.greske.na_kutku)
+  }
+  assert.equal(sveRedovi().length, prije)
+})
+
+t('Kutak: objava sa oznakom daje na_kutku i kutak_od u javnoj listi i pojedinačnom odgovoru; tekst bez oznake nema (false, prazno)', () => {
+  const { r, p } = objaviKutak('Ostrvo od jastuka')
+  assert.equal(r.na_kutku, true); assert.equal(p.na_kutku, true); assert.match(p.poruka, /djecijikutak\.me.*crnogorski/)
+  const bez = objaviKutak('Moreplovci iz dnevne sobe', { na_kutku: false })
+  assert.equal(bez.p.na_kutku, false); assert.ok(!/djecijikutak/.test(bez.p.poruka))
+  const lista = J(ctx.objaveJavnaLista_()).objave
+  const a = lista.find((x) => x.slug === r.slug), b = lista.find((x) => x.slug === bez.r.slug)
+  assert.equal(a.na_kutku, true); assert.match(a.kutak_od, /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/)
+  assert.equal(b.na_kutku, false); assert.equal(b.kutak_od, '')
+  const j = J(ctx.objaveJavnaJedna_(r.slug)).objava
+  assert.equal(j.na_kutku, true); assert.equal(j.kutak_od, a.kutak_od)
+  // kutak_od je najmanje dva sata poslije objave
+  assert.ok(Date.parse(a.kutak_od) - Date.parse(j.objavljeno) >= 2 * 3600 * 1000 - 1000, a.kutak_od + ' ' + j.objavljeno)
+  assert.equal(akcija('jedna', { slug: r.slug }).objava.na_kutku, true); assert.equal(akcija('jedna', { slug: bez.r.slug }).objava.na_kutku, false)
+  assert.equal(akcija('lista', {}).objave.find((x) => x.slug === r.slug).na_kutku, true)
+})
+
+t('Kutak: vrijeme uključenja se čuva pri ponovnom čuvanju, a isključenje ga briše; tabela dobija kolonu "Na Kutku" na kraju', () => {
+  const x = objaviKutak('Ostrvo od jastuka drugi dio')
+  const prvo = sveRedovi().find((o) => o.slug === x.r.slug).kutak
+  assert.match(prvo, /^\d{4}-\d\d-\d\dT/)
+  const j = akcija('jedna', { slug: x.r.slug }).objava
+  const opet = akcija('sacuvaj', { objava: { ...j, na_kutku: true }, potvrda_upozorenja: true }); assert.ok(opet.ok, JSON.stringify(opet))
+  assert.equal(sveRedovi().find((o) => o.slug === x.r.slug).kutak, prvo)
+  const ugasi = akcija('sacuvaj', { objava: { ...j, na_kutku: false }, potvrda_upozorenja: true }); assert.ok(ugasi.ok && ugasi.na_kutku === false)
+  assert.equal(sveRedovi().find((o) => o.slug === x.r.slug).kutak, '')
+  assert.equal(poziv('ZAGLAVLJE_OBJAVE[ZAGLAVLJE_OBJAVE.length - 1]'), 'Na Kutku')
+  // postojeći redovi bez nove kolone: čitaju se kao isključeno
+  assert.equal(J(ctx.objavaIzReda_(new Array(29).fill(''))).kutak, '')
+})
+
+t('Kutak: akcija=kutak vraća samo objavljene tekstove sa oznakom, samo crnogorski, sa tačnim oblikom polja; ostali su u povuceno', () => {
+  const f = feed()
+  assert.equal(f.ok, true); assert.equal(f.verzija, 1); assert.equal(f.jezik, 'me'); assert.ok(Array.isArray(f.objave) && Array.isArray(f.povuceno) && Array.isArray(f.zadrzano))
+  const o = f.objave.find((x) => x.slug === 'ostrvo-od-jastuka'); assert.ok(o, JSON.stringify(f.objave.map((x) => x.slug)))
+  assert.deepEqual(Object.keys(o).sort(), ['azurirano', 'izvor_naziv', 'izvor_url', 'jezik', 'koraci', 'kutak_od', 'minuta', 'na_kutku', 'naslov', 'objavljeno', 'opis', 'oznake', 'oznake_nazivi', 'recenica', 'rubrika', 'slug', 'tijelo', 'vrsta', 'zdravlje'])
+  assert.equal(o.naslov, 'Ostrvo od jastuka'); assert.equal(typeof o.tijelo, 'string'); assert.deepEqual(o.koraci, KOR_K); assert.equal(o.rubrika, 'igraonica'); assert.equal(o.vrsta, 'aktivnost')
+  assert.deepEqual(o.oznake, ['igre-u-kuci', 'uzrast-3-6']); assert.deepEqual(o.oznake_nazivi, ['igre u kući', 'uzrast 3-6']); assert.equal(o.na_kutku, true); assert.equal(o.jezik, 'me')
+  assert.ok(o.opis.length > 20 && o.recenica.length > 10 && o.minuta >= 1 && o.zdravlje === false)
+  assert.ok(!('napisao' in o) && !('status' in o) && !('potvrda' in o) && !('naslov_en' in o))
+  // bez oznake, drugačije rubrike i nacrti nisu u odgovoru, nego u povuceno; nijedan slug nije u oba niza
+  assert.ok(!f.objave.some((x) => x.slug === 'moreplovci-iz-dnevne-sobe') && f.povuceno.includes('moreplovci-iz-dnevne-sobe'))
+  assert.ok(f.objave.every((x) => !f.povuceno.includes(x.slug)))
+  assert.ok(f.povuceno.includes('radimo-i-nedjeljom'))   // Iz Graška, objavljen, bez oznake
+  assert.equal(f.objave.length + f.povuceno.length, sveRedovi().filter((x) => x.slug).length)
+})
+
+t('Kutak: Skloni i isključenje oznake stavljaju tekst u povuceno (ništa se ne briše); ponovna objava poslije Skloni otvara novi prozor', () => {
+  const x = objaviKutak('Ostrvo od jastuka treći dio')
+  assert.ok(feed().objave.some((o) => o.slug === x.r.slug))
+  akcija('skloni', { slug: x.r.slug })
+  assert.ok(!feed().objave.some((o) => o.slug === x.r.slug) && feed().povuceno.includes(x.r.slug))
+  assert.equal(sveRedovi().find((o) => o.slug === x.r.slug).status, 'sklonjeno')
+  const prije = sveRedovi().find((o) => o.slug === x.r.slug).kutak
+  const opet = akcija('objavi', { slug: x.r.slug, potvrda_upozorenja: true }); assert.ok(opet.ok && opet.na_kutku, JSON.stringify(opet))
+  assert.ok(sveRedovi().find((o) => o.slug === x.r.slug).kutak >= prije)
+  assert.ok(feed().objave.some((o) => o.slug === x.r.slug))
+})
+
+t('Kutak: blokade važe i prije slanja: tekst koji danas ne prolazi provjeru ne ide u odgovor (zadrzano), ni kad je ranije objavljen', () => {
+  const x = objaviKutak('Ostrvo od jastuka četvrti dio')
+  const red = ctx.objavaPoSlugu_(x.r.slug, true)
+  red.tijelo.cnr += '\n\nPreko 5000 djece je probalo ovu igru i svako je bilo srećno.'    // upis mimo provjere, kao ručna izmjena tabele
+  ctx.objaveUpisi_(red, red.red); poziv('objaveKesObrisi_("' + x.r.slug + '")')
+  const f = feed()
+  assert.ok(!f.objave.some((o) => o.slug === x.r.slug) && f.povuceno.includes(x.r.slug))
+  const z = f.zadrzano.find((o) => o.slug === x.r.slug); assert.ok(z && /brojka bez izvora/.test(z.razlog), JSON.stringify(f.zadrzano))
+  // ručno upisan "da" za Iz Graška ne puni Kutak
+  const ig0 = akcija('sacuvaj', { objava: ob({ naslov: { cnr: 'Praznično radno vrijeme', en: '', ru: '', tr: '' }, tijelo: { cnr: TIJELO, en: '', ru: '', tr: '' } }), potvrda_upozorenja: true }); assert.ok(ig0.ok, JSON.stringify(ig0))
+  assert.ok(akcija('objavi', { slug: ig0.slug, potvrda_upozorenja: true }).ok)
+  const ig = ctx.objavaPoSlugu_(ig0.slug, true); ig.kutak = 'da'; ctx.objaveUpisi_(ig, ig.red); poziv('objaveKesObrisi_("' + ig0.slug + '")')
+  assert.ok(!feed().objave.some((o) => o.slug === ig0.slug) && J(ctx.objaveJavnaJedna_(ig0.slug)).objava.na_kutku === false)
+})
+
+t('Kutak: odgovor akcija=kutak se kešira, a svaka promjena teksta brisanjem keša ga osvježava; doGet zna akciju', () => {
+  const a = feed(); const b = feed(); assert.equal(a.generisano, b.generisano)
+  poziv('objaveKesObrisi_("")'); assert.ok(feed().ok)
+  const odg = J(JSON.parse(ctx.doGet({ parameter: { akcija: 'kutak' } }).t)); assert.equal(odg.ok, true); assert.equal(odg.jezik, 'me')
 })
 
 t('S5: javno čitanje nikad ne pravi i ne prepisuje tabelu', () => {

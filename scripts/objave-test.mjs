@@ -21,7 +21,7 @@ const a = gs.indexOf('// ===== OBJAVE-CISTE-POCETAK')
 const b = gs.indexOf('// ===== OBJAVE-CISTE-KRAJ')
 assert.ok(a > 0 && b > a, 'markeri bloka OBJAVE-CISTE nijesu nađeni u Grasak.gs')
 const ctx = vm.createContext({})
-const F = vm.runInContext(gs.slice(a, b) + `\n;({ objaveCisti_, objaveSlug_, objaveBrojke_, objaveLicno_, objaveProvjeri_, objaveSigurnaAdresa_, objavePreusmjerenje_, objaveNajduziNiz_, objaveParsirajOdgovor_, objaveClanak_, objaveOpis_, objaveNalogNacrt_, objaveNalogPrevod_, objaveHttps_, OBJAVE_JEZICI, objaveRizicno_, objaveSaListe_, objaveNepoznato_, objaveUnos_, objaveJezikIzvora_, objaveKodJezika_, objaveMinuta_, objaveRecenica_, objaveTrebaNapomenu_, objaveTaksonomija_, objaveKoraci_, objaveNorm_, objaveImena_, objaveStatistika_, objaveTvrdnje_, objaveZaModel_, objaveVlastitiIzvor_, objaveNaslovnaRecenica_ })`, ctx)
+const F = vm.runInContext(gs.slice(a, b) + `\n;({ objaveCisti_, objaveSlug_, objaveBrojke_, objaveLicno_, objaveProvjeri_, objaveSigurnaAdresa_, objavePreusmjerenje_, objaveNajduziNiz_, objaveParsirajOdgovor_, objaveClanak_, objaveOpis_, objaveNalogNacrt_, objaveNalogPrevod_, objaveHttps_, OBJAVE_JEZICI, objaveRizicno_, objaveSaListe_, objaveNepoznato_, objaveUnos_, objaveJezikIzvora_, objaveKodJezika_, objaveMinuta_, objaveRecenica_, objaveTrebaNapomenu_, objaveTaksonomija_, objaveKoraci_, objaveNorm_, objaveImena_, objaveStatistika_, objaveTvrdnje_, objaveZaModel_, objaveVlastitiIzvor_, objaveNaslovnaRecenica_, objaveKutakDozvoljeno_, objaveKutakOznaceno_, objaveKutakVrijednost_, objaveNaKutku_, objaveKutakOd_, OBJAVE_KUTAK_RUBRIKE_NE, OBJAVE_KUTAK_VRSTE_NE })`, ctx)
 const EM = String.fromCharCode(0x2014)
 const TAX = JSON.parse(JSON.stringify(F.objaveTaksonomija_()))
 
@@ -581,6 +581,102 @@ t('funkcije api/*.js: statusi, keš, rubrika, oznaka, filter (skripta zamijenjen
     r = await poziv(RSS, '/kutak/rss.xml'); assert.equal(r.status, 503); assert.equal(r.hd['cache-control'], 'no-store')
     r = await poziv(SM, '/sitemap.xml'); assert.equal(r.status, 200); assert.ok(!r.tijelo.includes('/kutak') && r.tijelo.includes('/usluge')); assert.equal(r.hd['cache-control'], 'no-store')
   } finally { globalThis.fetch = stari }
+})
+
+/* ---------- 3) Dječiji kutak: štiklir "I na Dječiji kutak", javna polja, canonical ---------- */
+const P = await import(path.join(koren, 'src/data/kutakPravila.js'))
+
+t('štiklir: zadano uključen za Za roditelje, Igraonica, Vijesti za porodice; isključen za Šišanje i njega; nedostupan za Iz Graška i vrstu Iz salona', () => {
+  for (const r of ['za-roditelje', 'igraonica', 'vijesti-za-porodice']) { assert.equal(P.kutakZadano(r, 'savjet'), true, r); assert.equal(P.kutakDostupno(r, 'savjet'), true) }
+  assert.equal(P.kutakZadano('sisanje-i-njega', 'savjet'), false); assert.equal(P.kutakDostupno('sisanje-i-njega', 'savjet'), true)   // ručni izbor je moguć
+  assert.equal(P.kutakDostupno('iz-graska', 'vijest'), false); assert.equal(P.kutakZadano('iz-graska', 'vijest'), false)
+  assert.equal(P.kutakDostupno('igraonica', 'iz-salona'), false); assert.equal(P.kutakZadano('igraonica', 'iz-salona'), false)
+  assert.ok(P.kutakObjasnjenje('iz-graska', 'savjet').length > 20 && !P.kutakObjasnjenje('igraonica', 'savjet'))
+  assert.equal(P.kutakZadano('', ''), false); assert.equal(P.kutakDostupno('', ''), true)   // nacrt bez izbora nije zabrana, ali nije ni zadano uključen
+  // sve rubrike iz taksonomije imaju jasnu odluku: ili su u zadanim, ili u zabranjenim
+  for (const r of TAX.rubrike) assert.ok(r.slug in P.KUTAK_ZADANO || P.KUTAK_RUBRIKE_NE.includes(r.slug), 'rubrika bez odluke o Kutku: ' + r.slug)
+})
+
+t('štiklir: vrijednost poslije izmjene rubrike - zadano dok urednica ne klikne, njen izbor poslije, nedostupno je uvijek isključeno', () => {
+  assert.equal(P.kutakVrijednost({ rubrika: 'igraonica', vrsta: 'aktivnost', stiklir: false, rucno: false }), true)
+  assert.equal(P.kutakVrijednost({ rubrika: 'sisanje-i-njega', vrsta: 'savjet', stiklir: true, rucno: false }), false)   // zadano pobjeđuje dok nije dirala
+  assert.equal(P.kutakVrijednost({ rubrika: 'sisanje-i-njega', vrsta: 'savjet', stiklir: true, rucno: true }), true)     // sama je uključila
+  assert.equal(P.kutakVrijednost({ rubrika: 'igraonica', vrsta: 'aktivnost', stiklir: false, rucno: true }), false)      // sama je isključila
+  assert.equal(P.kutakVrijednost({ rubrika: 'iz-graska', vrsta: 'vijest', stiklir: true, rucno: true }), false)          // i ručni izbor ne važi za Iz Graška
+})
+
+t('štiklir: panel i skripta imaju istu zabranu; panel koristi pravila i šalje na_kutku; verzija skripte i panela se poklapaju', () => {
+  jeste(F.OBJAVE_KUTAK_RUBRIKE_NE, P.KUTAK_RUBRIKE_NE); jeste(F.OBJAVE_KUTAK_VRSTE_NE, P.KUTAK_VRSTE_NE)
+  for (const r of TAX.rubrike) assert.equal(F.objaveKutakDozvoljeno_(r.slug, 'savjet'), P.kutakDostupno(r.slug, 'savjet'), r.slug)
+  const panel = fs.readFileSync(path.join(koren, 'src/components/osoblje/KutakPanel.tsx'), 'utf8')
+  assert.ok(panel.includes("from '@/data/kutakPravila'") && panel.includes('I na Dječiji kutak') && panel.includes('kutakVrijednost('))
+  assert.ok(/aria|disabled=\{!kutakMoze\}/.test(panel))                        // štiklir je onemogućen kad nije dostupan
+  const vs = /const VERZIJA_SKRIPTE = '([^']+)'/.exec(gs)[1]
+  const vp = /OCEKIVANA_VERZIJA_SKRIPTE = '([^']+)'/.exec(fs.readFileSync(path.join(koren, 'src/lib/osoblje.ts'), 'utf8'))[1]
+  assert.equal(vs, vp); assert.notEqual(vs, '2026-11-11c')
+})
+
+t('skripta: Na Kutku = vrijeme uključenja; prvo uključenje upisuje vrijeme, ponovno čuva staro, isključenje briše; "da" i "ne" ručno', () => {
+  assert.equal(F.objaveKutakVrijednost_(true, '', '2026-11-11T10:00:00+01:00'), '2026-11-11T10:00:00+01:00')
+  assert.equal(F.objaveKutakVrijednost_(true, '2026-11-10T08:00:00+01:00', '2026-11-11T10:00:00+01:00'), '2026-11-10T08:00:00+01:00')
+  assert.equal(F.objaveKutakVrijednost_(false, '2026-11-10T08:00:00+01:00', 'x'), '')
+  assert.equal(F.objaveKutakVrijednost_(true, 'ne', 'sada'), 'sada')
+  for (const v of ['da', 'DA', '2026-11-10T08:00:00+01:00']) assert.equal(F.objaveKutakOznaceno_(v), true, v)
+  for (const v of ['', ' ', 'ne', 'Ne', '0', 'false', null, undefined]) assert.equal(F.objaveKutakOznaceno_(v), false, String(v))
+})
+
+t('skripta: na_kutku samo objavljen, označen, iz dozvoljene rubrike i vrste; kutak_od = kasnije od uključenja i objave + 2 h; bez vremena prazno', () => {
+  const o = { status: 'objavljeno', kutak: '2026-11-11T10:00:00+01:00', rubrika: 'igraonica', vrsta: 'aktivnost', objavljeno: '2026-11-11T09:30:00+01:00', datum: '2026-11-11' }
+  assert.equal(F.objaveNaKutku_(o), true)
+  assert.equal(F.objaveKutakOd_(o), '2026-11-11T11:00:00.000Z')            // 10:00+01:00 = 09:00Z, plus 2 h
+  assert.equal(F.objaveKutakOd_({ ...o, kutak: '2026-11-11T08:00:00+01:00' }), '2026-11-11T10:30:00.000Z')   // objava je kasnija od uključenja
+  assert.equal(F.objaveKutakOd_({ ...o, kutak: 'da', objavljeno: '' , datum: '' }), '')                      // nema ni jednog vremena
+  assert.equal(F.objaveKutakOd_({ ...o, kutak: 'da' }), '2026-11-11T10:30:00.000Z')
+  for (const lose of [{ status: 'nacrt' }, { status: 'sklonjeno' }, { kutak: '' }, { kutak: 'ne' }, { rubrika: 'iz-graska' }, { vrsta: 'iz-salona' }]) assert.equal(F.objaveNaKutku_({ ...o, ...lose }), false, JSON.stringify(lose))
+})
+
+const KANON = { ...ob, na_kutku: true, kutak_od: '2026-11-11T11:00:00.000Z' }
+const PRIJE = Date.parse('2026-11-11T10:59:59Z'), POSLIJE = Date.parse('2026-11-11T11:00:00Z')
+
+t('canonical: tekst za Kutak (poslije kutak_od) nosi canonical na djecijikutak.me/blog/<slug>, bez hreflang, i u og:url i JSON-LD', () => {
+  const h = R.renderObjava(KANON, 'cnr', TAX, LISTA, POSLIJE)
+  assert.ok(h.includes('<link rel="canonical" href="https://djecijikutak.me/blog/prvo-sisanje">'))
+  assert.ok(!h.includes('hreflang="sr-ME"') && !h.includes('hreflang="x-default"') && !/rel="alternate" hreflang/.test(h))
+  assert.ok(h.includes('<meta property="og:url" content="https://djecijikutak.me/blog/prvo-sisanje">'))
+  assert.ok(h.includes('"@id":"https://djecijikutak.me/blog/prvo-sisanje"'))
+  assert.ok(!h.includes('noindex') && h.includes('index, follow'))              // canonical i noindex se ne miješaju
+  assert.ok(h.includes('<h1>') && h.includes('<p>Prvi pasus.</p>'))             // strana ostaje čitljiva posjetiocima Graška
+})
+
+t('canonical: prije kutak_od, bez ispravnog kutak_od ili bez na_kutku canonical ostaje na Grašku; hreflang nema nijedan tekst za Kutak', () => {
+  for (const [tekst, sada] of [[KANON, PRIJE], [{ ...KANON, kutak_od: '' }, POSLIJE], [{ ...KANON, kutak_od: 'nije datum' }, POSLIJE], [{ ...KANON, na_kutku: false }, POSLIJE], [{ ...ob }, POSLIJE]]) {
+    const h = R.renderObjava(tekst, 'cnr', TAX, LISTA, sada)
+    assert.ok(h.includes('<link rel="canonical" href="https://grasaksalon.me/kutak/prvo-sisanje">'), JSON.stringify(tekst.kutak_od) + ' ' + tekst.na_kutku)
+  }
+  assert.ok(R.renderObjava({ ...ob }, 'cnr', TAX, LISTA, POSLIJE).includes('hreflang="sr-ME"'))   // obični tekst: kao do sada
+  assert.ok(!/rel="alternate" hreflang/.test(R.renderObjava(KANON, 'cnr', TAX, LISTA, PRIJE)))     // za Kutak nema hreflang ni prije kutak_od
+  // prevod nema Kutkovu kopiju (Kutak je samo crnogorski): ostaje samoreferentan, bez hreflang
+  const en = R.renderObjava(KANON, 'en', TAX, LISTA, POSLIJE)
+  assert.ok(en.includes('<link rel="canonical" href="https://grasaksalon.me/en/kutak/prvo-sisanje">') && !/rel="alternate" hreflang/.test(en))
+  assert.equal(R.kutakKanon(KANON, POSLIJE), true); assert.equal(R.kutakKanon(KANON, PRIJE), false); assert.equal(R.kutakKanon(null), false)
+})
+
+t('sitemap: tekst za Kutak nije u Graškovom sitemap-u (ni na jednom jeziku), a ne daje ni rubriku ni oznaku; ostali tekstovi kao do sada', () => {
+  const sm = R.renderSitemap([KANON, ...povezani], TAX)
+  assert.ok(!sm.includes('prvo-sisanje'), 'tekst za Kutak je u sitemap-u')
+  assert.ok(sm.includes('/kutak/p1') && sm.includes('/en/kutak/p1'))
+  // rubrika koja ima samo tekstove za Kutak nije u sitemap-u; lista i rubrika sa tekstovima na Grašku jesu
+  const samoKutak = [{ ...mk('k1', 'igraonica', ['cnr'], ['igre-u-kuci']), na_kutku: true, kutak_od: '2026-11-11T11:00:00.000Z' }]
+  const sk = R.renderSitemap(samoKutak, TAX)
+  assert.equal((sk.match(/<url>/g) || []).length, 6)
+  assert.ok(!sk.includes('/kutak/tema/igraonica') && !sk.includes('<loc>https://grasaksalon.me/kutak</loc>'))
+  // oznaka sa 5 tekstova, od kojih su dva za Kutak: nema 5 na Grašku pa nije indeksirana
+  const pet = Array.from({ length: 5 }, (_, i) => ({ ...mk('o' + i, 'igraonica', ['cnr'], ['igre-napolju']), na_kutku: i < 2, kutak_od: '2026-11-11T11:00:00.000Z' }))
+  assert.ok(!R.renderSitemap(pet, TAX).includes('/kutak/oznaka/igre-napolju'))
+  assert.ok(R.renderSitemap(pet.map((x) => ({ ...x, na_kutku: false })), TAX).includes('/kutak/oznaka/igre-napolju'))
+  // lista sa samo tekstovima za Kutak: noindex (nema svog sadržaja); sa jednim običnim tekstom: index
+  assert.ok(R.renderLista(samoKutak, 'cnr', TAX, { tip: 'lista' }).includes('noindex, follow'))
+  assert.ok(R.renderLista([...samoKutak, mk('g1', 'igraonica', ['cnr'], ['igre-u-kuci'])], 'cnr', TAX, { tip: 'lista' }).includes('content="index, follow"'))
 })
 
 await Promise.all(zadaci)

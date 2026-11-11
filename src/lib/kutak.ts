@@ -86,13 +86,15 @@ export interface ObjavaUredjaj {
   tijelo: PoJeziku
   koraci: PoJezikuNiz
   potvrda: { en: boolean; ru: boolean; tr: boolean }
+  /** Štiklir "I na Dječiji kutak": objavljeni crnogorski tekst stiže i na djecijikutak.me (uvoz na Kutku). */
+  na_kutku: boolean
 }
 export const praznaObjava = (): ObjavaUredjaj => ({
   slug: '', status: 'nacrt', vrsta: '', rubrika: '', oznake: [], izvor_naziv: '', izvor_url: '', izvor_jezik: '',
   naslov: { cnr: '', en: '', ru: '', tr: '' }, tijelo: { cnr: '', en: '', ru: '', tr: '' },
-  koraci: { cnr: [], en: [], ru: [], tr: [] }, potvrda: { en: false, ru: false, tr: false },
+  koraci: { cnr: [], en: [], ru: [], tr: [] }, potvrda: { en: false, ru: false, tr: false }, na_kutku: false,
 })
-export interface ObjavaStavka { slug: string; naslov: string; status: StatusObjave; datum: string; azurirano: string; vrsta: string; rubrika: string; jezici: Lang[]; javni_jezici: Lang[] }
+export interface ObjavaStavka { slug: string; naslov: string; status: StatusObjave; datum: string; azurirano: string; vrsta: string; rubrika: string; jezici: Lang[]; javni_jezici: Lang[]; na_kutku?: boolean }
 export interface Nalaz { jezik: Lang; pravilo: string; nadjeno: string }
 export interface Zdravstvena { jezik: Lang; nadjeno: string }
 export interface ProvjeraObjave { blokirano: Nalaz[]; upozorenja: string[]; zdravstvene?: Zdravstvena[]; greske?: Record<string, string> }

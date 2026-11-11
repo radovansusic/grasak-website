@@ -6,8 +6,9 @@ import {
   type ObjavaStavka, type ObjavaUredjaj, type Paznja, type ProvjeraObjave, type Taksonomija,
 } from '@/lib/kutak'
 import { inputCls } from './pomocno'
+import { kutakDostupno, kutakObjasnjenje, kutakVrijednost } from '@/data/kutakPravila'
 
-const NEMA_SKRIPTE = 'Kutak još nije uključen na serveru. Javite Radovanu: Google skripta treba novu verziju (2026-11-11c ili novija).'
+const NEMA_SKRIPTE = 'Kutak još nije uključen na serveru. Javite Radovanu: Google skripta treba novu verziju (2026-11-11d ili novija).'
 const SKRIPTA_PREKINUTA = 'Google skripta je prekinuta prije odgovora (najčešće zbog isteka vremena). Ništa nije objavljeno. Sačekajte nekoliko minuta i pokušajte ponovo; ako se ponovi, pišite ručno ili javite Radovanu.'
 const STATUS_OZNAKA = { nacrt: 'Nacrt', objavljeno: 'Objavljeno', sklonjeno: 'Sklonjeno' } as const
 const STATUS_BOJA = { nacrt: 'bg-sun text-ink', objavljeno: 'bg-grass text-white', sklonjeno: 'bg-ink/10 text-ink/60' } as const
@@ -32,6 +33,8 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
   const [paznja, setPaznja] = useState<Paznja[]>([])
   const [potvrda, setPotvrda] = useState(false)
   const [zdravlje, setZdravlje] = useState(false)
+  /** Urednica je sama kliknula štiklir "I na Dječiji kutak": zadane vrijednosti po rubrici ga više ne mijenjaju. */
+  const [kutakRucno, setKutakRucno] = useState(false)
   /** Izmjena crnogorskog teksta objavljene objave koja ima objavljen prevod: urednik bira, nikad tiho. */
   const [izbor, setIzbor] = useState<{ prevodi: string[]; poruka: string; odluka: (v: 'zadrzi' | 'povuci' | null) => void } | null>(null)
 
@@ -57,7 +60,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
   }
   const sviPodaci = () => (obj ? { objava: obj } : {})
   const javi = (tekst: string) => { setInfo(tekst); setGreska(''); window.setTimeout(() => setInfo((x) => (x === tekst ? '' : x)), 6000) }
-  const nova = () => { setObj(praznaObjava()); setUnos(''); setProvjera(null); setPaznja([]); setPotvrda(false); setZdravlje(false); setInfo(''); setGreska('') }
+  const nova = () => { setObj(praznaObjava()); setKutakRucno(false); setUnos(''); setProvjera(null); setPaznja([]); setPotvrda(false); setZdravlje(false); setInfo(''); setGreska('') }
   const zatvori = () => { setObj(null); setProvjera(null); setPaznja([]); setOsvjezi((x) => x + 1) }
   const izmjeni = (f: (o: ObjavaUredjaj) => ObjavaUredjaj) => { setObj((o) => (o ? f(o) : o)); setProvjera(null) }
   /** Izmjena prevoda poništava njegovu potvrdu: potvrđuje se ono što je pročitano. */
@@ -68,7 +71,8 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
     const r = await poziv('objave_jedna', { slug })
     setRadi('')
     if (!r.ok) { setGreska(r.poruka || 'Tekst nije otvoren.'); return }
-    setObj(r.objava as ObjavaUredjaj); setProvjera(null); setPaznja([]); setPotvrda(false); setZdravlje(false); setUnos('')
+    const u = r.objava as ObjavaUredjaj
+    setObj({ ...u, na_kutku: !!u.na_kutku && kutakDostupno(u.rubrika, u.vrsta) }); setKutakRucno(u.status === 'objavljeno'); setProvjera(null); setPaznja([]); setPotvrda(false); setZdravlje(false); setUnos('')
   }
 
   /** Pripremi u dva poziva (svaki ima svoj vremenski budžet u skripti): 1) nacrt, rubrika, vrsta, oznake, koraci, provjera; 2) prevodi en, ru, tr. */
@@ -77,7 +81,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
     const r = await poziv('objave_pripremi', { unos })
     if (!r.ok) { setRadi(''); setGreska((r.poruka || 'Priprema nije uspjela.') + ' Možete pisati ručno u koracima ispod.'); return }
     const n = r.objava as ObjavaUredjaj
-    setObj((o) => ({ ...(o || praznaObjava()), ...n, slug: o?.slug || '', status: o?.status || 'nacrt' }))
+    setObj((o) => { const m = { ...(o || praznaObjava()), ...n, slug: o?.slug || '', status: o?.status || 'nacrt' }; return { ...m, na_kutku: kutakVrijednost({ rubrika: m.rubrika, vrsta: m.vrsta, stiklir: !!o?.na_kutku, rucno: kutakRucno }) } })
     setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], zdravstvene: (r.zdravstvene as ProvjeraObjave['zdravstvene']) || [], greske: r.greske as Record<string, string> })
     const paznja1 = (r.paznja as Paznja[]) || []
     setPaznja(paznja1)
@@ -222,6 +226,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
                   <span className="block truncate font-bold text-ink">{o.naslov || o.slug}</span>
                   <span className="block text-xs text-ink/50">{[nazivRubrike(o.rubrika), nazivVrste(o.vrsta), o.datum ? o.datum.slice(8, 10) + '.' + o.datum.slice(5, 7) + '.' : '', (o.status === 'objavljeno' ? o.javni_jezici : o.jezici).map((j) => j.toUpperCase()).join(' ')].filter(Boolean).join(' · ')}</span>
                 </button>
+                {o.na_kutku && <span className="rounded-full bg-sky px-2.5 py-0.5 text-xs font-bold text-ink" title="Tekst je i na Dječijem kutku (djecijikutak.me)">I na Kutku</span>}
                 <span className={'rounded-full px-2.5 py-0.5 text-xs font-bold ' + STATUS_BOJA[o.status]}>{STATUS_OZNAKA[o.status]}</span>
                 {o.status === 'objavljeno' && (
                   <button onClick={() => void skloni(o.slug)} disabled={radi === 'skloni'} className="flex items-center gap-1 rounded-full bg-white px-3 py-1 text-xs font-bold text-coral shadow-sm ring-1 ring-coral/40 disabled:opacity-50"><EyeOff className="h-3.5 w-3.5" /> Skloni</button>
@@ -242,6 +247,8 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
   const oznaceno = (...mjesta: string[]) => (paznja.some((p) => mjesta.includes(p.mjesto)) ? ' ring-2 ring-coral' : '')
   const imaCnr = obj.naslov.cnr.trim().length >= 5 && obj.tijelo.cnr.trim().length >= 60
   const vrstaT = tax?.vrste.find((v) => v.slug === obj.vrsta)
+  const kutakMoze = kutakDostupno(obj.rubrika, obj.vrsta)
+  const kutakObjasni = kutakObjasnjenje(obj.rubrika, obj.vrsta)
   const uzrastSlugovi = new Set((tax?.oznake || []).filter((o) => o.grupa === 'uzrast').map((o) => o.slug))
   const prebaciOznaku = (slug: string) => izmjeni((o) => {
     if (o.oznake.includes(slug)) return { ...o, oznake: o.oznake.filter((x) => x !== slug) }
@@ -305,13 +312,13 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
         <h2 className="mb-2 font-display text-lg font-extrabold text-ink">3. Rubrika, vrsta i oznake</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className={'block rounded-xl text-sm font-bold text-ink' + oznaceno('rubrika')}>Rubrika
-            <select value={obj.rubrika} onChange={(e) => izmjeni((o) => ({ ...o, rubrika: e.target.value }))} className={inputCls + ' mt-1 font-normal'}>
+            <select value={obj.rubrika} onChange={(e) => izmjeni((o) => ({ ...o, rubrika: e.target.value, na_kutku: kutakVrijednost({ rubrika: e.target.value, vrsta: o.vrsta, stiklir: o.na_kutku, rucno: kutakRucno }) }))} className={inputCls + ' mt-1 font-normal'}>
               <option value="">Izaberite...</option>
               {tax?.rubrike.map((r) => <option key={r.slug} value={r.slug}>{r.naziv.cnr}</option>)}
             </select>
           </label>
           <label className={'block rounded-xl text-sm font-bold text-ink' + oznaceno('vrsta')}>Vrsta teksta
-            <select value={obj.vrsta} onChange={(e) => izmjeni((o) => ({ ...o, vrsta: e.target.value }))} className={inputCls + ' mt-1 font-normal'}>
+            <select value={obj.vrsta} onChange={(e) => izmjeni((o) => ({ ...o, vrsta: e.target.value, na_kutku: kutakVrijednost({ rubrika: o.rubrika, vrsta: e.target.value, stiklir: o.na_kutku, rucno: kutakRucno }) }))} className={inputCls + ' mt-1 font-normal'}>
               <option value="">Izaberite...</option>
               {tax?.vrste.map((v) => <option key={v.slug} value={v.slug}>{v.naziv.cnr}</option>)}
             </select>
@@ -329,6 +336,15 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
         <div className={'mt-3 rounded-xl' + oznaceno('koraci')}>
           <p className="text-sm font-bold text-ink">Šta možete uraditi danas (2 do 3 koraka{vrstaT?.koraci ? ', obavezno za ovu vrstu' : ''})</p>
           {koraciPolja('cnr', (k) => ({ cnr: k } as ObjavaUredjaj['koraci']))}
+        </div>
+        <div className={'mt-3 rounded-xl border-2 border-grass-tint p-3' + oznaceno('na_kutku')}>
+          <label className="flex items-start gap-2 text-sm font-bold text-ink">
+            <input type="checkbox" checked={obj.na_kutku && kutakMoze} disabled={!kutakMoze} onChange={(e) => { setKutakRucno(true); izmjeni((o) => ({ ...o, na_kutku: e.target.checked })) }} className="mt-0.5 h-4 w-4" />
+            <span>I na Dječiji kutak (djecijikutak.me)</span>
+          </label>
+          {kutakMoze
+            ? <p className="mt-1 text-xs text-ink/60">Objavljeni tekst stiže i na Dječiji kutak, samo na crnogorskom, obično za oko sat vremena. Provjere i blokade (zdravlje, djeca, brojka bez izvora) važe i prije slanja na Kutak. Povlačenje: odštiklirajte pa "Objavi izmjene", ili "Skloni sa sajta". Promjena važi tek poslije čuvanja.</p>
+            : <p className="mt-1 text-xs text-ink/60">{kutakObjasni}</p>}
         </div>
         <div className={'mt-3 rounded-xl bg-grass-tint p-3 text-sm' + oznaceno('izvor')}>
           <p className="mb-2 text-xs font-bold text-ink/70">Izvor (obavezan za Vijest; link ostaje original{obj.izvor_jezik ? `, jezik izvora: ${obj.izvor_jezik.toUpperCase()}` : ''})</p>

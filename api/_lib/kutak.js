@@ -17,6 +17,16 @@ export const JEZIK_OZNAKA = { cnr: 'CG', en: 'EN', ru: 'RU', tr: 'TR' }
 /** Strana oznake je indeksirana i u sitemap-u tek kad oznaka ima bar toliko tekstova na tom jeziku; do tada je noindex,follow. */
 export const OZNAKA_MIN_TEKSTOVA = 5
 export const KUTAK = 'kutak'   // isti slug na svim jezicima
+// Tekst sa na_kutku=true ima dom na Dječijem kutku (isti slug): Grašak ga i dalje prikazuje, ali sa canonical na Kutak, bez hreflang i bez adrese u sitemap-u.
+export const KUTAK_SAJT = 'https://djecijikutak.me'
+export const kutakAdresa = (slug) => KUTAK_SAJT + '/blog/' + slug
+export const naKutku = (o) => !!o && o.na_kutku === true
+/** canonical ide na Kutak tek kad prođe kutak_od (do tada Kutkova kopija možda još ne postoji: uvoz radi jednom na sat); bez ispravnog kutak_od canonical ostaje na Grašku. */
+export function kutakKanon(o, sada = Date.now()) {
+  if (!naKutku(o)) return false
+  const t = Date.parse(String((o && o.kutak_od) || ''))
+  return !isNaN(t) && t <= sada
+}
 
 const TEKST = {
   cnr: {
@@ -132,8 +142,9 @@ const rubrikaPo = (tax, slug) => (tax.rubrike || []).find((r) => r.slug === slug
 const oznakaPo = (tax, slug) => (tax.oznake || []).find((o) => o.slug === slug) || null
 const vrstaPo = (tax, slug) => (tax.vrste || []).find((v) => v.slug === slug) || null
 const naJeziku = (lista, jez) => (lista || []).filter((o) => o.naslov && o.naslov[jez])
-export const brojOznake = (lista, jez, oznaka) => naJeziku(lista, jez).filter((o) => (o.oznake || []).includes(oznaka)).length
-export const brojRubrike = (lista, jez, rubrika) => naJeziku(lista, jez).filter((o) => o.rubrika === rubrika).length
+const naGrasku = (lista, jez) => naJeziku(lista, jez).filter((o) => !naKutku(o))   // tekstovi koji na Grašku imaju svoj dom (za indeksiranje i sitemap)
+export const brojOznake = (lista, jez, oznaka) => naGrasku(lista, jez).filter((o) => (o.oznake || []).includes(oznaka)).length
+export const brojRubrike = (lista, jez, rubrika) => naGrasku(lista, jez).filter((o) => o.rubrika === rubrika).length
 /** Oznaka je indeksirana (i u sitemap-u) tek sa 5 tekstova na tom jeziku. */
 export const oznakaIndeksirana = (lista, jez, oznaka) => brojOznake(lista, jez, oznaka) >= OZNAKA_MIN_TEKSTOVA
 
@@ -271,7 +282,7 @@ function karticaTeksta(o, jez, tax) {
  * Jedan tekst na jeziku `jez`; null ako tekst nema taj jezik (nepotvrđen prevod se ne objavljuje).
  * ob = odgovor skripte (akcija=objava), tax = taksonomija, lista = sve objave (za tri povezana teksta iz iste rubrike).
  */
-export function renderObjava(ob, jez, tax, lista) {
+export function renderObjava(ob, jez, tax, lista, sada = Date.now()) {
   tax = tax || {}
   if (!ob || !ob.naslov || !ob.naslov[jez] || !ob.tijelo || !ob.tijelo[jez]) return null
   const rub = rubrikaPo(tax, ob.rubrika)
@@ -279,6 +290,9 @@ export function renderObjava(ob, jez, tax, lista) {
   if (!rub || !vrs) return null
   const T = tekst(jez)
   const url = adresa(jez, ob.slug)
+  // tekst za Kutak: crnogorska strana ima canonical na Kutak (kad prođe kutak_od); prevodi nemaju Kutkovu kopiju pa ostaju samoreferentni; hreflang nema nijedna
+  const naKutkuTekst = naKutku(ob)
+  const kanon = jez === 'cnr' && kutakKanon(ob, sada) ? kutakAdresa(ob.slug) : url
   const opis = (ob.opis && ob.opis[jez]) || String(ob.tijelo[jez]).replace(/\s+/g, ' ').slice(0, 155)
   const jezici = (ob.jezici || Object.keys(ob.naslov)).filter((j) => ob.naslov[j] && ob.tijelo[j])
   const slika = SITE + '/images/fb_cover.jpg'
@@ -296,7 +310,7 @@ export function renderObjava(ob, jez, tax, lista) {
     dateModified: izmijenjeno,
     articleSection: rub.naziv[jez] || rub.naziv.cnr,
     keywords: oznake.map((o) => o.naziv[jez] || o.naziv.cnr).join(', '),
-    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': kanon },
     image: [slika],
     author: { '@type': 'Organization', name: NAZIV, url: SITE + '/' },
     publisher: { '@type': 'Organization', name: NAZIV, url: SITE + '/', logo: { '@type': 'ImageObject', url: SITE + '/icon-512.png' } },
@@ -304,9 +318,9 @@ export function renderObjava(ob, jez, tax, lista) {
   const izvorUrl = httpsUrl(ob.izvor_url)
   if (izvorUrl) ld.citation = { '@type': 'CreativeWork', name: bezKontrolnih(ob.izvor_naziv) || izvorUrl, url: izvorUrl }
   const glava =
-    hreflangLinkovi(ob.slug, jezici) + '\n' +
+    (naKutkuTekst ? '' : hreflangLinkovi(ob.slug, jezici) + '\n') +
     `<meta property="og:type" content="article">\n<meta property="og:site_name" content="${NAZIV}">\n<meta property="og:locale" content="${OG_LOCALE[jez]}">\n` +
-    `<meta property="og:title" content="${esc(ob.naslov[jez])}">\n<meta property="og:description" content="${esc(opis)}">\n<meta property="og:url" content="${esc(url)}">\n<meta property="og:image" content="${esc(slika)}">\n` +
+    `<meta property="og:title" content="${esc(ob.naslov[jez])}">\n<meta property="og:description" content="${esc(opis)}">\n<meta property="og:url" content="${esc(kanon)}">\n<meta property="og:image" content="${esc(slika)}">\n` +
     `<meta property="article:published_time" content="${esc(objavljeno)}">\n<meta property="article:modified_time" content="${esc(izmijenjeno)}">\n<meta property="article:section" content="${esc(ld.articleSection)}">\n` +
     oznake.map((o) => `<meta property="article:tag" content="${esc(o.naziv[jez] || o.naziv.cnr)}">\n`).join('') +
     `<meta name="twitter:card" content="summary_large_image">\n<script type="application/ld+json">${ldJson(ld)}</script>\n`
@@ -331,7 +345,7 @@ ${povezani.length ? `<aside class="povezano"><h2>${esc(T.povezano)} ${esc(rub.na
 </div>`
   const jeziciPutanje = {}
   JEZICI.filter((j) => jezici.includes(j)).forEach((j) => { jeziciPutanje[j] = putanja(j, ob.slug) })
-  return okvir({ jez, naslov: `${ob.naslov[jez]} | ${NAZIV}`, opis, canonical: url, robots: 'index, follow, max-image-preview:large', glava, tijelo, jeziciPutanje, trenutno: false })
+  return okvir({ jez, naslov: `${ob.naslov[jez]} | ${NAZIV}`, opis, canonical: kanon, robots: 'index, follow, max-image-preview:large', glava, tijelo, jeziciPutanje, trenutno: false })
 }
 
 /* ---------- lista, rubrika, oznaka ---------- */
@@ -371,7 +385,8 @@ export function renderLista(lista, jez, tax, { tip = 'lista', kljuc = '', vrsta 
   const opis = rub ? rub.opis[jez] || rub.opis.cnr : ozn ? `${T.oznakaOpis} "${ime}".` : T.sub
   const baza = tip === 'tema' ? putanjaTema(jez, kljuc) : tip === 'oznaka' ? putanjaOznaka(jez, kljuc) : putanja(jez)
   const canonical = SITE + baza   // filter po vrsti pokazuje na osnovnu stranu
-  const dovoljno = tip === 'oznaka' ? svi.length >= OZNAKA_MIN_TEKSTOVA : svi.length >= 1
+  const nGrasku = svi.filter((o) => !naKutku(o)).length   // tekstovi sa domom na Kutku ne daju Grašku indeksirane liste
+  const dovoljno = tip === 'oznaka' ? nGrasku >= OZNAKA_MIN_TEKSTOVA : nGrasku >= 1
   const robots = dovoljno && !vrstaOk ? 'index, follow' : 'noindex, follow'
   const prazno = tip === 'tema' ? T.rubrikaPrazna : tip === 'oznaka' ? T.oznakaPrazna : T.prazno
   const naslovH1 = tip === 'oznaka' ? `${T.oznakaNaslov}: ${ime}` : ime
@@ -427,7 +442,7 @@ const STATICKE = [['/', 'weekly', '1.0'], ['/usluge', 'monthly', '0.9'], ['/o-na
  */
 export function renderSitemap(lista, tax) {
   const redovi = STATICKE.map(([p, f, pr]) => `  <url><loc>${SITE}${p === '/' ? '/' : p}</loc><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
-  const objave = lista || []
+  const objave = (lista || []).filter((o) => !naKutku(o))   // tekst za Kutak nije u Graškovom sitemap-u (dom mu je djecijikutak.me)
   const taksonomija = tax || {}
   JEZICI.forEach((j) => {
     const n = naJeziku(objave, j).length
