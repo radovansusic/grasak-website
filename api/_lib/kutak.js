@@ -17,16 +17,14 @@ export const JEZIK_OZNAKA = { cnr: 'CG', en: 'EN', ru: 'RU', tr: 'TR' }
 /** Strana oznake je indeksirana i u sitemap-u tek kad oznaka ima bar toliko tekstova na tom jeziku; do tada je noindex,follow. */
 export const OZNAKA_MIN_TEKSTOVA = 5
 export const KUTAK = 'kutak'   // isti slug na svim jezicima
-// Tekst sa na_kutku=true ima dom na Dječijem kutku (isti slug): Grašak ga i dalje prikazuje, ali sa canonical na Kutak, bez hreflang i bez adrese u sitemap-u.
+// Tekst sa na_kutku=true JE OZNAČEN za Kutak, ali dom na Kutku ima tek kad Kutak potvrdi da kopija postoji (kutak_potvrdjen, vidi potvrdiKutak niže).
+// Tek tada Grašak ostavlja strani canonical na Kutak (isti slug), bez hreflang i bez adrese u sitemap-u. Do potvrde je tekst običan Graškov tekst:
+// samoreferentni canonical, hreflang, sitemap. Razlog: uvoz na Kutku radi jednom na sat, može biti isključen, može preskočiti tekst (sudar slug-a sa ručnim člankom).
 export const KUTAK_SAJT = 'https://djecijikutak.me'
 export const kutakAdresa = (slug) => KUTAK_SAJT + '/blog/' + slug
-export const naKutku = (o) => !!o && o.na_kutku === true
-/** canonical ide na Kutak tek kad prođe kutak_od (do tada Kutkova kopija možda još ne postoji: uvoz radi jednom na sat); bez ispravnog kutak_od canonical ostaje na Grašku. */
-export function kutakKanon(o, sada = Date.now()) {
-  if (!naKutku(o)) return false
-  const t = Date.parse(String((o && o.kutak_od) || ''))
-  return !isNaN(t) && t <= sada
-}
+export const naKutku = (o) => !!o && o.na_kutku === true && o.kutak_potvrdjen === true
+/** canonical ide na Kutak samo uz potvrdu da kopija tamo postoji; inače ostaje na Grašku. */
+export const kutakKanon = (o) => naKutku(o)
 
 const TEKST = {
   cnr: {
@@ -282,7 +280,7 @@ function karticaTeksta(o, jez, tax) {
  * Jedan tekst na jeziku `jez`; null ako tekst nema taj jezik (nepotvrđen prevod se ne objavljuje).
  * ob = odgovor skripte (akcija=objava), tax = taksonomija, lista = sve objave (za tri povezana teksta iz iste rubrike).
  */
-export function renderObjava(ob, jez, tax, lista, sada = Date.now()) {
+export function renderObjava(ob, jez, tax, lista) {
   tax = tax || {}
   if (!ob || !ob.naslov || !ob.naslov[jez] || !ob.tijelo || !ob.tijelo[jez]) return null
   const rub = rubrikaPo(tax, ob.rubrika)
@@ -290,9 +288,9 @@ export function renderObjava(ob, jez, tax, lista, sada = Date.now()) {
   if (!rub || !vrs) return null
   const T = tekst(jez)
   const url = adresa(jez, ob.slug)
-  // tekst za Kutak: crnogorska strana ima canonical na Kutak (kad prođe kutak_od); prevodi nemaju Kutkovu kopiju pa ostaju samoreferentni; hreflang nema nijedna
+  // tekst za Kutak (potvrđen): crnogorska strana ima canonical na Kutak; prevodi nemaju Kutkovu kopiju pa ostaju samoreferentni; hreflang nema nijedna
   const naKutkuTekst = naKutku(ob)
-  const kanon = jez === 'cnr' && kutakKanon(ob, sada) ? kutakAdresa(ob.slug) : url
+  const kanon = jez === 'cnr' && kutakKanon(ob) ? kutakAdresa(ob.slug) : url
   const opis = (ob.opis && ob.opis[jez]) || String(ob.tijelo[jez]).replace(/\s+/g, ' ').slice(0, 155)
   const jezici = (ob.jezici || Object.keys(ob.naslov)).filter((j) => ob.naslov[j] && ob.tijelo[j])
   const slika = SITE + '/images/fb_cover.jpg'
@@ -544,4 +542,87 @@ export async function ucitajObjavu(slug, env, dohvati) {
   const z = zadnje.objave.get(slug)
   if (svjeze(z)) return Object.assign({}, z.odgovor, { staro: true })
   return { greska: true }
+}
+
+/* ---------- potvrda da Kutak ima kopiju (jedini poziv prema Kutku) ---------- */
+
+/** Pozitivna potvrda se pamti 6 sati (po instanci funkcije); negativna kratko, da se canonical prebaci brzo čim kopija nastane. */
+export const POTVRDA_POZITIVNO_MS = 6 * 60 * 60 * 1000
+export const POTVRDA_NEGATIVNO_MS = 5 * 60 * 1000
+export const POTVRDA_ROK_MS = 4000
+export const POTVRDA_GRUPA = 50
+export const POTVRDA_NAJVISE = 200
+const potvrde = new Map()   // slug -> { ok, do }
+/** Za testove. */
+export function zaboraviPotvrde() { potvrde.clear() }
+
+/** KUTAK_POTVRDA_URL: adresa funkcije grasak-potvrda na Kutku (https). Nije tajna. Nepostavljena = nijedna potvrda, canonical svugdje ostaje na Grašku. */
+export function potvrdaAdresa(env = {}) {
+  const u = String(env.KUTAK_POTVRDA_URL || '').trim()
+  if (!u) return ''
+  try { return new URL(u).protocol === 'https:' ? u : '' } catch { return '' }
+}
+
+async function pitajKutak(adresa, grupa, env, dohvati) {
+  const kontrola = new AbortController()
+  const sat = setTimeout(() => kontrola.abort(), Number(env.KUTAK_POTVRDA_ROK_MS) || POTVRDA_ROK_MS)
+  try {
+    const u = new URL(adresa)
+    u.searchParams.set('slugovi', grupa.join(','))
+    const r = await dohvati(u.toString(), { signal: kontrola.signal, headers: { accept: 'application/json' } })
+    if (!r.ok) return null
+    const j = await r.json()
+    if (!j || j.ok !== true || !Array.isArray(j.potvrdjeni)) return null
+    return new Set(j.potvrdjeni.filter((x) => typeof x === 'string' && grupa.includes(x)))
+  } catch {
+    return null
+  } finally {
+    clearTimeout(sat)
+  }
+}
+
+/**
+ * Koji od slugova imaju objavljenu kopiju na Kutku (red iz uvoza, izvor "grasak", is_published). Vraća Set potvrđenih.
+ * Ručni članak Kutka sa istim slugom nije potvrda (funkcija na Kutku ga ne računa). Greška, rok ili nepostavljena adresa = nije potvrđeno;
+ * ranije potvrđen tekst ostaje potvrđen dok traje zadnja pozitivna potvrda (do 24 sata) ako Kutak privremeno ne odgovara.
+ */
+export async function potvrdiKutak(slugovi, env = {}, dohvati = fetch, sada = Date.now()) {
+  const adresa = potvrdaAdresa(env)
+  const potvrdjeni = new Set()
+  if (!adresa) return potvrdjeni
+  const trazeni = [...new Set((slugovi || []).filter((s) => SLUG_RE.test(String(s))))].slice(0, POTVRDA_NAJVISE)
+  const treba = []
+  for (const s of trazeni) {
+    const z = potvrde.get(s)
+    if (z && z.do > sada) { if (z.ok) potvrdjeni.add(s) } else treba.push(s)
+  }
+  for (let i = 0; i < treba.length; i += POTVRDA_GRUPA) {
+    const grupa = treba.slice(i, i + POTVRDA_GRUPA)
+    const odg = await pitajKutak(adresa, grupa, env, dohvati)
+    for (const s of grupa) {
+      const staro = potvrde.get(s)
+      if (odg === null) {
+        // Kutak ne odgovara: zadnja pozitivna potvrda važi još do 24 sata, inače nije potvrđeno; pokušaj ponovo za par minuta
+        const drzi = !!staro && staro.poz !== null && sada - staro.poz < STARO_NAJVISE_MS
+        potvrde.set(s, { ok: drzi, do: sada + POTVRDA_NEGATIVNO_MS, poz: drzi ? staro.poz : null })
+        if (drzi) potvrdjeni.add(s)
+      } else if (odg.has(s)) {
+        potvrde.set(s, { ok: true, do: sada + POTVRDA_POZITIVNO_MS, poz: sada })
+        potvrdjeni.add(s)
+      } else {
+        potvrde.set(s, { ok: false, do: sada + POTVRDA_NEGATIVNO_MS, poz: null })
+      }
+    }
+  }
+  if (potvrde.size > 1000) for (const k of potvrde.keys()) { if (potvrde.size <= 500) break; potvrde.delete(k) }
+  return potvrdjeni
+}
+
+/** Kopija liste u kojoj svaki tekst sa na_kutku=true nosi kutak_potvrdjen (true samo uz potvrdu Kutka). Bez takvih tekstova nema nijednog poziva. */
+export async function oznaciKutak(objave, env = {}, dohvati = fetch, sada = Date.now()) {
+  const lista = objave || []
+  const slugovi = lista.filter((o) => o && o.na_kutku === true).map((o) => o.slug)
+  if (!slugovi.length) return lista
+  const p = await potvrdiKutak(slugovi, env, dohvati, sada)
+  return lista.map((o) => (o && o.na_kutku === true ? { ...o, kutak_potvrdjen: p.has(o.slug) } : o))
 }

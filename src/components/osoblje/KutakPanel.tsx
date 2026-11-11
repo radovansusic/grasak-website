@@ -8,7 +8,7 @@ import {
 import { inputCls } from './pomocno'
 import { kutakDostupno, kutakObjasnjenje, kutakVrijednost } from '@/data/kutakPravila'
 
-const NEMA_SKRIPTE = 'Kutak još nije uključen na serveru. Javite Radovanu: Google skripta treba novu verziju (2026-11-11d ili novija).'
+const NEMA_SKRIPTE = 'Kutak još nije uključen na serveru. Javite Radovanu: Google skripta treba novu verziju (2026-11-11e ili novija).'
 const SKRIPTA_PREKINUTA = 'Google skripta je prekinuta prije odgovora (najčešće zbog isteka vremena). Ništa nije objavljeno. Sačekajte nekoliko minuta i pokušajte ponovo; ako se ponovi, pišite ručno ili javite Radovanu.'
 const STATUS_OZNAKA = { nacrt: 'Nacrt', objavljeno: 'Objavljeno', sklonjeno: 'Sklonjeno' } as const
 const STATUS_BOJA = { nacrt: 'bg-sun text-ink', objavljeno: 'bg-grass text-white', sklonjeno: 'bg-ink/10 text-ink/60' } as const

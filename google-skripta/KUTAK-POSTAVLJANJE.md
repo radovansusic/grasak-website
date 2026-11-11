@@ -6,7 +6,9 @@ Javne adrese (strane pravi Vercel funkcija, stvarni HTML za Google): `/kutak` (l
 
 Grana je `p14-objave`. Ništa nije u `main` i ništa nije objavljeno dok se grana ne spoji.
 
-**Grana se spaja tek poslije koraka sa skriptom (koraci 1 do 5) i jednog probnog teksta (korak 6, tačke 1 do 4).** Razlog: spojena grana bez nove skripte ima panel koji traži verziju `2026-11-11d`, a sajt ne zna da li ima tekstova. Link "Graškov kutak" u meniju, podnožju i na početnoj strani pojavljuje se tek kad javni odgovor skripte vrati bar jedan objavljen tekst (provjera pri učitavanju, pamti se 10 minuta; ako skripta ne odgovara ili je stara, link se ne prikazuje). Strana `/kutak` bez tekstova daje 200 sa mirnom praznom stranom, a 503 samo kad skripta zaista ne odgovara (taj odgovor se ne kešira).
+**Štiklir "I na Dječiji kutak" se ne koristi dok uvoz na Kutku nije živ** (korak 7 iznad ovog: `docs/GRASAK-SYNC-POSTAVLJANJE.md` u repou kinder-guide-pg, grana `p16-grasak-sync`; Kutkova strana traži i tajnu u Vault-u, sve na tom dokumentu). Štiklir je u panelu zadano uključen za tri rubrike, pa se do tada tekstovi objavljuju sa isključenim štiklirom. Greške tu nema: i uključen štiklir bez živog uvoza je bezopasan za indeksiranje (canonical se prebacuje tek uz potvrdu Kutka, vidi niže), ali tekst na Kutak ne stiže.
+
+**Grana se spaja tek poslije koraka sa skriptom (koraci 1 do 5) i jednog probnog teksta (korak 6, tačke 1 do 4).** Razlog: spojena grana bez nove skripte ima panel koji traži verziju `2026-11-11e`, a sajt ne zna da li ima tekstova. Link "Graškov kutak" u meniju, podnožju i na početnoj strani pojavljuje se tek kad javni odgovor skripte vrati bar jedan objavljen tekst (provjera pri učitavanju, pamti se 10 minuta; ako skripta ne odgovara ili je stara, link se ne prikazuje). Strana `/kutak` bez tekstova daje 200 sa mirnom praznom stranom, a 503 samo kad skripta zaista ne odgovara (taj odgovor se ne kešira).
 
 ## I na Dječiji kutak (djecijikutak.me)
 
@@ -16,21 +18,22 @@ Zadane vrijednosti (po rubrici, dok ne klikne sama): uključeno za **Za roditelj
 
 Blokade se ne zaobilaze: zdravlje, ime djeteta, brojka ili statistika bez izvora, rizične teme i zdravstvena tvrdnja bez druge potvrde važe prije objave, a skripta ih ponavlja i pri pravljenju odgovora za Kutak (tekst koji danas ne prolazi se ne šalje i vodi se kao povučen).
 
-Šta se mijenja u tabeli: list "Objave" dobija kolonu **Na Kutku** (kolona 30, na kraju; dopisuje se sama pri koraku 2, meni Grasak > Postavi). U njoj je vrijeme kad je štiklir uključen; prazno znači isključeno. Ručno se može upisati "da" ili "ne", ali tekst iz Iz Graška ili Iz salona se ne šalje ni tada.
+Šta se mijenja u tabeli: list "Objave" dobija kolonu **Na Kutku** (kolona 30, na kraju; dopisuje se sama pri koraku 2, meni Grasak > Postavi). U njoj je vrijeme kad je štiklir uključen; prazno znači isključeno. Kad se štiklir isključi na tekstu koji je bio uključen, upisuje se "skinuto <vrijeme>": to je isključeno, ali se pamti da je tekst mogao stići na Kutak, da bi ga uvoz mogao skinuti (na Kutku se skida samo ono što je Grašak izričito naveo). Ručno se može upisati "da" ili "ne", ali tekst iz Iz Graška ili Iz salona se ne šalje ni tada.
 
 Kad se tekst pojavljuje:
 - Skripta daje tekst na novoj javnoj adresi `?akcija=kutak` (keš do 5 minuta). Kutak ga preuzima jednom na sat. Dakle na Kutku u aplikaciji je najkasnije za oko sat vremena (do ~65 minuta) od klika na Objavi.
 - Gotov HTML za pretraživače i statički sitemap Kutka nastaju tek pri sljedećem deployu Kutka (vidi `docs/GRASAK-SYNC-POSTAVLJANJE.md` u repou Kutka). Do tada ga vide aplikacija i dinamički sitemap.
-- Javni odgovori skripte (`?akcija=objave` i `?akcija=objava&slug=`) dobijaju dva polja: `na_kutku` (true samo za objavljen, označen tekst iz dozvoljene rubrike) i `kutak_od` (kasnije od uključenja štiklira i objave, plus 2 sata).
+- Javni odgovori skripte (`?akcija=objave` i `?akcija=objava&slug=`) dobijaju polje `na_kutku` (true samo za objavljen, označen tekst iz dozvoljene rubrike).
+- Javni odgovor `?akcija=kutak` ne odaje ništa o nacrtima: u `povuceno` ulaze samo slugovi tekstova koji su bili objavljeni sa štiklirom, a razlozi zadržavanja (blokade) se vide samo u panelu. Odgovor je u stranama do 70 KB (`&strana=2`...), da staje u keš skripte.
 
-Šta se mijenja na Grašku za takav tekst: crnogorska strana `/kutak/<slug>` ostaje čitljiva, ali tek od `kutak_od` nosi `canonical` na `https://djecijikutak.me/blog/<slug>` (isti slug), nema `hreflang` i nije u Graškovom `sitemap.xml`; njegov doprinos ne računa rubrici ni oznaci za indeksiranje. Strane prevoda ostaju samoreferentne, bez `hreflang`. Do `kutak_od` canonical je Graškov, jer Kutkova kopija možda još ne postoji. RSS Graška i dalje ima taj tekst (nije mijenjano).
+Šta se mijenja na Grašku za takav tekst: dok Kutak ne potvrdi da kopija postoji, **ništa**: strana ima samoreferentni canonical, hreflang i ostaje u Graškovom `sitemap.xml`. Kad je potvrdi (Graškova Vercel funkcija pita Kutkovu funkciju `grasak-potvrda`, odgovor pamti 6 sati, odsustvo 5 minuta; zahtijeva promjenljivu `KUTAK_POTVRDA_URL` u Vercelu, korak 8 u dokumentu Kutka), crnogorska strana `/kutak/<slug>` ostaje čitljiva, ali nosi `canonical` na `https://djecijikutak.me/blog/<slug>` (isti slug), nema `hreflang` i izlazi iz Graškovog `sitemap.xml`; njen doprinos ne računa rubrici ni oznaci za indeksiranje. Strane prevoda ostaju samoreferentne, bez `hreflang`. Bez `KUTAK_POTVRDA_URL` canonical nikad ne ide na Kutak (to je i prekidač: dok je ne postavite, sve je kao prije). Ako slug sukobi sa ručnim člankom Kutka, uvoz tekst ne uvozi (izvještaj ga navodi u `sudari`), potvrde nema i Grašak ostaje canonical. RSS Graška i dalje ima taj tekst (nije mijenjano).
 
 Kako se povlači (bilo koje od ova dva):
 1. **Odštiklirati** na već objavljenom tekstu pa **Objavi izmjene**: tekst nestaje sa Kutka pri sljedećem uvozu (najkasnije za oko sat vremena), a Grašak opet nosi svoj canonical.
-2. **Skloni sa sajta**: nestaje sa Graška i sa Kutka (na Kutku postaje neobjavljen, ne briše se). Ponovna objava poslije Skloni otvara novi prozor od 2 sata.
+2. **Skloni sa sajta**: nestaje sa Graška i sa Kutka (na Kutku postaje neobjavljen, ne briše se). Ponovna objava poslije Skloni vraća tekst na Kutak pri sljedećem uvozu.
 Brisanje reda u tabeli NE povlači tekst sa Kutka: koristite Skloni.
 
-Provjera poslije (uz korake iznad): u pregledniku `<adresa web appa>?akcija=kutak` daje JSON sa `ok: true`, `jezik: "me"`, nizom `objave` (samo označeni tekstovi, polja kao u `docs/GRASAK-SYNC-POSTAVLJANJE.md` u repou Kutka) i nizom `povuceno`; `?akcija=objave` ima `na_kutku` i `kutak_od` uz svaku objavu.
+Provjera poslije (uz korake iznad): u pregledniku `<adresa web appa>?akcija=kutak` daje JSON sa `ok: true`, `jezik: "me"`, nizom `objave` (samo označeni tekstovi, polja kao u `docs/GRASAK-SYNC-POSTAVLJANJE.md` u repou Kutka), nizom `povuceno` i poljima `strana` i `strana_ukupno`; `?akcija=objave` ima `na_kutku` uz svaku objavu. Nacrt sa uključenim štiklirom se u tom odgovoru ne smije pojaviti nigdje (ni slug, ni naslov).
 
 ## Taksonomija: gdje se mijenja
 
@@ -42,7 +45,7 @@ Pravila: tačno jedna rubrika, jedna vrsta, 2 do 4 oznake (najviše jedna oznaka
 
 1. Otvoriti tabelu "Grašak - termini", pa Extensions > Apps Script.
 2. U fajlu `Grasak.gs` označiti sve (Ctrl+A) i zalijepiti cijeli sadržaj fajla `google-skripta/Grasak.gs` iz ove grane. Sačuvati (Ctrl+S).
-3. Nova verzija skripte nosi oznaku `2026-11-11d` (`VERZIJA_SKRIPTE`); panel je traži (`OCEKIVANA_VERZIJA_SKRIPTE` u `src/lib/osoblje.ts`).
+3. Nova verzija skripte nosi oznaku `2026-11-11e` (`VERZIJA_SKRIPTE`); panel je traži (`OCEKIVANA_VERZIJA_SKRIPTE` u `src/lib/osoblje.ts`).
 
 ## 2. List "Objave"
 
@@ -84,11 +87,11 @@ List "Osoblje": Ime (npr. Kristina), Uloga `vlasnik`, Šifra (najmanje 8 znakova
 
 ## Šta zaustavlja objavu
 
-- Postotak ili statistika (brojka, razlomak ili riječima: "trideset posto", "dvije trećine") bez izvora. Uobičajene količine prolaze bez izvora: minuti, sati, dani, "3 puta", koraci, komadi, uzrast u godinama, cijene u eurima, datum, vrijeme, popust salona u rubrici Iz Graška, broj salona. Tvrdo se zaustavljaju postoci i statistike o djeci, zdravlju i rastu kose.
+- Postotak ili statistika (brojka, razlomak ili riječima: "trideset posto", "dvije trećine") bez izvora. Uobičajene količine prolaze bez izvora: minuti, sati, dani, "3 puta", koraci, komadi, brojanje predmeta do 20 ("5 igara", "3 jastuka i 2 deke"), uzrast u godinama, cijene u eurima, datum, vrijeme, popust salona u rubrici Iz Graška, broj salona. Tvrdo se zaustavljaju postoci i statistike o djeci, zdravlju i rastu kose, i brojke uz djecu, porodice, salone, studije i sve brojke iznad 20 ("5 djece", "300 porodica", "3 salona").
 - Zdravstvena TVRDNJA (liječi, sprječava bolest, ubrzava rast, preporučena doza, dijagnoza) bez izvora, na četiri jezika. Riječ "zdravlje" ili "sprječava dosadu" nije tvrdnja.
 - Link otključava brojku ili tvrdnju samo ako je upisan naziv izvora. Zdravstvena tvrdnja ni uz izvor ne izlazi bez druge, izričite potvrde istog urednika: panel traži poseban štiklir ("Ovaj tekst sadrži zdravstvenu tvrdnju. Provjerila sam izvor."), a skripta upisuje ko i kada je potvrdio u kolonu "Zdravlje potvrda" (kolona 29, dopisuje se sama). Zadano je `OBJAVE_ZDRAVLJE_DRUGA_OSOBA = false`; ako se postavi na `true`, potvrdu mora dati druga osoba (vlasnik ili administrator), ne autor teksta.
 - **Rizične teme, i uz izvor**: lijekovi i preparati protiv vaški (dozvoljeno samo "posavjetujte se sa pedijatrom", uz izvor), opadanje kose, promjene na koži glave, ishrana "za jaču kosu", tvrdnja da šišanje ubrzava rast kose, dijagnoze i stanja (autizam, ekcem, perut i slično).
-- Lično ime samo kad stoji uz oznaku srodstva ili uzrasta u istoj rečenici ("mala Ana (4)", "Markova mama", "naš klijent Luka"); veliko slovo u naslovu ili na početku rečenice nije dovoljno. Provjera ide samo nad jezicima koji idu u objavu (crnogorski i potvrđeni prevodi). Tuđi telefon i email.
+- Lično ime koje stoji uz oznaku srodstva ili uzrasta u istoj rečenici ("mala Ana (4)", "Markova mama", "naš klijent Luka", "Luka, 4 godine", "Luka od 4 godine", "Luka ima 4 godine"); veliko slovo u naslovu ili na početku rečenice nije dovoljno. Ime i prezime BEZ srodstva i uzrasta ("Danas je bio Luka Petrović") nije blokada nego **upozorenje koje urednik potvrđuje** ("potvrdite da to nije dijete ni roditelj iz salona"). Provjera NE hvata sva imena (samo ime bez ičega uz njega, ime pisano malim slovom): to je pomoć, ne zamjena za čitanje teksta prije objave. Provjera ide samo nad jezicima koji idu u objavu (crnogorski i potvrđeni prevodi); crnogorski tekst napisan ćirilicom se prije provjere pretvara u latinicu, pa ćirilica ne zaobilazi blokade. Tuđi telefon i email.
 - Nepoznata ili nedostajuća rubrika i vrsta, oznaka koje nema na listi ili broj oznaka van 2 do 4, više od jedne oznake uzrasta.
 - Savjet ili Aktivnost bez 2 do 3 koraka; Vijest bez naziva i https linka izvora; nepotpun prevod; potvrđen prevod bez koraka; tekst koji je prazan okvir (STUB).
 - Upozorenja traže potvrdu: superlativi i garancije, dužina izvan raspona vrste (Savjet 150-400 riječi, Aktivnost 150-300, Vijest 150-300, Članak 600+, Iz salona 100-250), prepisan niz iz izvora, Aktivnost bez oznake uzrasta.
@@ -116,7 +119,7 @@ Stalni red "Ovaj tekst nije medicinski savjet. Za zdravstvena pitanja obratite s
 - Izgled u pregledniku: strane iz funkcije (dugmad u boji rubrike, kartice, okvir "Šta možete uraditi danas") i kartica Kutak u panelu nijesu otvarane u browseru; boje su provjerene računom kontrasta, ne okom.
 - Google: prihvatanje `hreflang` `sr-ME`, indeksiranje, Search Console.
 - Keš: do oko 10 minuta od objave do sajta (5 min skripta + 5 min Vercel).
-- Uvoz na Dječiji kutak (štiklir, `?akcija=kutak`, `na_kutku`, `kutak_od`, canonical): provjereno samo na lažnim servisima (`node scripts/objave-gs-smoke.mjs`) i čistim funkcijama; nije viđeno na pravom Apps Scriptu ni na pravoj Kutkovoj bazi. Canonical preko domena je za Google nagovještaj, ne naredba.
+- Uvoz na Dječiji kutak (štiklir, `?akcija=kutak`, `na_kutku`, canonical po potvrdi Kutka): provjereno samo na lažnim servisima (`node scripts/objave-gs-smoke.mjs`) i čistim funkcijama; nije viđeno na pravom Apps Scriptu ni na pravoj Kutkovoj bazi. Canonical preko domena je za Google nagovještaj, ne naredba.
 - Javno čitanje (`?akcija=objave`) nikad ne pravi ni ne mijenja list "Objave"; samo korak 2 (meni Grasak > Postavi) i panel ga prave. Ako lista nema, javni odgovor je prazna lista.
 - Vremenski budžet 240 s i paralelni prevodi (`UrlFetchApp.fetchAll`) provjereni samo na lažnom servisu, ne na pravom Apps Scriptu.
 

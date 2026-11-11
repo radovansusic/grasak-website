@@ -12,7 +12,7 @@
 - Oznake: 2 do 4, najviše jedna oznaka uzrasta.
 - Savjet i Aktivnost traže 2 do 3 koraka u okviru "Šta možete uraditi danas". Vijest traži izvor (naziv i link).
 
-**Štiklir "I na Dječiji kutak"** (u istom dijelu, ispod koraka): objavljeni tekst stiže i na djecijikutak.me, samo na crnogorskom, za oko sat vremena. Sam je uključen za Za roditelje, Igraonica i Vijesti za porodice, a isključen za Šišanje i njega (možete uključiti). Za Iz Graška ne može: te tekstove vide samo posjetioci Graška. Iste provjere (zdravlje, djeca, brojke bez izvora) važe i za Kutak. Da tekst povučete sa Kutka: odštiklirajte i pritisnite **Objavi izmjene**, ili **Skloni sa sajta** (to ga skida i sa Graška). Tekst pišete i mijenjate samo ovdje, nikad na Kutku.
+**Štiklir "I na Dječiji kutak"** (u istom dijelu, ispod koraka; koristite ga tek kad vam Radovan kaže da je uvoz na Kutku uključen): objavljeni tekst stiže i na djecijikutak.me, samo na crnogorskom, za oko sat vremena. Sam je uključen za Za roditelje, Igraonica i Vijesti za porodice, a isključen za Šišanje i njega (možete uključiti). Za Iz Graška ne može: te tekstove vide samo posjetioci Graška. Iste provjere (zdravlje, djeca, brojke bez izvora) važe i za Kutak. Da tekst povučete sa Kutka: odštiklirajte i pritisnite **Objavi izmjene**, ili **Skloni sa sajta** (to ga skida i sa Graška). Tekst pišete i mijenjate samo ovdje, nikad na Kutku.
 
 **4. Pregledajte prevode.** Otvorite EN, RU i TR, pročitajte, ispravite šta treba. **Prevod izlazi samo ako ga potvrdite** štiklirom "Pročitano i potvrđeno: prevod". Ne potvrđen prevod ostaje sačuvan, ali ga niko ne vidi. Ako poslije potvrde promijenite crnogorski tekst, potvrde se poništavaju i prevode treba ponovo pročitati. Kad mijenjate već objavljen tekst koji ima objavljen prevod, panel pita: **Zadrži objavljene prevode** ili **Povuci prevode dok ih ne potvrdim**.
 
@@ -22,7 +22,7 @@
 - postotak ili statistika bez izvora (minuti, sati, dani, "3 puta", koraci, uzrast, cijena u eurima i datum prolaze);
 - zdravstvena tvrdnja (liječi, sprječava bolest, ubrzava rast, doza, dijagnoza) bez izvora; uz izvor traži drugu, izričitu potvrdu prije objave (štiklir "Ovaj tekst sadrži zdravstvenu tvrdnju. Provjerila sam izvor."); bilježi se ko je i kada potvrdio;
 - teme koje salon ne piše ni uz izvor: lijekovi i preparati protiv vaški (dozvoljeno samo "posavjetujte se sa pedijatrom", uz izvor), opadanje kose, promjene na koži glave, ishrana "za jaču kosu", tvrdnja da šišanje ubrzava rast kose, dijagnoze;
-- ime uz uzrast ili srodstvo ("mala Ana (4)", "Markova mama", "naš klijent Luka"), tuđi telefon, email;
+- ime uz uzrast ili srodstvo ("mala Ana (4)", "Markova mama", "naš klijent Luka", "Luka od 4 godine"), tuđi telefon, email. Ime i prezime bez ičega uz njih ("Luka Petrović") daje upozorenje koje potvrđujete: provjera ne hvata sva imena, pa tekst uvijek pročitajte sami. Brojanje predmeta do 20 ("5 igara", "3 jastuka") prolazi; brojke uz djecu, porodice i salone traže izvor;
 - nedostaje rubrika, vrsta, 2 do 4 oznake, koraci (za Savjet i Aktivnost) ili izvor (za Vijest);
 - prevod nije potpun.
 

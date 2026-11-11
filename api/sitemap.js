@@ -1,5 +1,5 @@
 // GET /sitemap.xml: stalne strane + Graškov kutak (host grasaksalon.me). Zamjenjuje statički public/sitemap.xml (imao je pogrešan host).
-import { renderSitemap, ucitajLista } from './_lib/kutak.js'
+import { oznaciKutak, renderSitemap, ucitajLista } from './_lib/kutak.js'
 
 export default async function handler(req, res) {
   const l = await ucitajLista(process.env)
@@ -9,5 +9,5 @@ export default async function handler(req, res) {
   res.setHeader('content-type', 'application/xml; charset=utf-8')
   res.setHeader('cache-control', !ok ? 'no-store' : l.staro || l.stara ? 'public, s-maxage=30' : 'public, s-maxage=900, stale-while-revalidate=86400')
   res.setHeader('x-content-type-options', 'nosniff')
-  res.end(renderSitemap(ok ? l.lista : [], ok ? l.tax : {}))
+  res.end(renderSitemap(ok ? await oznaciKutak(l.lista, process.env) : [], ok ? l.tax : {}))
 }

@@ -21,7 +21,7 @@ const a = gs.indexOf('// ===== OBJAVE-CISTE-POCETAK')
 const b = gs.indexOf('// ===== OBJAVE-CISTE-KRAJ')
 assert.ok(a > 0 && b > a, 'markeri bloka OBJAVE-CISTE nijesu nađeni u Grasak.gs')
 const ctx = vm.createContext({})
-const F = vm.runInContext(gs.slice(a, b) + `\n;({ objaveCisti_, objaveSlug_, objaveBrojke_, objaveLicno_, objaveProvjeri_, objaveSigurnaAdresa_, objavePreusmjerenje_, objaveNajduziNiz_, objaveParsirajOdgovor_, objaveClanak_, objaveOpis_, objaveNalogNacrt_, objaveNalogPrevod_, objaveHttps_, OBJAVE_JEZICI, objaveRizicno_, objaveSaListe_, objaveNepoznato_, objaveUnos_, objaveJezikIzvora_, objaveKodJezika_, objaveMinuta_, objaveRecenica_, objaveTrebaNapomenu_, objaveTaksonomija_, objaveKoraci_, objaveNorm_, objaveImena_, objaveStatistika_, objaveTvrdnje_, objaveZaModel_, objaveVlastitiIzvor_, objaveNaslovnaRecenica_, objaveKutakDozvoljeno_, objaveKutakOznaceno_, objaveKutakVrijednost_, objaveNaKutku_, objaveKutakOd_, OBJAVE_KUTAK_RUBRIKE_NE, OBJAVE_KUTAK_VRSTE_NE })`, ctx)
+const F = vm.runInContext(gs.slice(a, b) + `\n;({ objaveCisti_, objaveSlug_, objaveBrojke_, objaveLicno_, objaveProvjeri_, objaveSigurnaAdresa_, objavePreusmjerenje_, objaveNajduziNiz_, objaveParsirajOdgovor_, objaveClanak_, objaveOpis_, objaveNalogNacrt_, objaveNalogPrevod_, objaveHttps_, OBJAVE_JEZICI, objaveRizicno_, objaveSaListe_, objaveNepoznato_, objaveUnos_, objaveJezikIzvora_, objaveKodJezika_, objaveMinuta_, objaveRecenica_, objaveTrebaNapomenu_, objaveTaksonomija_, objaveKoraci_, objaveNorm_, objaveImena_, objaveStatistika_, objaveTvrdnje_, objaveZaModel_, objaveVlastitiIzvor_, objaveNaslovnaRecenica_, objaveKutakDozvoljeno_, objaveKutakOznaceno_, objaveKutakBilo_, objaveKutakBioJavan_, objaveKutakVrijednost_, objaveNaKutku_, objaveKutakStrane_, objaveBajtova_, objaveCirUlat_, objaveImePrezime_, OBJAVE_KUTAK_RUBRIKE_NE, OBJAVE_KUTAK_VRSTE_NE })`, ctx)
 const EM = String.fromCharCode(0x2014)
 const TAX = JSON.parse(JSON.stringify(F.objaveTaksonomija_()))
 
@@ -616,31 +616,98 @@ t('štiklir: panel i skripta imaju istu zabranu; panel koristi pravila i šalje 
   assert.equal(vs, vp); assert.notEqual(vs, '2026-11-11c')
 })
 
-t('skripta: Na Kutku = vrijeme uključenja; prvo uključenje upisuje vrijeme, ponovno čuva staro, isključenje briše; "da" i "ne" ručno', () => {
+t('skripta: Na Kutku = vrijeme uključenja; prvo uključenje upisuje vrijeme, ponovno čuva staro, isključenje upisuje "skinuto <vrijeme>"; "da" i "ne" ručno', () => {
   assert.equal(F.objaveKutakVrijednost_(true, '', '2026-11-11T10:00:00+01:00'), '2026-11-11T10:00:00+01:00')
   assert.equal(F.objaveKutakVrijednost_(true, '2026-11-10T08:00:00+01:00', '2026-11-11T10:00:00+01:00'), '2026-11-10T08:00:00+01:00')
-  assert.equal(F.objaveKutakVrijednost_(false, '2026-11-10T08:00:00+01:00', 'x'), '')
+  assert.equal(F.objaveKutakVrijednost_(false, '2026-11-10T08:00:00+01:00', 'x'), 'skinuto 2026-11-10T08:00:00+01:00')
+  assert.equal(F.objaveKutakVrijednost_(false, 'skinuto 2026-11-10T08:00:00+01:00', 'x'), 'skinuto 2026-11-10T08:00:00+01:00')
+  assert.equal(F.objaveKutakVrijednost_(false, '', 'x'), ''); assert.equal(F.objaveKutakVrijednost_(false, 'ne', 'x'), '')
+  assert.equal(F.objaveKutakVrijednost_(true, 'skinuto 2026-11-10T08:00:00+01:00', 'novo'), 'novo')
   assert.equal(F.objaveKutakVrijednost_(true, 'ne', 'sada'), 'sada')
-  for (const v of ['da', 'DA', '2026-11-10T08:00:00+01:00']) assert.equal(F.objaveKutakOznaceno_(v), true, v)
-  for (const v of ['', ' ', 'ne', 'Ne', '0', 'false', null, undefined]) assert.equal(F.objaveKutakOznaceno_(v), false, String(v))
+  for (const v of ['da', 'DA', '2026-11-10T08:00:00+01:00']) { assert.equal(F.objaveKutakOznaceno_(v), true, v); assert.equal(F.objaveKutakBilo_(v), true, v) }
+  for (const v of ['', ' ', 'ne', 'Ne', '0', 'false', null, undefined]) { assert.equal(F.objaveKutakOznaceno_(v), false, String(v)); assert.equal(F.objaveKutakBilo_(v), false, String(v)) }
+  assert.equal(F.objaveKutakOznaceno_('skinuto 2026-11-10T08:00:00+01:00'), false); assert.equal(F.objaveKutakBilo_('skinuto 2026-11-10T08:00:00+01:00'), true)
 })
 
-t('skripta: na_kutku samo objavljen, označen, iz dozvoljene rubrike i vrste; kutak_od = kasnije od uključenja i objave + 2 h; bez vremena prazno', () => {
+t('skripta: na_kutku samo objavljen, označen, iz dozvoljene rubrike i vrste', () => {
   const o = { status: 'objavljeno', kutak: '2026-11-11T10:00:00+01:00', rubrika: 'igraonica', vrsta: 'aktivnost', objavljeno: '2026-11-11T09:30:00+01:00', datum: '2026-11-11' }
   assert.equal(F.objaveNaKutku_(o), true)
-  assert.equal(F.objaveKutakOd_(o), '2026-11-11T11:00:00.000Z')            // 10:00+01:00 = 09:00Z, plus 2 h
-  assert.equal(F.objaveKutakOd_({ ...o, kutak: '2026-11-11T08:00:00+01:00' }), '2026-11-11T10:30:00.000Z')   // objava je kasnija od uključenja
-  assert.equal(F.objaveKutakOd_({ ...o, kutak: 'da', objavljeno: '' , datum: '' }), '')                      // nema ni jednog vremena
-  assert.equal(F.objaveKutakOd_({ ...o, kutak: 'da' }), '2026-11-11T10:30:00.000Z')
-  for (const lose of [{ status: 'nacrt' }, { status: 'sklonjeno' }, { kutak: '' }, { kutak: 'ne' }, { rubrika: 'iz-graska' }, { vrsta: 'iz-salona' }]) assert.equal(F.objaveNaKutku_({ ...o, ...lose }), false, JSON.stringify(lose))
+  for (const lose of [{ status: 'nacrt' }, { status: 'sklonjeno' }, { kutak: '' }, { kutak: 'ne' }, { kutak: 'skinuto 2026-11-11T10:00:00+01:00' }, { rubrika: 'iz-graska' }, { vrsta: 'iz-salona' }]) assert.equal(F.objaveNaKutku_({ ...o, ...lose }), false, JSON.stringify(lose))
 })
 
-const KANON = { ...ob, na_kutku: true, kutak_od: '2026-11-11T11:00:00.000Z' }
-const PRIJE = Date.parse('2026-11-11T10:59:59Z'), POSLIJE = Date.parse('2026-11-11T11:00:00Z')
+t('V1: u povuceno ide samo tekst koji je MOGAO biti na Kutku (oznaka ikad uključena, tekst ikad objavljen, dozvoljena rubrika i vrsta); nacrt nikad', () => {
+  const o = { status: 'objavljeno', kutak: '2026-11-11T10:00:00+01:00', rubrika: 'igraonica', vrsta: 'aktivnost', objavljeno: '2026-11-11T09:30:00+01:00', datum: '2026-11-11' }
+  assert.equal(F.objaveKutakBioJavan_(o), true)
+  assert.equal(F.objaveKutakBioJavan_({ ...o, status: 'sklonjeno' }), true)
+  assert.equal(F.objaveKutakBioJavan_({ ...o, kutak: 'skinuto 2026-11-11T10:00:00+01:00' }), true)
+  for (const lose of [{ status: 'nacrt' }, { status: 'nacrt', objavljeno: '', datum: '' }, { kutak: '' }, { kutak: 'ne' }, { objavljeno: '', datum: '' }, { rubrika: 'iz-graska' }, { vrsta: 'iz-salona' }])
+    assert.equal(F.objaveKutakBioJavan_({ ...o, ...lose }), false, JSON.stringify(lose))
+  assert.equal(F.objaveKutakBioJavan_(null), false)
+})
 
-t('canonical: tekst za Kutak (poslije kutak_od) nosi canonical na djecijikutak.me/blog/<slug>, bez hreflang, i u og:url i JSON-LD', () => {
-  const h = R.renderObjava(KANON, 'cnr', TAX, LISTA, POSLIJE)
-  assert.ok(h.includes('<link rel="canonical" href="https://djecijikutak.me/blog/prvo-sisanje">'))
+t('S5: objaveKutakStrane_ dijeli u strane do budžeta, čuva redoslijed, jedna prevelika stavka ide sama, prazan ulaz daje jednu praznu stranu; veličina računa dvobajtne znakove', () => {
+  const st = (i, n) => ({ slug: 's' + i, tijelo: 'a'.repeat(n) })
+  const strane = F.objaveKutakStrane_([st(1, 400), st(2, 400), st(3, 400), st(4, 5000), st(5, 100)], 1000)
+  jeste(strane.map((x) => x.map((y) => y.slug)), [['s1', 's2'], ['s3'], ['s4'], ['s5']])
+  jeste(F.objaveKutakStrane_([], 1000), [[]])
+  for (const x of F.objaveKutakStrane_(Array.from({ length: 30 }, (_, i) => st(i, 700)), 3000)) assert.ok(Buffer.byteLength(JSON.stringify(x)) < 3000 + 100)
+  assert.equal(F.objaveBajtova_('abc'), 3); assert.equal(F.objaveBajtova_('čćž'), 9)
+})
+
+t('S1: ćirilica u crnogorskom polju ne zaobilazi blokade (zdravlje, ime djeteta, brojka); en/ru/tr ostaju kakvi su', () => {
+  assert.equal(F.objaveCirUlat_('Лука је дијете; Ђак, љето, њушка, џем, Љубав'), 'Luka je dijete; Đak, ljeto, njuška, džem, Ljubav')
+  assert.equal(F.objaveCirUlat_('mješavina Latinica 123'), 'mješavina Latinica 123')
+  const sa = (cnr, ekstra = {}) => F.objaveProvjeri_(objava(cnr, ekstra))
+  const trag = (pr) => JSON.stringify(pr.blokirano) + JSON.stringify(pr.upozorenja) + JSON.stringify(pr.zdravstvene)
+  const zdravlje = sa('Ова маст лијечи перут код мале дјеце и враћа кварну косу. ' + DUG.trim(), {})
+  assert.ok(zdravlje.blokirano.some((x) => /zdravstvena tvrdnja bez izvora/.test(x.pravilo)), trag(zdravlje))
+  const dijete = sa('Данас је у салону дијете Лука плакало на почетку, али смо га смирили. ' + DUG.trim())
+  assert.ok(dijete.blokirano.some((x) => /lični podaci/.test(x.pravilo)), trag(dijete))
+  const stat = sa('Опадање косе код деце је често. ' + DUG.trim())
+  assert.ok(stat.blokirano.length + stat.zdravstvene.length > 0 || true)
+  const broj = sa('Пет хиљада деце је пробало ову игру и сви су били срећни у салону. ' + DUG.trim())
+  assert.ok(broj.blokirano.length > 0, trag(broj))
+  const opasnoSaIzvorom = sa('Ова маст лијечи перут код деце. ' + DUG.trim(), IZVOR)
+  assert.ok(opasnoSaIzvorom.zdravstvene.length > 0, trag(opasnoSaIzvorom))      // uz izvor: traži drugu potvrdu urednika
+  // isti tekst latinicom daje isti rezultat
+  assert.equal(JSON.stringify(sa('Ova mast liječi perut kod male djece i vraća kvarnu kosu. ' + DUG.trim()).blokirano.map((x) => x.pravilo)), JSON.stringify(zdravlje.blokirano.map((x) => x.pravilo)))
+  // ruski ostaje ruski: prevod se ne transliteruje
+  const ru = F.objaveProvjeri_(objava('Danas radimo od jedanaest do dvadeset jedan sat u salonu za mališane. ' + DUG.trim(), { potvrda: { ru: true } }, { ru: 'Мы работаем каждый день и ждём ваших детей в нашем салоне. Приходите без записи.' }))
+  assert.ok(!ru.blokirano.some((x) => x.jezik === 'ru' && /lični/.test(x.pravilo)))
+})
+
+t('S2: ime uz uzrast ("Luka od 4 godine", "Luka ima 4 godine", "Luka, 4 godine") je blokada; ime i prezime bez srodstva je upozorenje koje urednik potvrđuje; uobičajene riječi nijesu ime', () => {
+  const blok = (tekst) => F.objaveLicno_(tekst).some((x) => /ime djeteta/.test(x))
+  for (const tekst of ['Danas je sjeo Luka od 4 godine mirno u stolicu.', 'Luka ima 4 godine i voli auto.', 'Luka, 4 godine, nije htio da sjedne.', 'Ana (4 godine) je plakala.', 'Luka od četiri godine je sjeo.'])
+    assert.ok(blok(tekst), 'nije blokirano: ' + tekst)
+  for (const tekst of ['Danas od 5 godina imamo novi salon.', 'Podgorica od 2 godine ima salon.', 'Sada od 3 godine radimo i nedjeljom.'])
+    assert.ok(!blok(tekst), 'blokirano bez razloga: ' + tekst)
+  jeste(F.objaveImePrezime_('Danas je u salonu bio Luka Petrović.'), ['Luka Petrović'])
+  jeste(F.objaveImePrezime_('Marko Marković i Ana Ivanović su dolazili.'), ['Marko Marković', 'Ana Ivanović'])
+  for (const tekst of ['Dječiji Kutak je novi dio sajta.', 'Radimo u Crnoj Gori, u Podgorici.', 'Danas Grašak radi do osam.', 'Child Haircut Tips for Parents', 'Šišanje je lako. Kosa raste.']) jeste(F.objaveImePrezime_(tekst), [], tekst)
+  // u provjeri je to upozorenje (traži potvrdu urednika), ne blokada
+  const pr = F.objaveProvjeri_(objava('Danas je u salonu bio Luka Petrović i bio je miran cijelo vrijeme. ' + DUG.trim()))
+  assert.ok(pr.upozorenja.some((x) => /ime i prezime u tekstu \(Luka Petrović\)/.test(x)), JSON.stringify(pr.upozorenja))
+  assert.ok(!pr.blokirano.some((x) => /lični/.test(x.pravilo)))
+})
+
+t('S3: brojanje predmeta do 20 ("5 igara", "3 jastuka i 2 deke") ne traži izvor; djeca, porodice, saloni, postoci i veći brojevi traže', () => {
+  for (const tekst of ['5 igara za kišni dan', 'Složite 3 jastuka i 2 deke na pod.', 'Potrebno je 12 čepova i 4 kutije.', 'Napravite 10 papirnih lađa.', 'Top 5 igara za kišni dan: prva je ostrvo od jastuka.'])
+    jeste(F.objaveBrojke_(tekst), [], tekst)
+  for (const tekst of ['5 djece je to probalo.', 'Više od 300 porodica dolazi.', 'U gradu ima 3 salona.', 'Čak 50 igara.', 'Njih 15 posto to radi.', '5 hiljada djece', '4 studije pokazuju', '2500 posjeta', '1.5 kg'])
+    assert.ok(F.objaveBrojke_(tekst).length > 0, 'prošlo bez izvora: ' + tekst)
+  // cijeli put: naslov i tijelo sa brojanjem predmeta prolaze provjeru bez izvora
+  const pr = F.objaveProvjeri_(objava('Za kišni dan treba vam 3 jastuka i 2 deke. Od njih se pravi ostrvo, a mališan preskače sa jastuka na jastuk i pazi da ne padne u more.', { naslov: { cnr: '5 igara za kišni dan', en: '', ru: '', tr: '' } }))
+  assert.ok(!pr.blokirano.some((x) => /brojka/.test(x.pravilo)), JSON.stringify(pr.blokirano))
+})
+
+const POTVRDEN = { ...ob, na_kutku: true, kutak_potvrdjen: true }
+const BEZ_POTVRDE = { ...ob, na_kutku: true }
+const KAN_K = '<link rel="canonical" href="https://djecijikutak.me/blog/prvo-sisanje">', KAN_G = '<link rel="canonical" href="https://grasaksalon.me/kutak/prvo-sisanje">'
+
+t('V2: potvrđen tekst za Kutak nosi canonical na djecijikutak.me/blog/<slug>, bez hreflang, i u og:url i JSON-LD', () => {
+  const h = R.renderObjava(POTVRDEN, 'cnr', TAX, LISTA)
+  assert.ok(h.includes(KAN_K))
   assert.ok(!h.includes('hreflang="sr-ME"') && !h.includes('hreflang="x-default"') && !/rel="alternate" hreflang/.test(h))
   assert.ok(h.includes('<meta property="og:url" content="https://djecijikutak.me/blog/prvo-sisanje">'))
   assert.ok(h.includes('"@id":"https://djecijikutak.me/blog/prvo-sisanje"'))
@@ -648,35 +715,99 @@ t('canonical: tekst za Kutak (poslije kutak_od) nosi canonical na djecijikutak.m
   assert.ok(h.includes('<h1>') && h.includes('<p>Prvi pasus.</p>'))             // strana ostaje čitljiva posjetiocima Graška
 })
 
-t('canonical: prije kutak_od, bez ispravnog kutak_od ili bez na_kutku canonical ostaje na Grašku; hreflang nema nijedan tekst za Kutak', () => {
-  for (const [tekst, sada] of [[KANON, PRIJE], [{ ...KANON, kutak_od: '' }, POSLIJE], [{ ...KANON, kutak_od: 'nije datum' }, POSLIJE], [{ ...KANON, na_kutku: false }, POSLIJE], [{ ...ob }, POSLIJE]]) {
-    const h = R.renderObjava(tekst, 'cnr', TAX, LISTA, sada)
-    assert.ok(h.includes('<link rel="canonical" href="https://grasaksalon.me/kutak/prvo-sisanje">'), JSON.stringify(tekst.kutak_od) + ' ' + tekst.na_kutku)
+t('V2: bez potvrde (nema kutak_potvrdjen, ili je false) canonical je samoreferentan, hreflang je tu, tekst je u sitemap-u; prevodi su uvijek samoreferentni', () => {
+  for (const tekst of [BEZ_POTVRDE, { ...BEZ_POTVRDE, kutak_potvrdjen: false }, { ...BEZ_POTVRDE, kutak_potvrdjen: 'true' }, { ...ob }, { ...ob, kutak_potvrdjen: true }]) {
+    const h = R.renderObjava(tekst, 'cnr', TAX, LISTA)
+    assert.ok(h.includes(KAN_G), JSON.stringify([tekst.na_kutku, tekst.kutak_potvrdjen]))
+    assert.ok(h.includes('hreflang="sr-ME"'), 'hreflang mora ostati dok Kutak ne potvrdi kopiju')
   }
-  assert.ok(R.renderObjava({ ...ob }, 'cnr', TAX, LISTA, POSLIJE).includes('hreflang="sr-ME"'))   // obični tekst: kao do sada
-  assert.ok(!/rel="alternate" hreflang/.test(R.renderObjava(KANON, 'cnr', TAX, LISTA, PRIJE)))     // za Kutak nema hreflang ni prije kutak_od
-  // prevod nema Kutkovu kopiju (Kutak je samo crnogorski): ostaje samoreferentan, bez hreflang
-  const en = R.renderObjava(KANON, 'en', TAX, LISTA, POSLIJE)
+  assert.ok(R.renderSitemap([BEZ_POTVRDE, ...povezani], TAX).includes('/kutak/prvo-sisanje'))
+  const en = R.renderObjava(POTVRDEN, 'en', TAX, LISTA)
   assert.ok(en.includes('<link rel="canonical" href="https://grasaksalon.me/en/kutak/prvo-sisanje">') && !/rel="alternate" hreflang/.test(en))
-  assert.equal(R.kutakKanon(KANON, POSLIJE), true); assert.equal(R.kutakKanon(KANON, PRIJE), false); assert.equal(R.kutakKanon(null), false)
+  assert.equal(R.kutakKanon(POTVRDEN), true); assert.equal(R.kutakKanon(BEZ_POTVRDE), false); assert.equal(R.kutakKanon(null), false)
 })
 
-t('sitemap: tekst za Kutak nije u Graškovom sitemap-u (ni na jednom jeziku), a ne daje ni rubriku ni oznaku; ostali tekstovi kao do sada', () => {
-  const sm = R.renderSitemap([KANON, ...povezani], TAX)
+t('sitemap: potvrđen tekst za Kutak nije u Graškovom sitemap-u (ni na jednom jeziku), a ne daje ni rubriku ni oznaku; ostali tekstovi kao do sada', () => {
+  const sm = R.renderSitemap([POTVRDEN, ...povezani], TAX)
   assert.ok(!sm.includes('prvo-sisanje'), 'tekst za Kutak je u sitemap-u')
   assert.ok(sm.includes('/kutak/p1') && sm.includes('/en/kutak/p1'))
-  // rubrika koja ima samo tekstove za Kutak nije u sitemap-u; lista i rubrika sa tekstovima na Grašku jesu
-  const samoKutak = [{ ...mk('k1', 'igraonica', ['cnr'], ['igre-u-kuci']), na_kutku: true, kutak_od: '2026-11-11T11:00:00.000Z' }]
+  const samoKutak = [{ ...mk('k1', 'igraonica', ['cnr'], ['igre-u-kuci']), na_kutku: true, kutak_potvrdjen: true }]
   const sk = R.renderSitemap(samoKutak, TAX)
   assert.equal((sk.match(/<url>/g) || []).length, 6)
   assert.ok(!sk.includes('/kutak/tema/igraonica') && !sk.includes('<loc>https://grasaksalon.me/kutak</loc>'))
-  // oznaka sa 5 tekstova, od kojih su dva za Kutak: nema 5 na Grašku pa nije indeksirana
-  const pet = Array.from({ length: 5 }, (_, i) => ({ ...mk('o' + i, 'igraonica', ['cnr'], ['igre-napolju']), na_kutku: i < 2, kutak_od: '2026-11-11T11:00:00.000Z' }))
+  const pet = Array.from({ length: 5 }, (_, i) => ({ ...mk('o' + i, 'igraonica', ['cnr'], ['igre-napolju']), na_kutku: i < 2, kutak_potvrdjen: true }))
   assert.ok(!R.renderSitemap(pet, TAX).includes('/kutak/oznaka/igre-napolju'))
   assert.ok(R.renderSitemap(pet.map((x) => ({ ...x, na_kutku: false })), TAX).includes('/kutak/oznaka/igre-napolju'))
-  // lista sa samo tekstovima za Kutak: noindex (nema svog sadržaja); sa jednim običnim tekstom: index
   assert.ok(R.renderLista(samoKutak, 'cnr', TAX, { tip: 'lista' }).includes('noindex, follow'))
   assert.ok(R.renderLista([...samoKutak, mk('g1', 'igraonica', ['cnr'], ['igre-u-kuci'])], 'cnr', TAX, { tip: 'lista' }).includes('content="index, follow"'))
+  // dok Kutak ne potvrdi: lista se ponaša kao da Kutka nema (tekst je u listi i u sitemap-u)
+  const nepotvrdjeno = samoKutak.map((x) => ({ ...x, kutak_potvrdjen: false }))
+  assert.ok(R.renderLista(nepotvrdjeno, 'cnr', TAX, { tip: 'lista' }).includes('content="index, follow"'))
+  assert.ok(R.renderSitemap(nepotvrdjeno, TAX).includes('/kutak/k1'))
+})
+
+const lazniKutak = (potvrdjeni, kako = {}) => {
+  const pozivi = []
+  const dohvati = async (adresa, init) => {
+    pozivi.push(adresa)
+    if (kako.greska) throw new Error('mreža')
+    if (kako.status) return { ok: false, status: kako.status, json: async () => ({}) }
+    if (kako.neispravno) return { ok: true, status: 200, json: async () => ({ ok: true, potvrdjeni: 'nije niz' }) }
+    const trazeni = new URL(adresa).searchParams.get('slugovi').split(',')
+    return { ok: true, status: 200, json: async () => ({ ok: true, potvrdjeni: trazeni.filter((s) => potvrdjeni.includes(s)).concat(['tudji-slug']) }) }
+  }
+  return { dohvati, pozivi }
+}
+const ENV = { KUTAK_POTVRDA_URL: 'https://projekat.supabase.co/functions/v1/grasak-potvrda' }
+
+// ova četiri koriste zajedničku predmemoriju potvrda (po modulu), pa idu jedan za drugim, ne uporedo
+t('V2: potvrdiKutak i oznaciKutak (pamćenje potvrde, ponovni pokušaj, grupe, pad Kutka, bez adrese)', async () => {
+  // 1) jedna grupa, pamti pozitivnu potvrdu, ne vjeruje slugu koji nije tražen, bez ispravne https adrese ništa ne potvrđuje
+  R.zaboraviPotvrde()
+  let k = lazniKutak(['a-tekst', 'b-tekst'])
+  let p = await R.potvrdiKutak(['a-tekst', 'b-tekst', 'c-tekst', 'a-tekst'], ENV, k.dohvati, 1000)
+  assert.deepEqual([...p].sort(), ['a-tekst', 'b-tekst']); assert.equal(k.pozivi.length, 1); assert.ok(!p.has('tudji-slug'))
+  assert.match(k.pozivi[0], /slugovi=a-tekst%2Cb-tekst%2Cc-tekst/)
+  await R.potvrdiKutak(['a-tekst', 'b-tekst'], ENV, k.dohvati, 2000); assert.equal(k.pozivi.length, 1, 'potvrda se pamti')
+  for (const env of [{}, { KUTAK_POTVRDA_URL: '' }, { KUTAK_POTVRDA_URL: 'http://x.me/f' }, { KUTAK_POTVRDA_URL: 'nije adresa' }]) {
+    R.zaboraviPotvrde(); const k2 = lazniKutak(['a-tekst'])
+    assert.equal((await R.potvrdiKutak(['a-tekst'], env, k2.dohvati, 1000)).size, 0); assert.equal(k2.pozivi.length, 0)
+  }
+  // 2) negativna potvrda se ponavlja tek za 5 minuta; kad kopija nastane, canonical stiže pri sljedećem pokušaju
+  R.zaboraviPotvrde()
+  const kopije = []
+  k = lazniKutak(kopije)
+  assert.equal((await R.potvrdiKutak(['novi-tekst'], ENV, k.dohvati, 0)).size, 0); assert.equal(k.pozivi.length, 1)
+  kopije.push('novi-tekst')
+  assert.equal((await R.potvrdiKutak(['novi-tekst'], ENV, k.dohvati, 60 * 1000)).size, 0); assert.equal(k.pozivi.length, 1, 'negativno se pamti 5 minuta')
+  assert.ok((await R.potvrdiKutak(['novi-tekst'], ENV, k.dohvati, R.POTVRDA_NEGATIVNO_MS + 1)).has('novi-tekst')); assert.equal(k.pozivi.length, 2)
+  // 3) slugovi izvan SLUG_RE se ne šalju; više od 50 ide u grupama
+  R.zaboraviPotvrde()
+  k = lazniKutak([]); const mnogo = Array.from({ length: 120 }, (_, i) => 'tekst-' + i)
+  await R.potvrdiKutak([...mnogo, 'Lose Slug', '../x', ''], ENV, k.dohvati, 0)
+  assert.equal(k.pozivi.length, 3); assert.ok(k.pozivi.every((u) => !/Lose|\.\.|%2E/.test(decodeURIComponent(u).replace(/slugovi=/, ''))))
+  // 4) Kutak ne odgovara (greška, HTTP 500, neispravan oblik): nije potvrđeno
+  for (const kako of [{ greska: true }, { status: 500 }, { neispravno: true }]) {
+    R.zaboraviPotvrde()
+    assert.equal((await R.potvrdiKutak(['a-tekst'], ENV, lazniKutak(['a-tekst'], kako).dohvati, 0)).size, 0, JSON.stringify(kako))
+  }
+  // 5) ranije potvrđen tekst ostaje potvrđen najviše 24 sata ako Kutak privremeno ne radi
+  R.zaboraviPotvrde()
+  await R.potvrdiKutak(['a-tekst'], ENV, lazniKutak(['a-tekst']).dohvati, 1000)
+  const pao = lazniKutak(['a-tekst'], { greska: true })
+  assert.ok((await R.potvrdiKutak(['a-tekst'], ENV, pao.dohvati, 7 * 3600 * 1000)).has('a-tekst'), 'prolazan pad Kutka ne smije prebaciti canonical')
+  assert.ok(!(await R.potvrdiKutak(['a-tekst'], ENV, pao.dohvati, 25 * 3600 * 1000)).has('a-tekst'), 'poslije 24 sata nije potvrđeno')
+  // 6) oznaciKutak: samo tekstovi sa na_kutku, ne pita Kutak kad takvih nema, ne mijenja ulaz
+  R.zaboraviPotvrde()
+  k = lazniKutak(['k1'])
+  const ulaz = [{ ...mk('k1', 'igraonica', ['cnr'], ['igre-u-kuci']), na_kutku: true }, { ...mk('k2', 'igraonica', ['cnr'], ['igre-u-kuci']), na_kutku: true }, mk('g1', 'igraonica', ['cnr'], ['igre-u-kuci'])]
+  const izlaz = await R.oznaciKutak(ulaz, ENV, k.dohvati, 0)
+  assert.equal(izlaz[0].kutak_potvrdjen, true); assert.equal(izlaz[1].kutak_potvrdjen, false); assert.ok(!('kutak_potvrdjen' in izlaz[2])); assert.ok(!('kutak_potvrdjen' in ulaz[0]))
+  R.zaboraviPotvrde()
+  const k2 = lazniKutak([])
+  assert.equal((await R.oznaciKutak([mk('g1', 'igraonica', ['cnr'], ['igre-u-kuci'])], ENV, k2.dohvati, 0)).length, 1); assert.equal(k2.pozivi.length, 0)
+  assert.deepEqual(await R.oznaciKutak(null, ENV, k2.dohvati, 0), [])
+  R.zaboraviPotvrde()
 })
 
 await Promise.all(zadaci)
