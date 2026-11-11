@@ -942,6 +942,8 @@ t('gola zagrada "Riječ (N)": oznaka odnosa i riječ usred rečenice zadržavaju
   jeste(F.objaveImena_('Prvo Šišanje Martina (4) Priča'), [], 'naslovna rečenica ne zadržava'); jeste(F.objaveImePrezime_('Prvo Šišanje Martina (4) Priča').includes('Martina'), true)
   // spisak OBJAVE_IMENA_OK: ni zadržavanje ni upozorenje, i u padežima
   for (const r of ['Korak (1) je razgovor.', 'Slika (2) pokazuje stolicu.', 'Za više informacija pogledajte Tabelu (2).', 'Vidi Sliku (3) iznad.', 'U Fazi (2) dijete gleda.', 'Opcija (1) je bolja.', 'Pogledajte Opciju (2) ispod.']) { jeste(F.objaveImena_(r), [], 'zadržavanje: ' + r); jeste(F.objaveImePrezime_(r), [], 'upozorenje: ' + r) }
+  // ime salona u padežima (nepostojano a): ni zadržavanje ni upozorenje
+  for (const r of ['Šišanje u Grašku (1) traje kratko.', 'U Grašku od 2 godine šišamo djecu.', 'Graškov tim, 3 godine rada sa djecom.', 'Graškom (2) se bavi Kristina.', 'Grašak (3) je salon.']) { jeste(F.objaveImena_(r), [], 'zadržavanje: ' + r); jeste(F.objaveImePrezime_(r), [], 'upozorenje: ' + r) }
   // ista riječ ne daje oba ishoda
   for (const r of ['Dijete Mila (4) je plakalo.', 'Tog dana je Martina (4) plakala.', 'Martina (4) je plakala.']) assert.ok(F.objaveImena_(r).length === 0 || F.objaveImePrezime_(r).length === 0, 'oba ishoda: ' + r)
   // tekst upozorenja: jedno ime kaže "ime", ime i prezime kaže "ime i prezime"
