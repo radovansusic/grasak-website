@@ -3,9 +3,10 @@ import { motion } from 'framer-motion'
 import { Instagram, Facebook, MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react'
 import GrassDivider from './GrassDivider'
 import { useLang } from '@/i18n/LanguageContext'
+import { objavePutanja } from '@/lib/objave'
 
 export default function Footer() {
-  const { tr } = useLang()
+  const { tr, lang } = useLang()
   const nav = [
     { to: '/', label: tr('nav.home') },
     { to: '/usluge', label: tr('nav.usluge') },
@@ -14,6 +15,7 @@ export default function Footer() {
     { to: '/zakazi', label: tr('nav.book') },
     { to: '/kontakt', label: tr('nav.kontakt') },
     { to: '/moj', label: tr('moj.title') },
+    { to: objavePutanja(lang), label: tr('nav.objave') },
   ]
   return (
     <footer className="relative bg-grass-darkest text-white/85">

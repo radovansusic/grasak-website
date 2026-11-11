@@ -3,7 +3,13 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/sitemap.xml", "destination": "/api/sitemap" },
+    { "source": "/objave/rss.xml", "destination": "/api/objave-rss" },
+    { "source": "/objave", "destination": "/api/objave" },
+    { "source": "/objave/:slug", "destination": "/api/objave?slug=:slug" },
+    { "source": "/:jez(en|ru|tr)/objave", "destination": "/api/objave?jez=:jez" },
+    { "source": "/:jez(en|ru|tr)/objave/:slug", "destination": "/api/objave?jez=:jez&slug=:slug" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "headers": [
     {

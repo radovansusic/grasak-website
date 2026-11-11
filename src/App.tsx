@@ -12,6 +12,8 @@ const Zakazi = lazy(() => import('./pages/Zakazi'))
 const VaucerNarudzba = lazy(() => import('./pages/VaucerNarudzba'))
 const Osoblje = lazy(() => import('./pages/Osoblje'))
 const MojGrasak = lazy(() => import('./pages/MojGrasak'))
+const Objave = lazy(() => import('./pages/Objave'))
+const Objava = lazy(() => import('./pages/Objava'))
 
 function Ucitavanje() {
   return <div className="flex min-h-[60vh] items-center justify-center text-ink/50">Učitavam...</div>
@@ -33,6 +35,11 @@ export default function App() {
           <Route path="zakazi" element={<Zakazi />} />
           <Route path="vaucer" element={<VaucerNarudzba />} />
           <Route path="moj" element={<MojGrasak />} />
+          {/* objave: crnogorski /objave, ostali jezici /en|ru|tr/objave (iste adrese služi i Vercel funkcija za Google) */}
+          {['', 'en/', 'ru/', 'tr/'].map((prefiks) => [
+            <Route key={prefiks + 'l'} path={prefiks + 'objave'} element={<Objave />} />,
+            <Route key={prefiks + 'p'} path={prefiks + 'objave/:slug'} element={<Objava />} />,
+          ])}
         </Route>
       </Routes>
     </Suspense>

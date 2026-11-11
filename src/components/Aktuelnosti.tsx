@@ -1,6 +1,8 @@
+import { Link } from 'react-router'
 import { motion } from 'framer-motion'
 import { Megaphone, PartyPopper, CalendarDays, Lightbulb, Pin } from 'lucide-react'
 import { useLang } from '@/i18n/LanguageContext'
+import { objavePutanja } from '@/lib/objave'
 import { AKTUELNOSTI, type Aktuelno } from '@/data/aktuelnosti'
 
 const TAG_STYLE: Record<Aktuelno['tag'], { bg: string; fg: string; Icon: typeof Megaphone }> = {
@@ -37,7 +39,7 @@ function Tag({ tag }: { tag: Aktuelno['tag'] }) {
 }
 
 export default function Aktuelnosti() {
-  const { tr } = useLang()
+  const { tr, lang } = useLang()
   const pinned = AKTUELNOSTI.find((a) => a.pin)
   const rest = AKTUELNOSTI.filter((a) => a !== pinned).slice(0, 3)
 
@@ -104,6 +106,12 @@ export default function Aktuelnosti() {
               </motion.article>
             ))}
           </div>
+        </div>
+
+        <div className="mt-10 text-center">
+          <Link to={objavePutanja(lang)} className="inline-flex items-center rounded-full bg-white px-6 py-3 font-bold text-grass-deep shadow-md shadow-ink/5 hover:bg-grass hover:text-white">
+            {tr('objave.all')} →
+          </Link>
         </div>
       </div>
     </section>
