@@ -906,9 +906,16 @@ t('imena (S-K3-2): opšte imenice na početku rečenice ne blokiraju, a pravi pr
   assert.ok(F.objaveImena_('Ana i Luka, blizanci od 4 godine, sjeli su.').includes('Luka'))
   jeste(F.objaveImena_('Luka je sjeo na stolicu.'), [], 'ime bez ičega ostaje van pravila')
 })
+t('pravilo imena (g): ekavske opšte imenice i trajanje nijesu ime; prava imena i dalje blokiraju', () => {
+  const blokira = ['Marko, 4 godine, nije plakao.', 'Ana, 4 godine', 'LUKA, 4 GODINE', 'Marko, petogodišnjak, voli ostrvo.', 'Sara, petogodišnjakinja, je plakala.', 'Jovan je u trećoj godini i prvi put sjedi.', 'mala Ana (4) je plakala.', 'Markova mama je čekala.', 'Devojčica Mila, 3 godine, bila je hrabra.']
+  for (const r of blokira) { assert.ok(F.objaveImena_(r).length > 0, 'propust (imena): ' + r); assert.ok(F.objaveLicno_(r).length > 0, 'propust (lično): ' + r) }
+  assert.ok(F.objaveImena_('Devojčica Mila, 3 godine, bila je hrabra.').includes('Mila'), 'ekavska imenica ne smije sakriti pravo ime iza sebe')
+  const prolazi = ['Devojčica od 3 godine je prvi put sjela sama.', 'Dečak od 5 godina voli makaze.', 'Sunce, 4 godine zaredom, grije našu terasu.', 'Grašak, 3 godine rada, slavi.', 'Dete od 4 godine voli da gradi.', 'Deca od 4 godine slažu kocke.', 'Detetu od 4 godine treba vremena.', 'Dečaka od 5 godina vodi tata.', 'Devojčice od 3 godine su hrabre.', 'Cvijet, 2 godine za redom, cvjeta.', 'Kafa, 5 godina uzastopno, miriše.', 'Salon, 4 godine u nizu, radi.', 'Kuća, 3 godine postojanja, stoji.', 'Firma, 5 godina iskustva, raste.', 'Kuća, 12 godina tradicije, traje.']
+  for (const r of prolazi) { jeste(F.objaveImena_(r), [], 'lažna blokada (imena): ' + r); jeste(F.objaveLicno_(r), [], 'lažna blokada (lično): ' + r) }
+})
 t('verzija skripte i panela je ista', () => {
-  assert.ok(/VERZIJA_SKRIPTE = '2026-11-11f'/.test(gs))
-  assert.ok(/OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-11f'/.test(fs.readFileSync(path.join(koren, 'src/lib/osoblje.ts'), 'utf8')))
+  assert.ok(/VERZIJA_SKRIPTE = '2026-11-11g'/.test(gs))
+  assert.ok(/OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-11g'/.test(fs.readFileSync(path.join(koren, 'src/lib/osoblje.ts'), 'utf8')))
 })
 
 /* ---------- datum teksta: prazan ili neispravan datum ne daje prazan datum nigdje ---------- */

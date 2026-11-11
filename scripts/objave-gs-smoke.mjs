@@ -316,8 +316,8 @@ t('nacrt iz linka (ručni tok): dohvat samo preko UrlFetchApp sa provjerenom adr
 })
 
 
-t('verzija skripte 2026-11-11f; vremenski budžet 240 s', () => {
-  assert.equal(poziv('VERZIJA_SKRIPTE'), '2026-11-11f'); assert.equal(poziv('OBJAVE_BUDZET_MS'), 240000)
+t('verzija skripte 2026-11-11g; vremenski budžet 240 s', () => {
+  assert.equal(poziv('VERZIJA_SKRIPTE'), '2026-11-11g'); assert.equal(poziv('OBJAVE_BUDZET_MS'), 240000)
 })
 
 t('S3: telefon i e-pošta ne idu modelu; ime uz srodstvo zaustavlja poziv', () => {

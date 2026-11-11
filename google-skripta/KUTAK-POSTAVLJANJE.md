@@ -8,7 +8,7 @@ Grana je `p14-objave`. Ništa nije u `main` i ništa nije objavljeno dok se gran
 
 **Štiklir "I na Dječiji kutak" se ne koristi dok uvoz na Kutku nije živ** (korak 7 iznad ovog: `docs/GRASAK-SYNC-POSTAVLJANJE.md` u repou kinder-guide-pg, grana `p16-grasak-sync`; Kutkova strana traži i tajnu u Vault-u, sve na tom dokumentu). Štiklir je u panelu zadano uključen za tri rubrike, pa se do tada tekstovi objavljuju sa isključenim štiklirom (Kristina ga sama isključuje; jedini izuzetak je probni tekst iz koraka 7 dokumenta Kutka, koji se objavljuje sa uključenim i tek tada). Tekst objavljen sa zadano uključenim štiklirom prije uključenja uvoza ući će u prvi krug uvoza. Za indeksiranje je to bezopasno: i uključen štiklir bez živog uvoza ne šteti (canonical se prebacuje tek uz potvrdu Kutka, vidi niže), ali tekst na Kutak ne stiže.
 
-**Grana se spaja tek poslije koraka sa skriptom (koraci 1 do 5) i jednog probnog teksta (korak 6, tačke 1 do 4).** Razlog: spojena grana bez nove skripte ima panel koji traži verziju `2026-11-11f`, a sajt ne zna da li ima tekstova. Link "Graškov kutak" u meniju, podnožju i na početnoj strani pojavljuje se tek kad javni odgovor skripte vrati bar jedan objavljen tekst (provjera pri učitavanju, pamti se 10 minuta; ako skripta ne odgovara ili je stara, link se ne prikazuje). Strana `/kutak` bez tekstova daje 200 sa mirnom praznom stranom, a 503 samo kad skripta zaista ne odgovara (taj odgovor se ne kešira).
+**Grana se spaja tek poslije koraka sa skriptom (koraci 1 do 5) i jednog probnog teksta (korak 6, tačke 1 do 4).** Razlog: spojena grana bez nove skripte ima panel koji traži verziju `2026-11-11g`, a sajt ne zna da li ima tekstova. Link "Graškov kutak" u meniju, podnožju i na početnoj strani pojavljuje se tek kad javni odgovor skripte vrati bar jedan objavljen tekst (provjera pri učitavanju, pamti se 10 minuta; ako skripta ne odgovara ili je stara, link se ne prikazuje). Strana `/kutak` bez tekstova daje 200 sa mirnom praznom stranom, a 503 samo kad skripta zaista ne odgovara (taj odgovor se ne kešira).
 
 ## I na Dječiji kutak (djecijikutak.me)
 
@@ -43,9 +43,11 @@ Pravila: tačno jedna rubrika, jedna vrsta, 2 do 4 oznake (najviše jedna oznaka
 
 ## 1. Zalijepiti novu skriptu (nalog grasaksalon@gmail.com)
 
+**Šta je novo u verziji `2026-11-11g` (u odnosu na `f`):** samo dvije lažne blokade pravila o imenu djeteta uz uzrast. Ekavske opšte imenice na početku rečenice ("Devojčica od 3 godine je prvi put sjela sama", "Dečak", "Dete", "Deca") više se ne čitaju kao ime, a broj godina iza kog stoji oznaka trajanja ("Sunce, 4 godine zaredom, grije našu terasu", "3 godine rada") više se ne čita kao uzrast. Sve ostalo u skripti je isto kao u `f`. Ovu verziju lijepi isključivo Kristina, sa naloga salona; do tada panel vlasniku javlja da je skripta starija od sajta.
+
 1. Otvoriti tabelu "Grašak - termini", pa Extensions > Apps Script.
 2. U fajlu `Grasak.gs` označiti sve (Ctrl+A) i zalijepiti cijeli sadržaj fajla `google-skripta/Grasak.gs` iz ove grane. Sačuvati (Ctrl+S).
-3. Nova verzija skripte nosi oznaku `2026-11-11f` (`VERZIJA_SKRIPTE`); panel je traži (`OCEKIVANA_VERZIJA_SKRIPTE` u `src/lib/osoblje.ts`).
+3. Nova verzija skripte nosi oznaku `2026-11-11g` (`VERZIJA_SKRIPTE`); panel je traži (`OCEKIVANA_VERZIJA_SKRIPTE` u `src/lib/osoblje.ts`).
 
 ## 2. List "Objave"
 

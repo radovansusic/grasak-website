@@ -26,7 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-11f';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-11g';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -2787,7 +2787,7 @@ const OBJAVE_REL = [
   '\\u0440\\u0435\\u0431\\u0435\\u043d\\u043e\\u043a', '\\u0440\\u0435\\u0431\\u0451\\u043d\\u043e\\u043a', '\\u043c\\u0430\\u043b\\u044c\\u0447\\u0438\\u043a\\w*', '\\u0434\\u0435\\u0432\\u043e\\u0447\\u043a\\w*', '\\u0441\\u044b\\u043d\\w*', '\\u0434\\u043e\\u0447\\u044c', '\\u0434\\u043e\\u0447\\u043a\\w*', '\\u043c\\u0430\\u043b\\u044b\\u0448\\w*', '\\u043c\\u0430\\u043c\\u0430', '\\u043c\\u0430\\u043c\\u0443', '\\u043f\\u0430\\u043f\\u0430', '\\u043f\\u0430\\u043f\\u0443', '\\u043a\\u043b\\u0438\\u0435\\u043d\\u0442\\w*',
   '\\u00e7ocuk\\w*', 'o\\u011f\\w*', 'k\\u0131z\\w*', 'bebek\\w*', 'anne\\w*', 'baba\\w*', 'm\\u00fc\\u015fteri\\w*',
 ].join('|');
-const OBJAVE_IMENA_OK = /^(?:gra[šs]ak.*|грашак.*|podgoric.*|crn[aeou].*|montenegro.*|mjesec.*|januar.*|februar.*|mart.*|april.*|maj.*|jun.*|jul.*|avgust.*|septemb.*|oktob.*|novemb.*|decemb.*|ponedjelj.*|utorak.*|srijed.*|četvrt.*|petak.*|subot.*|nedjelj.*|koje|koji|kada|kako|gdje|ako|bez|kroz|pri|ali|ili|kao|šta|što|savjet.*|igra.*|kosa|danas|sada|tada|ovdje|obično|često|ponekad|uvijek|dječij.*|kutak.*|frizersk.*|salon.*|evropsk.*|svjetsk.*|nova|novo|novi|the|and|for|with|are|you|your|our|from|that|this|dijet.*|djec.*|dje[cč]ak.*|djevoj.*|mali[sš]an.*|beb[aeiu]|child.*|kids?|baby|toddler)$/i;   // nije ime: Grašak, Podgorica, mjeseci, dani, veznici
+const OBJAVE_IMENA_OK = /^(?:gra[šs]ak.*|грашак.*|podgoric.*|crn[aeou].*|montenegro.*|mjesec.*|januar.*|februar.*|mart.*|april.*|maj.*|jun.*|jul.*|avgust.*|septemb.*|oktob.*|novemb.*|decemb.*|ponedjelj.*|utorak.*|srijed.*|četvrt.*|petak.*|subot.*|nedjelj.*|koje|koji|kada|kako|gdje|ako|bez|kroz|pri|ali|ili|kao|šta|što|savjet.*|igra.*|kosa|danas|sada|tada|ovdje|obično|često|ponekad|uvijek|dječij.*|kutak.*|frizersk.*|salon.*|evropsk.*|svjetsk.*|nova|novo|novi|the|and|for|with|are|you|your|our|from|that|this|dijet.*|djec.*|dje[cč]ak.*|djevoj.*|dete(?:t.*)?|dec(?:a|e|i|u|om)|de[cč]ak.*|devoj.*|dečij.*|mali[sš]an.*|beb[aeiu]|child.*|kids?|baby|toddler)$/i;   // nije ime: Grašak, Podgorica, mjeseci, dani, veznici
 const OBJAVE_VELIKO = 'A-ZÀ-ÞČĆŠŽĐĞİŞЀ-Я';
 const OBJAVE_MALO = 'a-zà-ÿĀ-ɏа-џ';
 const OBJAVE_IME = '[' + OBJAVE_VELIKO + '][' + OBJAVE_MALO + ']{2,}';
@@ -2811,7 +2811,9 @@ function objaveImena_(tekst) {
   const relRe = new RegExp('(^|[^' + OB_L + '])(' + objaveSlova_(OBJAVE_REL) + ')(?=[ \\t]+(?:(?:po[ \\t]+imenu|named|\\u043f\\u043e[ \\t]+\\u0438\\u043c\\u0435\\u043d\\u0438|adl\\u0131)[ \\t]+)?(' + OB_W + '))', 'gi');
   const posRe = new RegExp('(^|[^' + OB_L + '])(' + OBJAVE_IME + '(?:ov|ev|in)(?:a|o|e|i|u|og|oj|om|ih)?|' + OBJAVE_IME + '[\'\\u2019]s)[ \\t]+(?:' + objaveSlova_(OBJAVE_REL) + ')(?![' + OB_L + '])', 'g');
   const godRe = '(?:god\\w*|mjes\\w*|years?|y\\.?\\s?o|yo|\\u043b\\u0435\\u0442|\\u0433\\u043e\\u0434\\u0430?|yaş\\w*|months?)';
-  const uzRe = new RegExp('(' + OBJAVE_IME + ')(?:,\\s*|\\s*\\(\\s*|\\s+(?:ima|imao|imala|je\\s+imao|je\\s+imala|has|had|is|was|od|je\\s+napunio\\w*|je\\s+napunila|turns)\\s+)(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')\\s?' + objaveSlova_(godRe), 'g');
+  // broj godina iza kog stoji oznaka trajanja ("4 godine zaredom", "3 godine rada") nije uzrast; lookahead stoji ispred broja da vraćanje unazad u "god\\w*" ne zaobiđe provjeru
+  const trajanjeRe = '(?!(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')\\s?' + objaveSlova_(godRe) + '\\s+(?:zaredom|za\\s+redom|uzastopno|u\\s+nizu|rada|postojanja|iskustva|tradicije)(?![' + OB_L + ']))';
+  const uzRe = new RegExp('(' + OBJAVE_IME + ')(?:,\\s*|\\s*\\(\\s*|\\s+(?:ima|imao|imala|je\\s+imao|je\\s+imala|has|had|is|was|od|je\\s+napunio\\w*|je\\s+napunila|turns)\\s+)' + trajanjeRe + '(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')\\s?' + objaveSlova_(godRe), 'g');
   const uzGoleRe = new RegExp('(' + OBJAVE_IME + ')\\s*\\(\\s*\\d{1,2}\\s*\\)', 'g');
   const preRe = new RegExp('(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')[\\s-]*(?:godišnj\\w*|year[\\s-]old|yo|\\u0433\\u043e\\u0434\\w*|\\u043b\\u0435\\u0442\\u043d\\w*|yaşındaki)[ \\t]+(?:(?:' + objaveSlova_(OBJAVE_REL) + ')[ \\t]+)?(' + OBJAVE_IME + ')', 'gi');
   // ime uz "petogodišnjak/petogodišnjakinja", "u trećoj godini", "Ana i Luka, blizanci od 4 godine" (opšte imenice na početku rečenice su u OBJAVE_IMENA_OK)
