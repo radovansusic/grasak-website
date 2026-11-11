@@ -913,6 +913,21 @@ t('pravilo imena (g): ekavske opšte imenice i trajanje nijesu ime; prava imena 
   const prolazi = ['Devojčica od 3 godine je prvi put sjela sama.', 'Dečak od 5 godina voli makaze.', 'Sunce, 4 godine zaredom, grije našu terasu.', 'Grašak, 3 godine rada, slavi.', 'Dete od 4 godine voli da gradi.', 'Deca od 4 godine slažu kocke.', 'Detetu od 4 godine treba vremena.', 'Dečaka od 5 godina vodi tata.', 'Devojčice od 3 godine su hrabre.', 'Cvijet, 2 godine za redom, cvjeta.', 'Kafa, 5 godina uzastopno, miriše.', 'Salon, 4 godine u nizu, radi.', 'Kuća, 3 godine postojanja, stoji.', 'Firma, 5 godina iskustva, raste.', 'Kuća, 12 godina tradicije, traje.']
   for (const r of prolazi) { jeste(F.objaveImena_(r), [], 'lažna blokada (imena): ' + r); jeste(F.objaveLicno_(r), [], 'lažna blokada (lično): ' + r) }
 })
+t('pravilo imena (g, drugi krug): ime iza uzrasta uz opštu imenicu, imena koja liče na mjesece', () => {
+  const zadrzava = ['Dečak od 5 godina, Luka, voli makaze.', 'Devojčica od 3 godine, Mila, je plakala.', 'Dete od 4 godine po imenu Marko je sjedilo mirno.', 'Dječak od 5 godina, Luka, voli makaze.', 'Djevojčica od 3 godine, Mila, je plakala.', 'Dijete od 4 godine po imenu Marko je sjedilo mirno.',
+    'Maja, 4 godine, bila je hrabra.', 'Marta, 5 godina, voli ostrvo.', 'Martina (4) je plakala.', 'Julija, petogodišnjakinja, sjedi sama.', 'Mala Maja (3) je došla sa mamom.',
+    'Petogodišnji dječak, Luka, voli makaze.', 'Dijete od 4 godine, zvano Marko, sjedi mirno.', 'Deca od 4 godine, Marko i Mia, su sjedila mirno.']
+  for (const r of zadrzava) { assert.ok(F.objaveImena_(r).length > 0, 'propust (imena): ' + r); assert.ok(F.objaveLicno_(r).length > 0, 'propust (lično): ' + r) }
+  const prolazi = ['Maja 2026. otvaramo novu igraonicu.', 'U maju radimo do 20 časova.', 'Od 1. marta nove cijene.', 'Jula i avgusta radimo skraćeno.', 'Marta mjeseca slavimo rođendan salona.',
+    'Dječak od 5 godina voli makaze.', 'Devojčica od 3 godine je prvi put sjela sama.', 'Dečak od 5 godina voli makaze.', 'Sunce, 4 godine zaredom, grije našu terasu.', 'Grašak, 3 godine rada, slavi.',
+    'Prvo šišanje može da bude uznemirujuće i za vas i za mališana.', 'Odvedite dijete u salon prije zakazanog termina.', 'Majstor od 5 godina iskustva stiže.', 'Mali junak od 4 godine ne mora da plače.', 'Korak (1) je razgovor.', 'Slika (2) pokazuje stolicu.']
+  for (const r of prolazi) { jeste(F.objaveImena_(r), [], 'lažna blokada (imena): ' + r); jeste(F.objaveLicno_(r), [], 'lažna blokada (lično): ' + r) }
+  // ime uz trajanje: ne zadržava tekst, ali daje upozorenje (put objaveImePrezime_)
+  jeste(F.objaveImena_('Marko, 4 godine zaredom, dolazi kod nas.'), [])
+  jeste(F.objaveImePrezime_('Marko, 4 godine zaredom, dolazi kod nas.'), ['Marko'])
+  jeste(F.objaveImePrezime_('Grašak, 3 godine rada, slavi.'), [])
+  jeste(F.objaveImePrezime_('Maja Petrović je došla.'), ['Maja Petrović'])
+})
 t('verzija skripte i panela je ista', () => {
   assert.ok(/VERZIJA_SKRIPTE = '2026-11-11g'/.test(gs))
   assert.ok(/OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-11g'/.test(fs.readFileSync(path.join(koren, 'src/lib/osoblje.ts'), 'utf8')))
