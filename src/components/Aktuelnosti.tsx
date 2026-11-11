@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Megaphone, PartyPopper, CalendarDays, Lightbulb, Pin } from 'lucide-react'
 import { useLang } from '@/i18n/LanguageContext'
-import { kutakPutanja, useKutakIma } from '@/lib/kutak'
+import { kutakPutanja, najnovijaTri, useKutakNajnovije } from '@/lib/kutak'
 import { AKTUELNOSTI, type Aktuelno } from '@/data/aktuelnosti'
 
 const TAG_STYLE: Record<Aktuelno['tag'], { bg: string; fg: string; Icon: typeof Megaphone }> = {
@@ -23,6 +23,13 @@ function fmtDate(iso: string) {
   }
 }
 
+const DATUM_LOCALE = { cnr: 'sr-Latn-ME', en: 'en-GB', ru: 'ru-RU', tr: 'tr-TR' } as const
+
+function fmtKutakDatum(iso: string, lang: keyof typeof DATUM_LOCALE) {
+  const d = new Date(iso.slice(0, 10) + 'T12:00:00')
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(DATUM_LOCALE[lang], { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
 function Tag({ tag }: { tag: Aktuelno['tag'] }) {
   const { tr } = useLang()
   const { bg, fg, Icon } = TAG_STYLE[tag]
@@ -39,7 +46,9 @@ function Tag({ tag }: { tag: Aktuelno['tag'] }) {
 
 export default function Aktuelnosti() {
   const { tr, lang } = useLang()
-  const kutakIma = useKutakIma()
+  const kutak = useKutakNajnovije()
+  const kutakIma = kutak.ima
+  const kutakTri = najnovijaTri(kutak, lang)
   const pinned = AKTUELNOSTI.find((a) => a.pin)
   const rest = AKTUELNOSTI.filter((a) => a !== pinned).slice(0, 3)
 
@@ -107,6 +116,32 @@ export default function Aktuelnosti() {
             ))}
           </div>
         </div>
+
+        {kutakTri.length > 0 && (
+          <div className="mt-14">
+            <h3 className="mb-6 text-center font-display text-2xl font-bold text-ink md:text-3xl">{tr('akt.kutakNaslov')}</h3>
+            <ul className="grid gap-6 md:grid-cols-3">
+              {kutakTri.map((t) => (
+                <li key={t.slug} className="flex">
+                  <a
+                    href={`${kutakPutanja(lang)}/${t.slug}`}
+                    className="flex w-full flex-col rounded-3xl bg-white p-6 shadow-md shadow-ink/5 transition hover:-translate-y-0.5 hover:shadow-lg"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-xs font-black uppercase tracking-wide text-grass-deep">{t.rubrika}</span>
+                      <time dateTime={t.objavljeno} className="text-xs font-bold uppercase tracking-wide text-ink/45">
+                        {fmtKutakDatum(t.objavljeno, lang)}
+                      </time>
+                    </div>
+                    <span className="mt-3 font-display text-xl font-bold text-ink">{t.naslov}</span>
+                    {t.opis && <span className="mt-2 flex-1 leading-relaxed text-ink/75">{t.opis}</span>}
+                    <span className="mt-4 font-bold text-grass-deep">{tr('akt.kutakCitaj')} →</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {kutakIma && (
           <div className="mt-10 text-center">

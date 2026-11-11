@@ -764,6 +764,11 @@ const nepoznatoTest = async () => {
   const tekst = (slug) => ({ ...mk(slug, 'igraonica', ['cnr'], ['igre-u-kuci']), na_kutku: true })
   let izlaz = await R.oznaciKutak([tekst('a-tekst')], ENV, mrtav.dohvati, 1000)
   assert.equal(izlaz.nepoznato, true); assert.equal(izlaz[0].kutak_potvrdjen, false)
+  // S-K3-1: drugi zahtjev u prozoru negativne potvrde (hladna instanca, Kutak i dalje ne odgovara) ne smije izgubiti zastavicu, ni bez novog poziva
+  const pozivaPrije = mrtav.pozivi.length
+  for (const dt of [30000, 60000, 240000]) { izlaz = await R.oznaciKutak([tekst('a-tekst')], ENV, mrtav.dohvati, 1000 + dt); assert.equal(izlaz.nepoznato, true, 'zastavica izgubljena poslije ' + dt) }
+  assert.equal(mrtav.pozivi.length, pozivaPrije, 'u prozoru nema novog poziva')
+  izlaz = await R.oznaciKutak([tekst('a-tekst')], ENV, lazniKutak([]).dohvati, 1000 + R.POTVRDA_NEGATIVNO_MS + 1); assert.equal(izlaz.nepoznato, false)   // Kutak odgovorio uredno poslije prozora: znamo
   R.zaboraviPotvrde()
   izlaz = await R.oznaciKutak([tekst('a-tekst')], ENV, lazniKutak([]).dohvati, 1000); assert.equal(izlaz.nepoznato, false)         // Kutak odgovorio: nema kopije
   izlaz = await R.oznaciKutak([tekst('a-tekst')], {}, lazniKutak([]).dohvati, 1000); assert.equal(izlaz.nepoznato, false)             // nema adrese: znamo da je samoreferentno
@@ -841,6 +846,69 @@ t('V2: potvrdiKutak i oznaciKutak (pamćenje potvrde, ponovni pokušaj, grupe, p
   assert.deepEqual(await R.oznaciKutak(null, ENV, k2.dohvati, 0), [])
   R.zaboraviPotvrde()
   await nepoznatoTest()
+})
+
+/* ---------- Krug 4: početna (src/lib/kutak.ts) i imena (Grasak.gs) ---------- */
+const esb = await import('esbuild')
+const kutakTs = await esb.build({
+  entryPoints: [path.join(koren, 'src/lib/kutak.ts')], bundle: true, write: false, format: 'esm', platform: 'node',
+  alias: { '@': path.join(koren, 'src') }, define: { 'import.meta.env': '{}' }, banner: { js: "import { createRequire as cr } from 'node:module'; const require = cr(import.meta.url);" }, logLevel: 'silent',
+})
+const kutakTmp = path.join(koren, 'node_modules/.cache/objave-test-kutak.mjs')
+fs.mkdirSync(path.dirname(kutakTmp), { recursive: true }); fs.writeFileSync(kutakTmp, kutakTs.outputFiles[0].text)
+const KT = await import(kutakTmp)
+const stavkaJavna = (slug, jezici, o = {}) => ({
+  slug, rubrika: 'igraonica', vrsta: 'savjet', objavljeno: '2026-11-0' + (o.dan || 1) + 'T10:00:00', jezici,
+  naslov: { cnr: 'Naslov ' + slug, en: jezici.includes('en') ? 'Title ' + slug : '', ru: '', tr: '' },
+  opis: { cnr: 'Opis ' + slug, en: 'Desc ' + slug }, recenica: { cnr: 'Rečenica ' + slug, en: 'Sentence ' + slug }, na_kutku: !!o.na_kutku,
+})
+const TAXK = { rubrike: [{ slug: 'igraonica', boja: 'zelena', naziv: { cnr: 'Igraonica', en: 'Playroom', ru: 'Игровая', tr: 'Oyun' }, opis: {} }] }
+t('početna: tri najnovija na jeziku strane, redoslijed skripte, najviše tri, polja kartice', () => {
+  const n = KT.sazmiNajnovije({ ok: true, taksonomija: TAXK, objave: ['a', 'b', 'c', 'd', 'e'].map((x, i) => stavkaJavna(x, ['cnr', 'en'], { dan: 5 - i })) })
+  const tri = KT.najnovijaTri(n, 'cnr')
+  assert.deepEqual(tri.map((x) => x.slug), ['a', 'b', 'c'])
+  assert.deepEqual(Object.keys(tri[0]).sort(), ['naslov', 'objavljeno', 'opis', 'rubrika', 'slug'])
+  assert.equal(tri[0].rubrika, 'Igraonica'); assert.equal(tri[0].naslov, 'Naslov a'); assert.equal(tri[0].opis, 'Rečenica a'); assert.equal(tri[0].objavljeno, '2026-11-05')
+  assert.equal(KT.najnovijaTri(n, 'en')[0].rubrika, 'Playroom'); assert.equal(KT.najnovijaTri(n, 'en')[0].naslov, 'Title a')
+})
+t('početna: jezik bez potvrđenog prevoda ne prikazuje taj tekst (isto pravilo kao lista i strana teksta), bez teksta nema bloka', () => {
+  const n = KT.sazmiNajnovije({ ok: true, taksonomija: TAXK, objave: [stavkaJavna('a', ['cnr']), stavkaJavna('b', ['cnr', 'en']), stavkaJavna('c', ['cnr'])] })
+  assert.deepEqual(KT.najnovijaTri(n, 'en').map((x) => x.slug), ['b'])
+  assert.deepEqual(KT.najnovijaTri(n, 'ru'), [])
+  assert.deepEqual(KT.najnovijaTri(n, 'tr'), [])
+  // prevod označen u jezici, ali bez naslova: nema kartice
+  const bez = KT.sazmiNajnovije({ ok: true, taksonomija: TAXK, objave: [{ ...stavkaJavna('x', ['cnr', 'ru']) }] })
+  assert.deepEqual(KT.najnovijaTri(bez, 'ru'), [])
+})
+t('početna: odgovor bez tekstova, bez taksonomije, stara skripta ili greška = nema (nijedna kartica, nijedna veza)', () => {
+  for (const lose of [null, {}, { ok: false }, { ok: true, objave: [] , taksonomija: TAXK }, { ok: true, objave: [stavkaJavna('a', ['cnr'])] }, { ok: true, taksonomija: TAXK, objave: 'x' }]) {
+    const n = KT.sazmiNajnovije(lose); assert.equal(n.ima, false); assert.deepEqual(KT.najnovijaTri(n, 'cnr'), [])
+  }
+  assert.equal(KT.sazmiNajnovije({ ok: true, taksonomija: TAXK, objave: [stavkaJavna('a', ['cnr'])] }).ima, true)
+})
+t('početna: tekst označen za Dječiji kutak ostaje na Graškovoj strani (veza je uvijek Grašak, ne Kutak), slug sa lošim znakovima otpada, ništa osim polja kartice se ne pamti', () => {
+  const n = KT.sazmiNajnovije({ ok: true, taksonomija: TAXK, objave: [stavkaJavna('k1', ['cnr'], { na_kutku: true }), { ...stavkaJavna('x', ['cnr']), slug: 'x"><script>' }, { ...stavkaJavna('t', ['cnr']), tijelo: { cnr: 'TIJELO' }, koraci: { cnr: ['KORAK'] }, izvor_url: 'https://izvor.example' }] })
+  assert.deepEqual(KT.najnovijaTri(n, 'cnr').map((x) => x.slug), ['k1', 't'])
+  assert.ok(!JSON.stringify(n).includes('TIJELO') && !JSON.stringify(n).includes('KORAK') && !JSON.stringify(n).includes('izvor.example'))
+  assert.equal(KT.kutakPutanja('cnr') + '/k1', '/kutak/k1'); assert.equal(KT.kutakPutanja('en') + '/k1', '/en/kutak/k1')
+})
+t('strana teksta ima vezu nazad na listu u jeziku strane', () => {
+  const ob = { slug: 'p1', rubrika: 'igraonica', vrsta: 'savjet', oznake: [], objavljeno: '2026-11-01', jezici: ['cnr', 'en'], naslov: { cnr: 'N', en: 'N' }, tijelo: { cnr: 'Tijelo teksta.', en: 'Body.' }, koraci: { cnr: [], en: [] }, opis: {}, minuta: { cnr: 1, en: 1 } }
+  const tx = { rubrike: [{ slug: 'igraonica', boja: 'zelena', naziv: { cnr: 'I', en: 'P' }, opis: { cnr: '', en: '' } }], vrste: [{ slug: 'savjet', naziv: { cnr: 'S', en: 'T' } }], oznake: [] }
+  assert.ok(R.renderObjava(ob, 'cnr', tx, []).includes('<p class="nazad"><a href="/kutak">&larr; Graškov kutak</a></p>'))
+  assert.ok(R.renderObjava(ob, 'en', tx, []).includes('<a href="/en/kutak">&larr; Grašak&#39;s Corner</a>'))
+})
+t('imena (S-K3-2): opšte imenice na početku rečenice ne blokiraju, a pravi propusti sada blokiraju', () => {
+  const ne = ['Dijete od 4 godine najčešće voli da gradi.', 'Djeca od 4 godine mogu da slažu kocke.', 'Dječak od 4 godine obično voli ostrvo.', 'Djevojčica od 5 godina voli da crta.', 'Mališan od 5 godina voli da gradi.', 'Mališani od 4 godine slažu kocke.', 'Beba od 6 mjeseci može da leži na tepihu.', 'Firma je u drugoj godini poslovanja.', 'Grašak je u trećoj godini rada.', 'Za djecu od 4 godine.']
+  for (const r of ne) jeste(F.objaveImena_(r), [], 'lažna blokada: ' + r)
+  const da = [['Marko, petogodišnjak, voli ostrvo.', 'Marko'], ['Sara, petogodišnjakinja, je plakala.', 'Sara'], ['Jovan je u trećoj godini i prvi put sjedi.', 'Jovan'], ['Ana i Luka, blizanci od 4 godine, sjeli su.', 'Ana'], ['Dječak Vuk voli da gradi.', 'Vuk'], ['Luka od 4 godine sjedi.', 'Luka'], ['Mama Ana je došla.', 'Ana']]
+  for (const [r, ime] of da) assert.ok(F.objaveImena_(r).includes(ime), 'propust: ' + r)
+  assert.ok(F.objaveImena_('Ana i Luka, blizanci od 4 godine, sjeli su.').includes('Luka'))
+  jeste(F.objaveImena_('Luka je sjeo na stolicu.'), [], 'ime bez ičega ostaje van pravila')
+})
+t('verzija skripte i panela je ista', () => {
+  assert.ok(/VERZIJA_SKRIPTE = '2026-11-11f'/.test(gs))
+  assert.ok(/OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-11f'/.test(fs.readFileSync(path.join(koren, 'src/lib/osoblje.ts'), 'utf8')))
 })
 
 await Promise.all(zadaci)

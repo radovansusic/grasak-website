@@ -26,7 +26,7 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-11e';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-11f';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
 const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
@@ -2787,7 +2787,7 @@ const OBJAVE_REL = [
   '\\u0440\\u0435\\u0431\\u0435\\u043d\\u043e\\u043a', '\\u0440\\u0435\\u0431\\u0451\\u043d\\u043e\\u043a', '\\u043c\\u0430\\u043b\\u044c\\u0447\\u0438\\u043a\\w*', '\\u0434\\u0435\\u0432\\u043e\\u0447\\u043a\\w*', '\\u0441\\u044b\\u043d\\w*', '\\u0434\\u043e\\u0447\\u044c', '\\u0434\\u043e\\u0447\\u043a\\w*', '\\u043c\\u0430\\u043b\\u044b\\u0448\\w*', '\\u043c\\u0430\\u043c\\u0430', '\\u043c\\u0430\\u043c\\u0443', '\\u043f\\u0430\\u043f\\u0430', '\\u043f\\u0430\\u043f\\u0443', '\\u043a\\u043b\\u0438\\u0435\\u043d\\u0442\\w*',
   '\\u00e7ocuk\\w*', 'o\\u011f\\w*', 'k\\u0131z\\w*', 'bebek\\w*', 'anne\\w*', 'baba\\w*', 'm\\u00fc\\u015fteri\\w*',
 ].join('|');
-const OBJAVE_IMENA_OK = /^(?:gra[šs]ak.*|грашак.*|podgoric.*|crn[aeou].*|montenegro.*|mjesec.*|januar.*|februar.*|mart.*|april.*|maj.*|jun.*|jul.*|avgust.*|septemb.*|oktob.*|novemb.*|decemb.*|ponedjelj.*|utorak.*|srijed.*|četvrt.*|petak.*|subot.*|nedjelj.*|koje|koji|kada|kako|gdje|ako|bez|kroz|pri|ali|ili|kao|šta|što|savjet.*|igra.*|kosa|danas|sada|tada|ovdje|obično|često|ponekad|uvijek|dječij.*|kutak.*|frizersk.*|salon.*|evropsk.*|svjetsk.*|nova|novo|novi|the|and|for|with|are|you|your|our|from|that|this)$/i;   // nije ime: Grašak, Podgorica, mjeseci, dani, veznici
+const OBJAVE_IMENA_OK = /^(?:gra[šs]ak.*|грашак.*|podgoric.*|crn[aeou].*|montenegro.*|mjesec.*|januar.*|februar.*|mart.*|april.*|maj.*|jun.*|jul.*|avgust.*|septemb.*|oktob.*|novemb.*|decemb.*|ponedjelj.*|utorak.*|srijed.*|četvrt.*|petak.*|subot.*|nedjelj.*|koje|koji|kada|kako|gdje|ako|bez|kroz|pri|ali|ili|kao|šta|što|savjet.*|igra.*|kosa|danas|sada|tada|ovdje|obično|često|ponekad|uvijek|dječij.*|kutak.*|frizersk.*|salon.*|evropsk.*|svjetsk.*|nova|novo|novi|the|and|for|with|are|you|your|our|from|that|this|dijet.*|djec.*|dje[cč]ak.*|djevoj.*|mali[sš]an.*|beb[aeiu]|child.*|kids?|baby|toddler)$/i;   // nije ime: Grašak, Podgorica, mjeseci, dani, veznici
 const OBJAVE_VELIKO = 'A-ZÀ-ÞČĆŠŽĐĞİŞЀ-Я';
 const OBJAVE_MALO = 'a-zà-ÿĀ-ɏа-џ';
 const OBJAVE_IME = '[' + OBJAVE_VELIKO + '][' + OBJAVE_MALO + ']{2,}';
@@ -2814,10 +2814,18 @@ function objaveImena_(tekst) {
   const uzRe = new RegExp('(' + OBJAVE_IME + ')(?:,\\s*|\\s*\\(\\s*|\\s+(?:ima|imao|imala|je\\s+imao|je\\s+imala|has|had|is|was|od|je\\s+napunio\\w*|je\\s+napunila|turns)\\s+)(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')\\s?' + objaveSlova_(godRe), 'g');
   const uzGoleRe = new RegExp('(' + OBJAVE_IME + ')\\s*\\(\\s*\\d{1,2}\\s*\\)', 'g');
   const preRe = new RegExp('(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')[\\s-]*(?:godišnj\\w*|year[\\s-]old|yo|\\u0433\\u043e\\u0434\\w*|\\u043b\\u0435\\u0442\\u043d\\w*|yaşındaki)[ \\t]+(?:(?:' + objaveSlova_(OBJAVE_REL) + ')[ \\t]+)?(' + OBJAVE_IME + ')', 'gi');
+  // ime uz "petogodišnjak/petogodišnjakinja", "u trećoj godini", "Ana i Luka, blizanci od 4 godine" (opšte imenice na početku rečenice su u OBJAVE_IMENA_OK)
+  const sufRe = new RegExp('(' + OBJAVE_IME + ')\\s*,?\\s+[' + OBJAVE_MALO + ']*godi[šs]nja(?:k|kinja)[' + OBJAVE_MALO + ']*', 'g');
+  const ordRe = new RegExp('(' + OBJAVE_IME + ')\\s+(?:je\\s+)?u\\s+(?:prv\\w*|drug\\w*|tre[ćc]\\w*|(?:\u010detvrt|pet|[\u0161s]est|sedm|osm|devet)\\w*|\\d{1,2}\\.?)\\s+godini(?!\\s+(?:posl|rada|rad|postoj|studij|\u0161kol|primjen|ulag|u\\s+nizu))', 'g');
+  const parRe = new RegExp('(' + OBJAVE_IME + ')\\s+(?:i|and|\u0438)\\s+(' + OBJAVE_IME + ')\\s*,?\\s+(?:blizan\\w*|twins|brat\\w*|sestr\\w*|bra[\u0107c]a)\\s+(?:od\\s+)?(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')\\s?god', 'g');
   t.split('\n').forEach(linija => {
     linija.split(/[.!?;:]+(?:\s+|$)/).forEach(rec => {
       const r = rec.trim();
       if (r.length < 4) return;
+      let q;
+      sufRe.lastIndex = 0; while ((q = sufRe.exec(r)) !== null) { if (ok(q[1])) nalazi.push(q[1]); }
+      ordRe.lastIndex = 0; while ((q = ordRe.exec(r)) !== null) { if (ok(q[1])) nalazi.push(q[1]); }
+      parRe.lastIndex = 0; while ((q = parRe.exec(r)) !== null) { if (ok(q[1])) nalazi.push(q[1]); if (ok(q[2])) nalazi.push(q[2]); }
       const naslovna = objaveNaslovnaRecenica_(r);
       const imaRel = new RegExp('(?:^|[^' + OB_L + '])(?:' + objaveSlova_(OBJAVE_REL) + ')(?![' + OB_L + '])', 'i').test(r);
       let m;

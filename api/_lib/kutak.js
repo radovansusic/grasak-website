@@ -165,6 +165,7 @@ body{margin:0;background:var(--krem);color:var(--tinta);font:18px/1.7 Nunito,sys
 .uzak{max-width:760px;margin:0 auto}
 h1{font:800 clamp(30px,6vw,44px)/1.15 "Baloo 2",cursive;color:var(--tamna);margin:0 0 10px;text-wrap:balance}
 h2{font:800 24px/1.25 "Baloo 2",cursive;color:var(--tamna);margin:0 0 10px}
+.nazad{margin:0 0 14px;font-size:14px;font-weight:700}
 .meta{color:#4f5d55;font-size:14px;font-weight:700;margin:0 0 22px}
 .sub{margin:0 0 20px;color:#3e4d44}
 article p{margin:0 0 1.1em}
@@ -328,6 +329,7 @@ export function renderObjava(ob, jez, tax, lista) {
   const minuta = (ob.minuta && ob.minuta[jez]) || 1
   const povezani = naJeziku(lista, jez).filter((o) => o.rubrika === ob.rubrika && o.slug !== ob.slug).slice(0, 3)
   const tijelo = `<div class="uzak">
+<p class="nazad"><a href="${esc(putanja(jez))}">&larr; ${esc(T.nazad)}</a></p>
 <article>
 <p><a class="pill b-${bojaKlasa(rub.boja)}" href="${esc(putanjaTema(jez, rub.slug))}">${esc(rub.naziv[jez] || rub.naziv.cnr)}</a> <span class="vr" style="display:inline;margin-left:6px">${esc(vrs.naziv[jez] || vrs.naziv.cnr)}</span></p>
 <h1>${esc(ob.naslov[jez])}</h1>
@@ -595,7 +597,10 @@ export async function potvrdiKutak(slugovi, env = {}, dohvati = fetch, sada = Da
   const treba = []
   for (const s of trazeni) {
     const z = potvrde.get(s)
-    if (z && z.do > sada) { if (z.ok) potvrdjeni.add(s) } else treba.push(s)
+    if (z && z.do > sada) {
+      if (z.ok) potvrdjeni.add(s)
+      else if (z.nepoznato) potvrdjeni.nepoznato = true   // zapis iz neuspjeha: neznanje se ne smije učvrstiti u dugom kešu ni kroz memoriju instance
+    } else treba.push(s)
   }
   for (let i = 0; i < treba.length; i += POTVRDA_GRUPA) {
     const grupa = treba.slice(i, i + POTVRDA_GRUPA)
@@ -605,7 +610,7 @@ export async function potvrdiKutak(slugovi, env = {}, dohvati = fetch, sada = Da
       if (odg === null) {
         // Kutak ne odgovara: zadnja pozitivna potvrda važi još do 24 sata, inače nije potvrđeno; pokušaj ponovo za par minuta
         const drzi = !!staro && staro.poz !== null && sada - staro.poz < STARO_NAJVISE_MS
-        potvrde.set(s, { ok: drzi, do: sada + POTVRDA_NEGATIVNO_MS, poz: drzi ? staro.poz : null })
+        potvrde.set(s, { ok: drzi, do: sada + POTVRDA_NEGATIVNO_MS, poz: drzi ? staro.poz : null, nepoznato: !drzi })
         if (drzi) potvrdjeni.add(s)
         else potvrdjeni.nepoznato = true
       } else if (odg.has(s)) {

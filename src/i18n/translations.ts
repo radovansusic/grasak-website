@@ -204,6 +204,8 @@ const cnr: Dict = {
   },
   akt: {
     kutakAll: 'Sve u Graškovom kutku',
+    kutakNaslov: 'Iz Graškovog kutka',
+    kutakCitaj: 'Pročitajte',
     eyebrow: 'Aktuelnosti',
     title: 'Šta se dešava kod Graška',
     sub: 'Akcije, najave, događaji i zanimljivosti iz dječijeg svijeta - sve na jednom mjestu.',
@@ -700,6 +702,8 @@ const en: Dict = {
   },
   akt: {
     kutakAll: "All in Grašak's Corner",
+    kutakNaslov: "From Grašak's Corner",
+    kutakCitaj: 'Read',
     eyebrow: 'News',
     title: "What's happening at Grašak",
     sub: 'Promotions, announcements, events and fun facts from the world of kids - all in one place.',
@@ -1195,6 +1199,8 @@ const ru: Dict = {
   },
   akt: {
     kutakAll: 'Всё в Уголке Grašak',
+    kutakNaslov: 'Из Уголка Grašak',
+    kutakCitaj: 'Читать',
     eyebrow: 'Новости',
     title: 'Что происходит у Grašak',
     sub: 'Акции, объявления, события и интересные факты из мира детей - всё в одном месте.',
@@ -1690,6 +1696,8 @@ const tr: Dict = {
   },
   akt: {
     kutakAll: "Grašak Köşesi'nin tamamı",
+    kutakNaslov: "Grašak Köşesi'nden",
+    kutakCitaj: 'Oku',
     eyebrow: 'Güncel',
     title: "Grašak'ta neler oluyor",
     sub: 'Kampanyalar, duyurular, etkinlikler ve çocuk dünyasından ilginç bilgiler - hepsi bir arada.',
