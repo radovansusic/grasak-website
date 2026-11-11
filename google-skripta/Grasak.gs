@@ -3337,7 +3337,7 @@ const LIST_OBJAVE = 'Objave';
 // Redoslijed kolona je ugovor sa tabelom: nove kolone idu samo na kraj. listObjava_ dopisuje zaglavlje ako ga stara tabela nema.
 const ZAGLAVLJE_OBJAVE = ['Slug', 'Datum', 'Status', 'Autor', 'Vrsta', 'Izvor naziv', 'Izvor URL',
   'Naslov cnr', 'Tijelo cnr', 'Naslov en', 'Tijelo en', 'Naslov ru', 'Tijelo ru', 'Naslov tr', 'Tijelo tr', 'Azurirano', 'Napisao',
-  'Rubrika', 'Oznake', 'Koraci cnr', 'Koraci en', 'Koraci ru', 'Koraci tr', 'Potvrda en', 'Potvrda ru', 'Potvrda tr', 'Objavljeno', 'Izvor jezik'];
+  'Rubrika', 'Oznake', 'Koraci cnr', 'Koraci en', 'Koraci ru', 'Koraci tr', 'Potvrda en', 'Potvrda ru', 'Potvrda tr', 'Objavljeno', 'Izvor jezik', 'Zdravlje potvrda'];
 const OK_ = ZAGLAVLJE_OBJAVE.reduce((o, k, i) => { o[k] = i; return o; }, {});
 const OBJAVE_STATUSI = ['nacrt', 'objavljeno', 'sklonjeno'];
 const OBJAVE_AUTOR = 'Grašak';
@@ -3377,7 +3377,7 @@ function objavaIzReda_(r) {
     naslov: { cnr: t(r[OK_['Naslov cnr']]), en: t(r[OK_['Naslov en']]), ru: t(r[OK_['Naslov ru']]), tr: t(r[OK_['Naslov tr']]) },
     tijelo: { cnr: t(r[OK_['Tijelo cnr']]), en: t(r[OK_['Tijelo en']]), ru: t(r[OK_['Tijelo ru']]), tr: t(r[OK_['Tijelo tr']]) },
     azurirano: t(r[OK_['Azurirano']]), napisao: t(r[OK_['Napisao']]),
-    rubrika: t(r[OK_['Rubrika']]).trim(), oznake: objaveNizSlugova_(t(r[OK_['Oznake']])), koraci: koraci, potvrda: potvrda, objavljeno: t(r[OK_['Objavljeno']]), izvor_jezik: t(r[OK_['Izvor jezik']]).trim().toLowerCase(),
+    rubrika: t(r[OK_['Rubrika']]).trim(), oznake: objaveNizSlugova_(t(r[OK_['Oznake']])), koraci: koraci, potvrda: potvrda, objavljeno: t(r[OK_['Objavljeno']]), izvor_jezik: t(r[OK_['Izvor jezik']]).trim().toLowerCase(), zdravlje_potvrda: t(r[OK_['Zdravlje potvrda']]).trim(),
   };
 }
 
@@ -3391,7 +3391,7 @@ function redIzObjave_(ob) {
   });
   ['en', 'ru', 'tr'].forEach(j => { red[OK_['Potvrda ' + j]] = ob.potvrda && ob.potvrda[j] ? 'da' : ''; });
   red[OK_['Azurirano']] = ob.azurirano || ''; red[OK_['Napisao']] = ob.napisao || '';
-  red[OK_['Rubrika']] = ob.rubrika || ''; red[OK_['Oznake']] = (ob.oznake || []).join(','); red[OK_['Objavljeno']] = ob.objavljeno || ''; red[OK_['Izvor jezik']] = ob.izvor_jezik || '';
+  red[OK_['Rubrika']] = ob.rubrika || ''; red[OK_['Oznake']] = (ob.oznake || []).join(','); red[OK_['Objavljeno']] = ob.objavljeno || ''; red[OK_['Izvor jezik']] = ob.izvor_jezik || ''; red[OK_['Zdravlje potvrda']] = ob.zdravlje_potvrda || '';
   return red;
 }
 
@@ -3641,7 +3641,7 @@ function objaveAkcija_(o, z) {
     case 'osoblje_objave_jedna': {
       const x = objavaPoSlugu_(z.slug);
       if (!x) return { ok: false, poruka: 'Tekst nije nađen.' };
-      return { ok: true, objava: { slug: x.slug, status: x.status, datum: x.datum, vrsta: x.vrsta, rubrika: x.rubrika, oznake: x.oznake, izvor_naziv: x.izvor_naziv, izvor_url: x.izvor_url, izvor_jezik: x.izvor_jezik, naslov: x.naslov, tijelo: x.tijelo, koraci: x.koraci, potvrda: x.potvrda } };
+      return { ok: true, objava: { slug: x.slug, status: x.status, datum: x.datum, vrsta: x.vrsta, rubrika: x.rubrika, oznake: x.oznake, izvor_naziv: x.izvor_naziv, izvor_url: x.izvor_url, izvor_jezik: x.izvor_jezik, naslov: x.naslov, tijelo: x.tijelo, koraci: x.koraci, potvrda: x.potvrda, zdravlje_potvrda: x.zdravlje_potvrda || '' } };
     }
     case 'osoblje_objave_nacrt': return objaveNacrt_(z);
     case 'osoblje_objave_pripremi': return objavePripremi_(z);
@@ -3814,21 +3814,26 @@ function objavePripremiPrevodi_(o, z) {
   return odg;
 }
 
-/** true: zdravstvenu tvrdnju uz izvor mora potvrditi druga osoba, ne onaj ko je tekst napisao. Jedan red za ublažavanje (false = dovoljna je potvrda autora). */
-const OBJAVE_ZDRAVLJE_DRUGA_OSOBA = true;
+/** false (zadano): zdravstvenu tvrdnju uz izvor potvrđuje urednik drugim, izričitim klikom (potvrda_zdravlje), a ko i kada se bilježi uz objavu. true: potvrđuje druga osoba, ne autor teksta. */
+const OBJAVE_ZDRAVLJE_DRUGA_OSOBA = false;
 
-/** Zdravstvena tvrdnja uz izvor: bez potvrde druge osobe (potvrda_zdravlje) nema objave ni izmjene objavljenog teksta. null = u redu. */
+/** Zdravstvena tvrdnja uz izvor: bez druge potvrde (potvrda_zdravlje) nema objave ni izmjene objavljenog teksta. null = u redu. */
 function objaveZdravstvenaPotvrda_(pr, napisao, o, z) {
   const zd = pr.zdravstvene || [];
   if (!zd.length) return null;
   const opis = zd.map(x => '"' + x.nadjeno + '" (' + x.jezik.toUpperCase() + ')').join(', ');
   if (z.potvrda_zdravlje !== true) {
-    return { ok: false, trebaZdravlje: true, zdravstvene: zd, poruka: 'Tekst nosi zdravstvenu tvrdnju uz izvor: ' + opis + '. Druga osoba (vlasnik ili administrator) mora provjeriti izvor i potvrditi tvrdnju.' };
+    return { ok: false, trebaZdravlje: true, zdravstvene: zd, poruka: 'Tekst nosi zdravstvenu tvrdnju uz izvor: ' + opis + '. Provjerite izvor i potvrdite posebnim klikom.' };
   }
   if (OBJAVE_ZDRAVLJE_DRUGA_OSOBA && napisao && String(napisao).trim().toLowerCase() === String(o.ime || '').trim().toLowerCase()) {
     return { ok: false, trebaZdravlje: true, zdravstvene: zd, poruka: 'Zdravstvenu tvrdnju mora potvrditi druga osoba, ne autor teksta (' + napisao + '). Neka tekst otvori drugi vlasnik ili administrator i klikne Objavi.' };
   }
   return null;
+}
+
+/** Zapis druge potvrde: ko i kada je potvrdio zdravstvenu tvrdnju (ide u kolonu "Zdravlje potvrda"). */
+function objaveZapisZdravlja_(pr, o) {
+  return 'potvrdio/la ' + (o.ime || '?') + ' ' + objaveSada_() + ': ' + (pr.zdravstvene || []).map(x => '"' + x.nadjeno + '" (' + x.jezik.toUpperCase() + ')').join(', ');
 }
 
 function objaveSamoKoraci_(a, b) { return JSON.stringify(a || []) === JSON.stringify(b || []); }
@@ -3881,7 +3886,8 @@ function objaveSacuvaj_(o, z) {
     if (zd) return zd;
     if (pr.upozorenja.length && z.potvrda_upozorenja !== true) return { ok: false, poruka: 'Tekst nosi upozorenja: potvrdite ih.', upozorenja: pr.upozorenja, trebaPotvrda: true };
   }
-  const ob = { slug: slug, datum: stara ? stara.datum : '', objavljeno: stara ? stara.objavljeno : '', status: stanje, vrsta: u.vrsta, rubrika: u.rubrika, oznake: u.oznake, izvor_naziv: u.izvor_naziv, izvor_url: u.izvor_url, izvor_jezik: u.izvor_jezik,
+  const zapisZdravlja = stanje === 'objavljeno' && (pr.zdravstvene || []).length ? objaveZapisZdravlja_(pr, o) : (stara ? stara.zdravlje_potvrda || '' : '');
+  const ob = { zdravlje_potvrda: zapisZdravlja, slug: slug, datum: stara ? stara.datum : '', objavljeno: stara ? stara.objavljeno : '', status: stanje, vrsta: u.vrsta, rubrika: u.rubrika, oznake: u.oznake, izvor_naziv: u.izvor_naziv, izvor_url: u.izvor_url, izvor_jezik: u.izvor_jezik,
     naslov: u.naslov, tijelo: u.tijelo, koraci: u.koraci, potvrda: u.potvrda, azurirano: objaveSada_(), napisao: stara ? stara.napisao || o.ime : o.ime };
   objaveUpisi_(ob, stara ? stara.red : 0);
   objaveKesObrisi_(slug);
@@ -3901,6 +3907,7 @@ function objaveObjavi_(o, z) {
   const zd = objaveZdravstvenaPotvrda_(pr, x.napisao, o, z);
   if (zd) return zd;
   if (pr.upozorenja.length && z.potvrda_upozorenja !== true) return { ok: false, poruka: 'Tekst nosi upozorenja: pročitajte ih pa potvrdite.', upozorenja: pr.upozorenja, trebaPotvrda: true };
+  if ((pr.zdravstvene || []).length) x.zdravlje_potvrda = objaveZapisZdravlja_(pr, o);
   x.status = 'objavljeno';
   const sada = objaveSada_();
   if (!x.datum) x.datum = Utilities.formatDate(new Date(), CFG.TZ, 'yyyy-MM-dd');

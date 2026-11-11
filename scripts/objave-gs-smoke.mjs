@@ -151,7 +151,7 @@ t('izmjena objavljenog prolazi punu provjeru; skloni je skida sa javnog', () => 
 t('stara tabela (kolona "Tip", bez novih kolona) dobija novo zaglavlje; podaci ostaju', () => {
   const sh = sheets['Objave']
   assert.equal(sh.getRange(1, 5, 1, 1).getValues()[0][0], 'Vrsta')
-  assert.equal(sh.getRange(1, 28, 1, 1).getValues()[0][0], 'Izvor jezik')
+  assert.equal(sh.getRange(1, 28, 1, 1).getValues()[0][0], 'Izvor jezik'); assert.equal(sh.getRange(1, 29, 1, 1).getValues()[0][0], 'Zdravlje potvrda')
   // simulacija stare tabele: zaglavlje sa "Tip" na petom mjestu
   sh.getRange(1, 5, 1, 1).setValues([['Tip']])
   assert.equal(akcija('lista', {}).ok, true)
@@ -346,11 +346,11 @@ t('S6: izvor_url samo https; javascript: se ne čuva, a ni ranije upisan ne izla
   assert.equal(J(ctx.objaveJavnaJedna_(r.slug)).objava.izvor_url, 'https://portal.example.com/a')
   // ono što je moglo ostati u tabeli iz ranije: javni odgovor ga ne propušta
   const sh = sheets['Objave']
-  const red = sh.getRange(1, 1, sh.getLastRow(), 28).getValues()
+  const red = sh.getRange(1, 1, sh.getLastRow(), 29).getValues()
   const i = red.findIndex((x) => x[0] === r.slug), kolona = red[0].findIndex((x) => /izvor.*url/i.test(String(x)))
   assert.ok(i > 0 && kolona >= 0, red[0].join())
   const kopija = red[i].slice(); kopija[kolona] = 'javascript:alert(1)'
-  sh.getRange(i + 1, 1, 1, 28).setValues([kopija])
+  sh.getRange(i + 1, 1, 1, 29).setValues([kopija])
   poziv('objaveKesObrisi_("' + r.slug + '")')
   const javno = J(ctx.objaveJavnaJedna_(r.slug))
   assert.ok(javno.ok && javno.objava.izvor_url === '', JSON.stringify(javno.objava))
@@ -365,10 +365,10 @@ t('V2 (d): zdravstvena tvrdnja uz izvor traži potvrdu druge osobe', () => {
   const bez = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true })
   assert.ok(bez.ok === false && (bez.trebaZdravlje || (bez.blokirano || []).length), JSON.stringify(bez))
   if (bez.trebaZdravlje) {
-    const istaOsoba = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true, potvrda_zdravlje: true })
-    assert.equal(istaOsoba.ok, false); assert.equal(istaOsoba.trebaZdravlje, true)
-    const druga = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true, potvrda_zdravlje: true }, { ime: 'Ana', uloga: 'admin' })
-    assert.ok(druga.ok, JSON.stringify(druga))
+    // zadano: isti urednik objavljuje drugim, izričitim klikom (potvrda_zdravlje); ko i kada se bilježi uz objavu
+    const sama = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true, potvrda_zdravlje: true })
+    assert.ok(sama.ok, JSON.stringify(sama))
+    assert.match(akcija('jedna', { slug: r.slug }).objava.zdravlje_potvrda, /Kristina .*20\d\d/)
   }
 })
 

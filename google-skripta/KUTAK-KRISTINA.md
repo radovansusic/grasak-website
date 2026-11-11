@@ -18,7 +18,7 @@
 
 **Šta zaustavlja objavu** (crveno, dugme Objavi je zaključano dok se ne ispravi):
 - postotak ili statistika bez izvora (minuti, sati, dani, "3 puta", koraci, uzrast, cijena u eurima i datum prolaze);
-- zdravstvena tvrdnja (liječi, sprječava bolest, ubrzava rast, doza, dijagnoza) bez izvora; uz izvor traži i potvrdu druge osobe, ne autora;
+- zdravstvena tvrdnja (liječi, sprječava bolest, ubrzava rast, doza, dijagnoza) bez izvora; uz izvor traži drugu, izričitu potvrdu prije objave (štiklir "Ovaj tekst sadrži zdravstvenu tvrdnju. Provjerila sam izvor."); bilježi se ko je i kada potvrdio;
 - teme koje salon ne piše ni uz izvor: lijekovi i preparati protiv vaški (dozvoljeno samo "posavjetujte se sa pedijatrom", uz izvor), opadanje kose, promjene na koži glave, ishrana "za jaču kosu", tvrdnja da šišanje ubrzava rast kose, dijagnoze;
 - ime uz uzrast ili srodstvo ("mala Ana (4)", "Markova mama", "naš klijent Luka"), tuđi telefon, email;
 - nedostaje rubrika, vrsta, 2 do 4 oznake, koraci (za Savjet i Aktivnost) ili izvor (za Vijest);

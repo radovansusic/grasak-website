@@ -340,7 +340,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
               <input value={obj.izvor_url} onChange={(e) => izmjeni((o) => ({ ...o, izvor_url: e.target.value }))} className={inputCls + ' mt-1 font-normal'} inputMode="url" />
             </label>
           </div>
-          <p className="mt-2 text-xs text-ink/60">Minute, sati, broj puta, koraci, uzrast u godinama, cijene u eurima i datumi prolaze. Procenti, statistika ("svako treće dijete") i zdravstvene tvrdnje traže izvor sa nazivom i linkom; zdravstvenu tvrdnju uz izvor mora potvrditi i druga osoba. Imena i podaci djece i roditelja ne smiju u tekst. Lijekovi protiv vaški, opadanje kose, promjene na koži glave, ishrana za kosu i dijagnoze se ne pišu ni uz izvor.</p>
+          <p className="mt-2 text-xs text-ink/60">Minute, sati, broj puta, koraci, uzrast u godinama, cijene u eurima i datumi prolaze. Procenti, statistika ("svako treće dijete") i zdravstvene tvrdnje traže izvor sa nazivom i linkom; zdravstvenu tvrdnju uz izvor potvrđujete posebnim klikom prije objave (bilježi se ko i kada). Imena i podaci djece i roditelja ne smiju u tekst. Lijekovi protiv vaški, opadanje kose, promjene na koži glave, ishrana za kosu i dijagnoze se ne pišu ni uz izvor.</p>
         </div>
       </section>
 
@@ -383,7 +383,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
               <p key={'z' + i} className="rounded-xl bg-sun p-2 text-ink"><b>Zdravstvena tvrdnja uz izvor</b> ({JEZIK_NAZIV[x.jezik]}): "{x.nadjeno}". Provjerite da je izvor stvarno navodi.</p>
             ))}
             {trebaZdravlje && !blokirano && (
-              <label className="flex items-center gap-2 font-bold text-ink"><input type="checkbox" checked={zdravlje} onChange={(e) => setZdravlje(e.target.checked)} className="h-4 w-4" /> Druga osoba (ne autor teksta) je provjerila izvor i potvrđuje zdravstvenu tvrdnju</label>
+              <label className="flex items-center gap-2 font-bold text-ink"><input type="checkbox" checked={zdravlje} onChange={(e) => setZdravlje(e.target.checked)} className="h-4 w-4" /> Ovaj tekst sadrži zdravstvenu tvrdnju. Provjerila sam izvor.</label>
             )}
             {trebaPotvrda && !blokirano && (
               <label className="flex items-center gap-2 font-bold text-ink"><input type="checkbox" checked={potvrda} onChange={(e) => setPotvrda(e.target.checked)} className="h-4 w-4" /> Pročitano i potvrđeno: upozorenja su pregledana, objavljujem</label>
