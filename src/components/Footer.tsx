@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Instagram, Facebook, MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react'
 import GrassDivider from './GrassDivider'
 import { useLang } from '@/i18n/LanguageContext'
-import { objavePutanja } from '@/lib/objave'
+import { kutakPutanja } from '@/lib/kutak'
 
 export default function Footer() {
   const { tr, lang } = useLang()
@@ -15,7 +15,7 @@ export default function Footer() {
     { to: '/zakazi', label: tr('nav.book') },
     { to: '/kontakt', label: tr('nav.kontakt') },
     { to: '/moj', label: tr('moj.title') },
-    { to: objavePutanja(lang), label: tr('nav.objave') },
+    { to: kutakPutanja(lang), label: tr('nav.kutak'), puna: true },
   ]
   return (
     <footer className="relative bg-grass-darkest text-white/85">
@@ -91,9 +91,13 @@ export default function Footer() {
           <ul className="mt-4 space-y-2 text-sm">
             {nav.map((l) => (
               <li key={l.to}>
-                <Link to={l.to} className="transition-colors hover:text-sun">
-                  {l.label}
-                </Link>
+                {'puna' in l ? (
+                  <a href={l.to} className="transition-colors hover:text-sun">{l.label}</a>
+                ) : (
+                  <Link to={l.to} className="transition-colors hover:text-sun">
+                    {l.label}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

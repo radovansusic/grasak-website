@@ -5,7 +5,7 @@ import { inspectAttr } from 'plugin-inspect-react-code'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // '/' (apsolutno): dubok URL /objave/<slug> sa './' traži resurse iz /objave/assets/... i dobija index.html umjesto skripte
+  // '/' (apsolutno): dubok URL (npr. /kutak/tema/x) sa './' traži resurse iz podputanje i dobija index.html umjesto skripte
   base: '/',
   plugins: [inspectAttr(), react()],
   server: {
