@@ -263,6 +263,15 @@ ${jeziciPutanje ? prekidac(jez, jeziciPutanje) : ''}
 
 const datum10 = (iso) => String(iso || '').slice(0, 10)
 
+/** Ispravan datum (GGGG-MM-DD, može i sa vremenom iza) ili ''. Ispravan niz se vraća netaknut, da izlaz ostane isti do bajta. */
+export function datumIspravan(iso) {
+  const s = String(iso || '')
+  if (!/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/.test(s)) return ''
+  const d = new Date(s.slice(0, 10) + 'T12:00:00Z')
+  return !isNaN(d) && d.toISOString().slice(0, 10) === s.slice(0, 10) ? s : ''
+}
+const prviDatum = (...v) => { for (const x of v) { const d = datumIspravan(x); if (d) return d } return '' }
+
 /** Okvir "Šta možete uraditi danas": 2 do 3 koraka. */
 function renderKoraci(koraci, jez) {
   const k = (koraci || []).filter(Boolean)
@@ -297,16 +306,16 @@ export function renderObjava(ob, jez, tax, lista) {
   const slika = SITE + '/images/fb_cover.jpg'
   const oznake = (ob.oznake || []).map((s) => oznakaPo(tax, s)).filter(Boolean)
   const koraci = (ob.koraci && ob.koraci[jez]) || []
-  const objavljeno = ob.objavljeno || ob.datum
-  const izmijenjeno = ob.azurirano || objavljeno
+  const objavljeno = prviDatum(ob.objavljeno, ob.datum)
+  const izmijenjeno = prviDatum(ob.azurirano, objavljeno)
   const ld = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: ob.naslov[jez].slice(0, 110),
     description: opis,
     inLanguage: HTML_LANG[jez],
-    datePublished: objavljeno,
-    dateModified: izmijenjeno,
+    ...(objavljeno ? { datePublished: objavljeno } : {}),
+    ...(izmijenjeno ? { dateModified: izmijenjeno } : {}),
     articleSection: rub.naziv[jez] || rub.naziv.cnr,
     keywords: oznake.map((o) => o.naziv[jez] || o.naziv.cnr).join(', '),
     mainEntityOfPage: { '@type': 'WebPage', '@id': kanon },
@@ -320,20 +329,23 @@ export function renderObjava(ob, jez, tax, lista) {
     (naKutkuTekst ? '' : hreflangLinkovi(ob.slug, jezici) + '\n') +
     `<meta property="og:type" content="article">\n<meta property="og:site_name" content="${NAZIV}">\n<meta property="og:locale" content="${OG_LOCALE[jez]}">\n` +
     `<meta property="og:title" content="${esc(ob.naslov[jez])}">\n<meta property="og:description" content="${esc(opis)}">\n<meta property="og:url" content="${esc(kanon)}">\n<meta property="og:image" content="${esc(slika)}">\n` +
-    `<meta property="article:published_time" content="${esc(objavljeno)}">\n<meta property="article:modified_time" content="${esc(izmijenjeno)}">\n<meta property="article:section" content="${esc(ld.articleSection)}">\n` +
+    (objavljeno ? `<meta property="article:published_time" content="${esc(objavljeno)}">\n` : '') + (izmijenjeno ? `<meta property="article:modified_time" content="${esc(izmijenjeno)}">\n` : '') + `<meta property="article:section" content="${esc(ld.articleSection)}">\n` +
     oznake.map((o) => `<meta property="article:tag" content="${esc(o.naziv[jez] || o.naziv.cnr)}">\n`).join('') +
     `<meta name="twitter:card" content="summary_large_image">\n<script type="application/ld+json">${ldJson(ld)}</script>\n`
   const izvor = izvorUrl ? `<p class="izvor">${esc(T.izvor)}: <a href="${esc(izvorUrl)}" rel="noopener nofollow"${/^[a-z]{2,3}$/.test(ob.izvor_jezik || '') ? ` hreflang="${esc(ob.izvor_jezik)}" lang="${esc(ob.izvor_jezik)}"` : ''}>${esc(ob.izvor_naziv || izvorUrl)}</a>${/^[a-z]{2,3}$/.test(ob.izvor_jezik || '') ? ` (${esc(ob.izvor_jezik.toUpperCase())})` : ''}</p>` : ''
   const napomena = ob.zdravlje && tax.zdravlje_napomena ? `<p class="napomena">${esc(tax.zdravlje_napomena[jez] || tax.zdravlje_napomena.cnr)}</p>` : ''
-  const azur = datum10(izmijenjeno) > datum10(objavljeno) ? ` · ${esc(T.azurirano)}: <time datetime="${esc(izmijenjeno)}">${esc(datumLijep(izmijenjeno, jez))}</time>` : ''
-  const minuta = (ob.minuta && ob.minuta[jez]) || 1
+  const pokaziAzur = izmijenjeno && (!objavljeno || datum10(izmijenjeno) > datum10(objavljeno))
+  const meta = [
+    objavljeno ? `<time datetime="${esc(objavljeno)}">${esc(datumLijep(objavljeno, jez))}</time>` : '',
+    pokaziAzur ? `${esc(T.azurirano)}: <time datetime="${esc(izmijenjeno)}">${esc(datumLijep(izmijenjeno, jez))}</time>` : '',
+  ].filter(Boolean).concat(esc(T.minuta((ob.minuta && ob.minuta[jez]) || 1))).join(' · ')
   const povezani = naJeziku(lista, jez).filter((o) => o.rubrika === ob.rubrika && o.slug !== ob.slug).slice(0, 3)
   const tijelo = `<div class="uzak">
 <p class="nazad"><a href="${esc(putanja(jez))}">&larr; ${esc(T.nazad)}</a></p>
 <article>
 <p><a class="pill b-${bojaKlasa(rub.boja)}" href="${esc(putanjaTema(jez, rub.slug))}">${esc(rub.naziv[jez] || rub.naziv.cnr)}</a> <span class="vr" style="display:inline;margin-left:6px">${esc(vrs.naziv[jez] || vrs.naziv.cnr)}</span></p>
 <h1>${esc(ob.naslov[jez])}</h1>
-<p class="meta"><time datetime="${esc(objavljeno)}">${esc(datumLijep(objavljeno, jez))}</time>${azur} · ${esc(T.minuta(minuta))}</p>
+<p class="meta">${meta}</p>
 ${paragrafi(ob.tijelo[jez])}
 ${renderKoraci(koraci, jez)}
 ${izvor}
@@ -416,7 +428,7 @@ export function renderRss(lista, tax) {
   const stavke = naJeziku(lista, 'cnr').slice(0, 50).map((o) => {
     const r = rubrikaPo(tax || {}, o.rubrika)
     return `    <item>\n      <title>${esc(o.naslov.cnr)}</title>\n      <link>${esc(adresa('cnr', o.slug))}</link>\n      <guid isPermaLink="true">${esc(adresa('cnr', o.slug))}</guid>\n` +
-      `      <pubDate>${rfc822(o.objavljeno || o.datum)}</pubDate>\n` + (r ? `      <category>${esc(r.naziv.cnr)}</category>\n` : '') +
+      (prviDatum(o.objavljeno, o.datum) ? `      <pubDate>${rfc822(prviDatum(o.objavljeno, o.datum))}</pubDate>\n` : '') + (r ? `      <category>${esc(r.naziv.cnr)}</category>\n` : '') +
       `      <description>${esc((o.recenica && o.recenica.cnr) || (o.opis && o.opis.cnr) || '')}</description>\n` +
       (httpsUrl(o.izvor_url) ? `      <source url="${esc(httpsUrl(o.izvor_url))}">${esc(o.izvor_naziv || httpsUrl(o.izvor_url))}</source>\n` : '') + '    </item>'
   }).join('\n')
@@ -459,7 +471,7 @@ export function renderSitemap(lista, tax) {
     const jezici = JEZICI.filter((j) => o.naslov && o.naslov[j])
     const alt = jezici.map((j) => `    <xhtml:link rel="alternate" hreflang="${HREFLANG[j]}" href="${esc(adresa(j, o.slug))}"/>`).concat(`    <xhtml:link rel="alternate" hreflang="x-default" href="${esc(adresa('cnr', o.slug))}"/>`).join('\n')
     jezici.forEach((j) => {
-      redovi.push(`  <url>\n    <loc>${esc(adresa(j, o.slug))}</loc>\n    <lastmod>${esc(datum10(o.azurirano || o.objavljeno || o.datum))}</lastmod>\n${alt}\n  </url>`)
+      redovi.push(`  <url>\n    <loc>${esc(adresa(j, o.slug))}</loc>\n${prviDatum(o.azurirano, o.objavljeno, o.datum) ? `    <lastmod>${esc(datum10(prviDatum(o.azurirano, o.objavljeno, o.datum)))}</lastmod>\n` : ''}${alt}\n  </url>`)
     })
   })
   return `<?xml version="1.0" encoding="UTF-8"?>

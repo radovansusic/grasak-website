@@ -911,6 +911,67 @@ t('verzija skripte i panela je ista', () => {
   assert.ok(/OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-11f'/.test(fs.readFileSync(path.join(koren, 'src/lib/osoblje.ts'), 'utf8')))
 })
 
+/* ---------- datum teksta: prazan ili neispravan datum ne daje prazan datum nigdje ---------- */
+const bezDatuma = (ekstra) => ({ ...ob, datum: '', objavljeno: '', azurirano: '', ...ekstra })
+const ldOd = (h) => JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(h)[1])
+const nijePrazan = (h, poruka) => assert.ok(!/datetime=""/.test(h) && !/(published_time|modified_time)" content=""/.test(h) && !/Invalid Date|undefined|NaN/.test(h), poruka)
+t('datum: prazan datum - strana, JSON-LD, meta, RSS i sitemap bez praznih vrijednosti', () => {
+  for (const jez of ['cnr', 'en']) {
+    const h = R.renderObjava(bezDatuma({}), jez, TAX, [])
+    nijePrazan(h, 'prazan datum, ' + jez)
+    assert.ok(!h.includes('<time') && !h.includes('article:published_time') && !h.includes('article:modified_time'))
+    assert.ok(/<p class="meta">\d+ (min čitanja|min read)<\/p>/.test(h), 'red sa klasom meta ostaje samo sa vremenom čitanja')
+    const ld = ldOd(h); assert.ok(!('datePublished' in ld) && !('dateModified' in ld))
+  }
+  const rss = R.renderRss([bezDatuma({})], TAX)
+  assert.ok(!rss.includes('pubDate') && !rss.includes('Invalid Date') && rss.includes('<item>'))
+  const sm = R.renderSitemap([bezDatuma({})], TAX)
+  assert.ok(!sm.includes('lastmod') && !sm.includes('Invalid Date') && sm.includes('<loc>https://grasaksalon.me/kutak/prvo-sisanje</loc>'))
+})
+t('datum: neispravan niz se tretira kao da datuma nema', () => {
+  for (const lose of ['nije datum', '11.11.2026', '2026-13-45', '2026-02-31', 'undefined', 'null', '   ', 0]) {
+    const o = bezDatuma({ datum: lose, objavljeno: lose, azurirano: lose })
+    const h = R.renderObjava(o, 'cnr', TAX, [])
+    nijePrazan(h, 'neispravan datum: ' + lose)
+    assert.ok(!h.includes('<time') && !('datePublished' in ldOd(h)), 'neispravan datum: ' + lose)
+    assert.ok(!R.renderRss([o], TAX).includes('pubDate') && !R.renderSitemap([o], TAX).includes('lastmod'), 'rss/sitemap: ' + lose)
+  }
+  // neispravno "objavljeno" a ispravno "datum": važi datum
+  const h = R.renderObjava(bezDatuma({ objavljeno: 'xx', datum: '2026-11-11' }), 'cnr', TAX, [])
+  assert.ok(h.includes('<time datetime="2026-11-11">') && ldOd(h).datePublished === '2026-11-11')
+})
+t('datum: samo "azurirano" - nema objavljenog, ažurirano se vidi jednom i bez viška razdjelnika', () => {
+  const o = bezDatuma({ azurirano: '2026-11-12T20:00:00+01:00' })
+  const h = R.renderObjava(o, 'cnr', TAX, [])
+  nijePrazan(h, 'samo azurirano')
+  assert.equal((h.match(/<time /g) || []).length, 1)
+  assert.ok(/<p class="meta">Ažurirano: <time datetime="2026-11-12T20:00:00\+01:00">[^<]+<\/time> · 3 min čitanja<\/p>/.test(h), h.match(/<p class="meta">.*<\/p>/)[0])
+  const ld = ldOd(h); assert.ok(!('datePublished' in ld)); assert.equal(ld.dateModified, '2026-11-12T20:00:00+01:00')
+  assert.ok(h.includes('article:modified_time" content="2026-11-12T20:00:00+01:00"') && !h.includes('article:published_time'))
+  assert.ok(R.renderSitemap([o], TAX).includes('<lastmod>2026-11-12</lastmod>'))
+  assert.ok(!R.renderRss([o], TAX).includes('pubDate'))
+})
+t('datum: ispravan datum - izlaz je nepromijenjen (nepromijenjen redoslijed, oblik i razdjelnici)', () => {
+  const h = R.renderObjava(ob, 'cnr', TAX, LISTA)
+  assert.ok(/<p class="meta"><time datetime="2026-11-11T09:30:00\+01:00">11\. novembar 2026\.?<\/time> · Ažurirano: <time datetime="2026-11-12T20:00:00\+01:00">12\. novembar 2026\.?<\/time> · 3 min čitanja<\/p>/.test(h), h.match(/<p class="meta">.*<\/p>/)[0])
+  assert.ok(h.includes('article:published_time" content="2026-11-11T09:30:00+01:00"') && h.includes('article:modified_time" content="2026-11-12T20:00:00+01:00"'))
+  const ld = ldOd(h); assert.equal(ld.datePublished, '2026-11-11T09:30:00+01:00'); assert.equal(ld.dateModified, '2026-11-12T20:00:00+01:00')
+  const jednak = R.renderObjava({ ...ob, azurirano: ob.objavljeno }, 'cnr', TAX, [])
+  assert.ok(/<p class="meta"><time datetime="2026-11-11T09:30:00\+01:00">[^<]+<\/time> · 3 min čitanja<\/p>/.test(jednak), 'bez ažuriranja kad je isti dan')
+  assert.ok(R.renderRss([ob], TAX).includes('<pubDate>Wed, 11 Nov 2026 12:00:00 GMT</pubDate>'))
+  assert.ok(R.renderSitemap([ob], TAX).includes('<lastmod>2026-11-12</lastmod>'))
+  assert.equal(R.datumIspravan('2026-11-11'), '2026-11-11'); assert.equal(R.datumIspravan('2026-11-11T09:30:00+01:00'), '2026-11-11T09:30:00+01:00')
+})
+
+/* ---------- vercel.json: maxDuration veći od najgoreg lanca poziva ---------- */
+t('vercel.json: maxDuration za api/*.js veći od zbira unutrašnjih rokova (dva poziva skripte + potvrda Kutka)', () => {
+  const vj = JSON.parse(fs.readFileSync(path.join(koren, 'vercel.json'), 'utf8'))
+  const md = vj.functions && vj.functions['api/*.js'] && vj.functions['api/*.js'].maxDuration
+  assert.ok(Number.isInteger(md) && md > 0, 'vercel.json nema functions["api/*.js"].maxDuration')
+  const najgori = (2 * R.SKRIPTA_ROK_MS + R.POTVRDA_ROK_MS) / 1000
+  assert.ok(md > najgori, `maxDuration ${md} s nije veći od najgoreg lanca ${najgori} s`)
+})
+
 await Promise.all(zadaci)
 const proc = process.exitCode ? 'NEUSPJEH' : 'sve prošlo'
 console.log(`objave-test: ${prosli} provjera prošlo, ${proc}`)
