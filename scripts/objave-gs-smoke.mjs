@@ -29,6 +29,7 @@ const props = {}
 const kes = {}
 const pozivi = []
 let modelOdgovori = []
+let fetchAllPoziva = 0
 const ctx = vm.createContext({
   console, JSON, Date, Math, Array, Object, String, Number, isFinite,
   PropertiesService: { getScriptProperties: () => ({ getProperty: (k) => props[k] ?? null, setProperty: (k, v) => { props[k] = v }, setProperties: (o) => Object.assign(props, o) }) },
@@ -42,6 +43,7 @@ const ctx = vm.createContext({
       const o = modelOdgovori.shift() || { kod: 200, tijelo: { content: [{ type: 'text', text: '{"naslov":"x","tijelo":"y"}' }] } }
       return { getResponseCode: () => o.kod, getContentText: () => (typeof o.tijelo === 'string' ? o.tijelo : JSON.stringify(o.tijelo)), getHeaders: () => o.zaglavlja || {} }
     },
+    fetchAll: (zahtjevi) => { fetchAllPoziva++; return zahtjevi.map((r) => ctx.UrlFetchApp.fetch(r.url, r)) },
   },
 })
 vm.runInContext(kod, ctx)
@@ -113,17 +115,30 @@ t('potvrda prevoda: potvrđen EN postaje javan; izmjena crnogorskog poništava p
   assert.deepEqual(pub.objava.jezici, ['cnr', 'en']); assert.deepEqual(pub.objava.koraci.en, ['Come without booking.', 'Bring a favourite toy.'])
   assert.deepEqual(J(ctx.objaveJavnaLista_()).objave[0].jezici, ['cnr', 'en'])
   // izmjena crnogorskog bez dirnuća prevoda, uz pokušaj da potvrda ostane: server je poništava
-  const izm = akcija('sacuvaj', { objava: { ...j, tijelo: { ...j.tijelo, cnr: j.tijelo.cnr + ' Vidimo se.' }, potvrda: { en: true, ru: false, tr: false } }, potvrda_upozorenja: true })
-  assert.ok(izm.ok && izm.potvrda.en === false && izm.ponistene.includes('en') && /potvrda poništena/.test(izm.poruka), JSON.stringify(izm))
+  const izmjena = { ...j, tijelo: { ...j.tijelo, cnr: j.tijelo.cnr + ' Vidimo se.' }, potvrda: { en: true, ru: false, tr: false } }
+  // S4: objavljen EN prevod, izmjena crnogorskog: bez izbora urednika nema tihe odluke
+  const bezIzbora = akcija('sacuvaj', { objava: izmjena, potvrda_upozorenja: true })
+  assert.ok(bezIzbora.ok === false && bezIzbora.trebaIzbor === true && bezIzbora.prevodi.includes('en'), JSON.stringify(bezIzbora))
+  assert.deepEqual(J(ctx.objaveJavnaJedna_('radimo-i-nedjeljom')).objava.jezici, ['cnr', 'en'])      // ništa se nije promijenilo
+  const izm = akcija('sacuvaj', { objava: izmjena, potvrda_upozorenja: true, prevodi_izbor: 'povuci' })
+  assert.ok(izm.ok && izm.potvrda.en === false && izm.ponistene.includes('en') && /potvrda povučena/.test(izm.poruka), JSON.stringify(izm))
   assert.deepEqual(J(ctx.objaveJavnaJedna_('radimo-i-nedjeljom')).objava.jezici, ['cnr'])
   // potvrđen prevod koji ne postoji ne prolazi
   const lose = akcija('sacuvaj', { objava: { ...akcija('jedna', { slug: 'radimo-i-nedjeljom' }).objava, potvrda: { en: false, ru: true, tr: false } } })
   assert.equal(lose.ok, false); assert.ok(lose.greske.potvrda_ru)
 })
 
+t('S4: "zadrži objavljene prevode" ostavlja potvrđen prevod javnim uz izmijenjen original', () => {
+  const j = akcija('jedna', { slug: 'radimo-i-nedjeljom' }).objava
+  assert.ok(akcija('sacuvaj', { objava: { ...j, potvrda: { en: true, ru: false, tr: false } }, potvrda_upozorenja: true }).ok)
+  const r = akcija('sacuvaj', { objava: { ...j, tijelo: { ...j.tijelo, cnr: j.tijelo.cnr + ' Hvala.' }, potvrda: { en: true, ru: false, tr: false } }, potvrda_upozorenja: true, prevodi_izbor: 'zadrzi' })
+  assert.ok(r.ok && r.potvrda.en === true && r.ponistene.length === 0, JSON.stringify(r))
+  assert.deepEqual(J(ctx.objaveJavnaJedna_('radimo-i-nedjeljom')).objava.jezici, ['cnr', 'en'])
+})
+
 t('izmjena objavljenog prolazi punu provjeru; skloni je skida sa javnog', () => {
   const j = akcija('jedna', { slug: 'radimo-i-nedjeljom' }).objava
-  const r = akcija('sacuvaj', { objava: { ...j, tijelo: { ...j.tijelo, cnr: 'Kosa raste do 30% brže ako šišate redovno, pa vas čekamo svake nedjelje u Grašku, vaši mališani.' } } })
+  const r = akcija('sacuvaj', { objava: { ...j, tijelo: { ...j.tijelo, cnr: 'Kosa raste do 30% brže ako šišate redovno, pa vas čekamo svake nedjelje u Grašku, vaši mališani.' } }, prevodi_izbor: 'povuci' })
   assert.equal(r.ok, false); assert.ok(r.blokirano.length)
   assert.equal(J(ctx.objaveJavnaJedna_('radimo-i-nedjeljom')).ok, true)
   const s = akcija('skloni', { slug: 'radimo-i-nedjeljom' })
@@ -178,8 +193,9 @@ t('rezerva: kad Anthropic padne, zove se DeepSeek; kad padnu oba, poruka bez klj
 
 t('prevod: tri poziva (en, ru, tr) sa koracima, nijedan neuspjeh ne ruši ostale, ništa nije potvrđeno', () => {
   pozivi.length = 0
-  modelOdgovori = [odgModel({ naslov: 'We are open on Sundays', tijelo: 'Dear parents, we now work on Sundays too. See you at Grašak, where kids come first.', koraci: ['Come without booking.', 'Bring a toy.'] }), { kod: 500, tijelo: 'x' }, { kod: 500, tijelo: 'x' },
-    odgModel({ naslov: 'Pazar günleri açığız', tijelo: 'Sevgili veliler, artık pazar günleri de açığız. Grašak\'ta görüşürüz, minikler bizim için önce gelir.', koraci: ['Randevusuz gelin.', 'Oyuncak getirin.'] })]
+  // paralelno: krug 1 (Anthropic) en, ru, tr; krug 2 (rezerva) samo ono što je palo (ru)
+  modelOdgovori = [odgModel({ naslov: 'We are open on Sundays', tijelo: 'Dear parents, we now work on Sundays too. See you at Grašak, where kids come first.', koraci: ['Come without booking.', 'Bring a toy.'] }), { kod: 500, tijelo: 'x' },
+    odgModel({ naslov: 'Pazar günleri açığız', tijelo: 'Sevgili veliler, artık pazar günleri de açığız. Grašak\'ta görüşürüz, minikler bizim için önce gelir.', koraci: ['Randevusuz gelin.', 'Oyuncak getirin.'] }), { kod: 500, tijelo: 'x' }]
   const r = akcija('prevedi', { objava: ob({ naslov: { cnr: 'Radimo i nedjeljom', en: '', ru: '', tr: '' }, tijelo: { cnr: TIJELO, en: '', ru: '', tr: '' }, koraci: { cnr: KOR, en: [], ru: [], tr: [] } }) })
   assert.ok(r.ok, JSON.stringify(r)); assert.ok(r.prevodi.naslov.en && r.prevodi.naslov.tr && !r.prevodi.naslov.ru && r.greske.ru)
   assert.deepEqual(r.prevodi.koraci.en, ['Come without booking.', 'Bring a toy.'])
@@ -196,12 +212,23 @@ const prevodiOdgovori = () => [
   odgModel({ naslov: 'Gözyaşsız ilk saç kesimi', tijelo: 'İlk saç kesimi büyük bir gün. Dinlenmiş gelin ve acele etmeyin.\n\nYavaş çalışırız: çocuk koltuğu seçer ve mola her zaman serbesttir.', koraci: ['Çocuğa salonu resimde gösterin.', 'Sevdiği oyuncağı getirin.'] }),
 ]
 const redova = () => sheets['Objave'].getLastRow()
+// Pripremi je sada dva poziva: 1 nacrt + provjera, 2 prevodi (paralelno, fetchAll). Spoj daje isti oblik kao prije.
+const pripremiSve = (z) => {
+  const a = akcija('pripremi', z)
+  if (!a.ok) return a
+  assert.equal(a.prevodi_slijede, true)
+  const b = akcija('pripremi_prevodi', { objava: a.objava })
+  if (!b.ok) return b
+  return { ...b, izvor_procitan: a.izvor_procitan, davalac: a.davalac, odbaceno: a.odbaceno, nacrt: a, paznja: a.paznja.concat(b.paznja), blokirano: b.blokirano }
+}
 
 t('Pripremi iz samog teksta: nacrt + rubrika/vrsta/oznake/koraci + provjera + 3 prevoda; ništa se ne upisuje; prevodi nepotvrđeni', () => {
   pozivi.length = 0; const prije = redova()
   modelOdgovori = [odgModel(NACRT_SAVJET), ...prevodiOdgovori()]
-  const r = akcija('pripremi', { unos: 'Savjet za roditelje kako da prvo šišanje prođe bez suza, polako i sa pauzama.' })
+  pozivi.length = 0; fetchAllPoziva = 0
+  const r = pripremiSve({ unos: 'Savjet za roditelje kako da prvo šišanje prođe bez suza, polako i sa pauzama.' })
   assert.ok(r.ok, JSON.stringify(r))
+  assert.equal(fetchAllPoziva, 1)                                               // prevodi idu paralelno, u jednom fetchAll
   assert.equal(pozivi.length, 4)                                                // 1 nacrt + 3 prevoda, nijedan dohvat linka
   assert.ok(pozivi.every((p) => /api\.anthropic\.com/.test(p.url)))
   assert.equal(r.izvor_procitan, false)
@@ -209,15 +236,15 @@ t('Pripremi iz samog teksta: nacrt + rubrika/vrsta/oznake/koraci + provjera + 3 
   for (const j of ['en', 'ru', 'tr']) { assert.ok(r.objava.naslov[j] && r.objava.tijelo[j] && r.objava.koraci[j].length === 2, j); assert.equal(r.objava.potvrda[j], false) }
   assert.deepEqual(r.greske, {}); assert.deepEqual(r.greskePrevoda, {})
   assert.equal(r.objava.tip, undefined); assert.equal(r.objava.izvor_url, '')
-  assert.ok(r.paznja.some((x) => x.mjesto === 'prevod_en' && /čeka vašu potvrdu/.test(x.poruka)) && r.paznja.some((x) => x.mjesto === 'prevod_tr'))
+  assert.ok(r.paznja.some((x) => x.mjesto === 'prevod_en' && /čeka potvrdu/.test(x.poruka)) && r.paznja.some((x) => x.mjesto === 'prevod_tr'))
   assert.equal(redova(), prije)                                                 // ništa upisano i ništa objavljeno
   assert.equal(J(ctx.objaveJavnaLista_()).objave.length, 0)
   const sistem = JSON.parse(pozivi[0].opt.payload).system; assert.ok(/ruski/.test(JSON.parse(pozivi[2].opt.payload).system) && /sisanje-i-njega/.test(sistem))
 })
 
 t('Pripremi: označena mjesta koja traže pažnju (rubrika bez predloga, blokada, upozorenje, prevod nije uspio)', () => {
-  modelOdgovori = [odgModel({ ...NACRT_SAVJET, rubrika: 'kuhinja', vrsta: 'savjet', tijelo: NACRT_SAVJET.tijelo + ' Kosa raste do 30% brže.' }), { kod: 500, tijelo: 'x' }, { kod: 500, tijelo: 'x' }, ...prevodiOdgovori().slice(2), { kod: 500, tijelo: 'x' }]
-  const r = akcija('pripremi', { unos: 'Savjet za roditelje kako da prvo šišanje prođe bez suza, polako i sa pauzama.' })
+  modelOdgovori = [odgModel({ ...NACRT_SAVJET, rubrika: 'kuhinja', vrsta: 'savjet', tijelo: NACRT_SAVJET.tijelo + ' Kosa raste do 30% brže.' }), { kod: 500, tijelo: 'x' }, { kod: 500, tijelo: 'x' }, ...prevodiOdgovori().slice(2), { kod: 500, tijelo: 'x' }, { kod: 500, tijelo: 'x' }]
+  const r = pripremiSve({ unos: 'Savjet za roditelje kako da prvo šišanje prođe bez suza, polako i sa pauzama.' })
   assert.ok(r.ok, JSON.stringify(r))
   const mj = r.paznja.map((x) => x.mjesto)
   assert.ok(mj.includes('rubrika') && mj.includes('model') && mj.includes('tekst_cnr') && mj.includes('upozorenje'), mj.join())
@@ -231,7 +258,7 @@ t('Pripremi iz samog linka: čita izvor (UrlFetchApp), vrsta Vijest, izvor sa or
   const clanak = '<html><head><title>Kako pripremiti dijete za vrtić</title><meta property="og:site_name" content="Portal Roditelj"></head><body><p>' + 'Ovo je dovoljno dugačak red teksta iz članka za provjeru dohvata sadržaja stranice. '.repeat(6) + '</p></body></html>'
   modelOdgovori = [{ kod: 200, tijelo: clanak, zaglavlja: { 'Content-Type': 'text/html; charset=utf-8' } },
     odgModel({ rubrika: 'vijesti-za-porodice', vrsta: 'vijest', oznake: ['vrtic', 'skola'], naslov: 'Polazak u vrtić', tijelo: 'Portal piše o tome kako da pripremite dijete za vrtić. Kratak sažetak za roditelje mališana.\n\nGlavna poruka je da se ide polako i bez pritiska, uz jasnu rutinu.', koraci: [], izvor_naziv: 'Portal Roditelj', izvor_jezik: 'sr' }), ...prevodiOdgovori()]
-  const r = akcija('pripremi', { unos: '  https://portal.example.com/clanak  ' })
+  const r = pripremiSve({ unos: '  https://portal.example.com/clanak  ' })
   assert.ok(r.ok, JSON.stringify(r)); assert.equal(r.izvor_procitan, true)
   assert.equal(pozivi.length, 5); assert.equal(pozivi[0].url, 'https://portal.example.com/clanak')   // prvo dohvat, pa model
   assert.equal(r.objava.vrsta, 'vijest'); assert.equal(r.objava.izvor_url, 'https://portal.example.com/clanak'); assert.equal(r.objava.izvor_naziv, 'Portal Roditelj'); assert.equal(r.objava.izvor_jezik, 'sr')
@@ -244,7 +271,7 @@ t('Pripremi sa izvorom na stranom jeziku (engleski i ruski): nacrt na crnogorsko
   pozivi.length = 0
   modelOdgovori = [{ kod: 200, tijelo: engleski, zaglavlja: { 'content-type': 'text/html' } },
     odgModel({ rubrika: 'za-roditelje', vrsta: 'vijest', oznake: ['prvo-sisanje', 'uzrast-1-3'], naslov: 'Prvo šišanje bez žurbe', tijelo: 'Engleski portal savjetuje roditeljima da prvo šišanje bude kratko i mirno. Prema istraživanju sa 120 porodica, djeci prija odmor prije dolaska.\n\nGlavna poruka: polako, bez pritiska.', koraci: [], izvor_naziv: 'Parenting Weekly', izvor_jezik: 'en' }), ...prevodiOdgovori()]
-  const r = akcija('pripremi', { unos: 'https://parenting.example.org/first-haircut' })
+  const r = pripremiSve({ unos: 'https://parenting.example.org/first-haircut' })
   assert.ok(r.ok, JSON.stringify(r))
   assert.equal(r.objava.izvor_jezik, 'en'); assert.equal(r.objava.izvor_url, 'https://parenting.example.org/first-haircut'); assert.equal(r.objava.izvor_naziv, 'Parenting Weekly')
   assert.ok(/prvo šišanje/i.test(r.objava.naslov.cnr) && !/haircut/i.test(r.objava.tijelo.cnr))      // nacrt je na crnogorskom
@@ -255,12 +282,12 @@ t('Pripremi sa izvorom na stranom jeziku (engleski i ruski): nacrt na crnogorsko
   assert.match(JSON.parse(pozivi[1].opt.payload).messages[0].content, /Parents should keep/)         // izvor stiže modelu u originalu, u okviru podatka
   // isti sadržaj bez izvora: brojka je blokirana
   modelOdgovori = [odgModel({ ...NACRT_SAVJET, tijelo: NACRT_SAVJET.tijelo + ' Istraživanje sa 120 porodica to potvrđuje.' }), ...prevodiOdgovori()]
-  const bez = akcija('pripremi', { unos: 'Savjet o prvom šišanju, kratko i mirno, iz iskustva salona.' })
+  const bez = pripremiSve({ unos: 'Savjet o prvom šišanju, kratko i mirno, iz iskustva salona.' })
   assert.ok(bez.blokirano.some((x) => /brojka bez izvora/.test(x.pravilo)))
   // ruski izvor: model javlja ru, a kad ne javi, prepoznaje se iz teksta
   const ruski = '<html><head><title>Первая стрижка</title></head><body><p>' + 'Родители часто не знают, как подготовить ребёнка к первой стрижке в парикмахерской, и это нормально. '.repeat(4) + '</p></body></html>'
   modelOdgovori = [{ kod: 200, tijelo: ruski, zaglavlja: { 'content-type': 'text/html' } }, odgModel({ rubrika: 'za-roditelje', vrsta: 'vijest', oznake: ['prvo-sisanje', 'vrtic'], naslov: 'Prva šišanja', tijelo: 'Ruski portal piše o pripremi djeteta za prvo šišanje. Kratak sažetak.\n\nPoruka je da je normalno ne znati kako.', koraci: [], izvor_naziv: 'Roditelji.ru' }), ...prevodiOdgovori()]
-  const ru = akcija('pripremi', { unos: 'https://roditelji.example.ru/pervaya-strizhka' })
+  const ru = pripremiSve({ unos: 'https://roditelji.example.ru/pervaya-strizhka' })
   assert.ok(ru.ok && ru.objava.izvor_jezik === 'ru', JSON.stringify(ru.objava))
 })
 
@@ -286,6 +313,70 @@ t('nacrt iz linka (ručni tok): dohvat samo preko UrlFetchApp sa provjerenom adr
   const r = akcija('nacrt', { link: 'https://portal.example.com/clanak' })
   assert.ok(r.ok && r.objava.vrsta === 'vijest' && r.objava.izvor_url === 'https://portal.example.com/clanak' && r.objava.izvor_naziv === 'Portal', JSON.stringify(r))
   assert.equal(pozivi[1].url, 'https://portal.example.com/stvarni')
+})
+
+
+t('verzija skripte 2026-11-11c; vremenski budžet 240 s', () => {
+  assert.equal(poziv('VERZIJA_SKRIPTE'), '2026-11-11c'); assert.equal(poziv('OBJAVE_BUDZET_MS'), 240000)
+})
+
+t('S3: telefon i e-pošta ne idu modelu; ime uz srodstvo zaustavlja poziv', () => {
+  pozivi.length = 0
+  modelOdgovori = [odgModel({ rubrika: 'iz-graska', vrsta: 'iz-salona', oznake: ['praznici', 'vrtic'], naslov: 'Radimo nedjeljom', tijelo: 'Dragi roditelji, od vikenda radimo i nedjeljom. Vidimo se.\n\nSve ostaje isto, samo vam je dostupnije vama i mališanima.', koraci: [] })]
+  const r = akcija('nacrt', { biljeska: 'Radimo nedjeljom, javite se na 069 123 456 ili marko@example.com za termin, dođite bez zakazivanja.' })
+  assert.ok(r.ok, JSON.stringify(r))
+  const poslano = JSON.parse(pozivi.at(-1).opt.payload).messages[0].content
+  assert.ok(!/069|123 456|marko@example/.test(poslano), poslano)
+  const n = pozivi.length
+  const l = akcija('nacrt', { biljeska: 'Markova mama nam je pričala da je mala Ana (4) prvi put bila u Grašku i bila je hrabra.' })
+  assert.equal(l.ok, false); assert.equal(l.kod, 'licno'); assert.equal(pozivi.length, n)
+  const p = akcija('pripremi', { unos: 'Naš klijent Luka je bio kod nas u subotu i bio je odličan, hvala mu na strpljenju.' })
+  assert.equal(p.ok, false); assert.equal(p.kod, 'licno')
+  assert.ok(!/Kristina/.test(poziv('objaveNalogNacrt_()')))     // lično ime urednika nije u sistemskom nalogu
+})
+
+t('S6: izvor_url samo https; javascript: se ne čuva, a ni ranije upisan ne izlazi u javnom odgovoru', () => {
+  const baza = ob({ vrsta: 'vijest', rubrika: 'vijesti-za-porodice', izvor_naziv: 'Portal', naslov: { cnr: 'Vijest sa lošim linkom', en: '', ru: '', tr: '' }, tijelo: { cnr: TIJELO, en: '', ru: '', tr: '' }, koraci: { cnr: [] } })
+  const lose = akcija('sacuvaj', { objava: { ...baza, izvor_url: 'javascript:alert(1)' } })
+  assert.ok(lose.ok, JSON.stringify(lose)); assert.match(lose.poruka, /nije https/)
+  assert.equal(akcija('jedna', { slug: lose.slug }).objava.izvor_url, '')
+  assert.equal(akcija('objavi', { slug: lose.slug, potvrda_upozorenja: true }).ok, false)     // vijest bez https izvora ne izlazi
+  const r = akcija('sacuvaj', { objava: { ...baza, naslov: { cnr: 'Vijest sa dobrim linkom', en: '', ru: '', tr: '' }, izvor_url: 'https://portal.example.com/a' } })
+  const pub = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true }); assert.ok(pub.ok, JSON.stringify(pub))
+  assert.equal(J(ctx.objaveJavnaJedna_(r.slug)).objava.izvor_url, 'https://portal.example.com/a')
+  // ono što je moglo ostati u tabeli iz ranije: javni odgovor ga ne propušta
+  const sh = sheets['Objave']
+  const red = sh.getRange(1, 1, sh.getLastRow(), 28).getValues()
+  const i = red.findIndex((x) => x[0] === r.slug), kolona = red[0].findIndex((x) => /izvor.*url/i.test(String(x)))
+  assert.ok(i > 0 && kolona >= 0, red[0].join())
+  const kopija = red[i].slice(); kopija[kolona] = 'javascript:alert(1)'
+  sh.getRange(i + 1, 1, 1, 28).setValues([kopija])
+  poziv('objaveKesObrisi_("' + r.slug + '")')
+  const javno = J(ctx.objaveJavnaJedna_(r.slug))
+  assert.ok(javno.ok && javno.objava.izvor_url === '', JSON.stringify(javno.objava))
+})
+
+t('V2 (d): zdravstvena tvrdnja uz izvor traži potvrdu druge osobe', () => {
+  const zdr = ob({ vrsta: 'savjet', rubrika: 'sisanje-i-njega', oznake: ['prvo-sisanje', 'uzrast-1-3'], izvor_naziv: 'Pedijatrijsko udruženje', izvor_url: 'https://udruzenje.example.org/studija',
+    naslov: { cnr: 'Šta kažu pedijatri', en: '', ru: '', tr: '' },
+    tijelo: { cnr: 'Pedijatrijsko udruženje navodi da ova vježba ubrzava rast kose kod mališana, pa je mnogi roditelji probaju kod kuće.\n\nMi samo prenosimo šta piše u izvoru, a odluku o tome ostavljamo vama i ljekaru vašeg djeteta, jer svako dijete je drugačije.', en: '', ru: '', tr: '' }, koraci: { cnr: ['Pitajte pedijatra prije promjene rutine.', 'Pratite kako dijete reaguje.'] } })
+  const r = akcija('sacuvaj', { objava: zdr })
+  assert.ok(r.ok, JSON.stringify(r))
+  const bez = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true })
+  assert.ok(bez.ok === false && (bez.trebaZdravlje || (bez.blokirano || []).length), JSON.stringify(bez))
+  if (bez.trebaZdravlje) {
+    const istaOsoba = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true, potvrda_zdravlje: true })
+    assert.equal(istaOsoba.ok, false); assert.equal(istaOsoba.trebaZdravlje, true)
+    const druga = akcija('objavi', { slug: r.slug, potvrda_upozorenja: true, potvrda_zdravlje: true }, { ime: 'Ana', uloga: 'admin' })
+    assert.ok(druga.ok, JSON.stringify(druga))
+  }
+})
+
+t('S5: javno čitanje nikad ne pravi i ne prepisuje tabelu', () => {
+  delete sheets['Objave']
+  const l = J(ctx.objaveJavnaLista_()); assert.equal(l.objave.length, 0)
+  assert.equal(J(ctx.objaveJavnaJedna_('bilo-sta')).nema, true)
+  assert.equal(sheets['Objave'], undefined)
 })
 
 console.log(`objave-gs-smoke: ${n} provjera prošlo${process.exitCode ? ', NEUSPJEH' : ', sve prošlo'} (lažni Google servisi, ne prava skripta)`)

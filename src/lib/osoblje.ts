@@ -6,7 +6,7 @@ export interface Profil { ime: string; uloga: Uloga }
 export interface LokacijaOsoblje { id: string; naziv: string; osobe: string[]; radno: Record<string, [string, string] | null> }
 export interface KonfigOsoblje { korak: number; usluge: Usluga[]; lokacije: LokacijaOsoblje[]; verzija?: string; kalendar?: string; nalog?: string; bekap?: string; bekapGreska?: string }
 /** Verzija Google skripte koju ovaj panel očekuje (VERZIJA_SKRIPTE u Grasak.gs). */
-export const OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-11b'
+export const OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-11c'
 export interface TerminOsoblje {
   id: string; od: string; do: string; usluga: string; dijete: string; uzrast: string; roditelj: string
   telefon: string; napomena: string; izvor: string; status: 'zakazan' | 'nije_dosao' | 'otkazan'
@@ -43,13 +43,19 @@ type Odgovor<T> = T & { ok: boolean; poruka?: string }
 /** Prijava u panel: ime iz lista Osoblje + lična šifra. */
 export interface Pristup { ime: string; sifra: string }
 
+/** Google je vratio nešto što nije JSON (strana sa greškom): skripta je prekinuta prije odgovora, npr. zbog isteka vremena. Veza postoji, pa to nije "nema veze". */
+export class SkriptaPrekinuta extends Error {
+  constructor() { super('Skripta nije vratila odgovor') }
+}
+
 export async function osoblje<T = object>(akcija: string, pristup: Pristup, podaci: Record<string, unknown> = {}): Promise<Odgovor<T>> {
   const r = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ akcija: 'osoblje_' + akcija, ime: pristup.ime, sifra: pristup.sifra, ...podaci }),
   })
-  return r.json()
+  const tekst = await r.text()
+  try { return JSON.parse(tekst) as Odgovor<T> } catch { throw new SkriptaPrekinuta() }
 }
 
 /* ---- sedmica, istorija klijenta, lista predstojećih ---- */

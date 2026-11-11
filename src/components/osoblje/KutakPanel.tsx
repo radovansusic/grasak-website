@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { AlertTriangle, Check, EyeOff, Languages, Loader2, Plus, Save, Send, ShieldCheck, Sparkles } from 'lucide-react'
-import { osoblje, type Pristup } from '@/lib/osoblje'
+import { osoblje, SkriptaPrekinuta, type Pristup } from '@/lib/osoblje'
 import {
   JEZIK_NAZIV, praznaObjava,
   type ObjavaStavka, type ObjavaUredjaj, type Paznja, type ProvjeraObjave, type Taksonomija,
 } from '@/lib/kutak'
 import { inputCls } from './pomocno'
 
-const NEMA_SKRIPTE = 'Kutak traži novu verziju Google skripte (Grasak.gs). Zalijepite je i napravite New version (vidi KUTAK-POSTAVLJANJE.md).'
+const NEMA_SKRIPTE = 'Kutak još nije uključen na serveru. Javite Radovanu: Google skripta treba novu verziju (2026-11-11c ili novija).'
+const SKRIPTA_PREKINUTA = 'Google skripta je prekinuta prije odgovora (najčešće zbog isteka vremena). Ništa nije objavljeno. Sačekajte nekoliko minuta i pokušajte ponovo; ako se ponovi, pišite ručno ili javite Radovanu.'
 const STATUS_OZNAKA = { nacrt: 'Nacrt', objavljeno: 'Objavljeno', sklonjeno: 'Sklonjeno' } as const
 const STATUS_BOJA = { nacrt: 'bg-sun text-ink', objavljeno: 'bg-grass text-white', sklonjeno: 'bg-ink/10 text-ink/60' } as const
 const PREVODI = ['en', 'ru', 'tr'] as const
@@ -30,6 +31,9 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
   const [provjera, setProvjera] = useState<ProvjeraObjave | null>(null)
   const [paznja, setPaznja] = useState<Paznja[]>([])
   const [potvrda, setPotvrda] = useState(false)
+  const [zdravlje, setZdravlje] = useState(false)
+  /** Izmjena crnogorskog teksta objavljene objave koja ima objavljen prevod: urednik bira, nikad tiho. */
+  const [izbor, setIzbor] = useState<{ prevodi: string[]; poruka: string; odluka: (v: 'zadrzi' | 'povuci' | null) => void } | null>(null)
 
   useEffect(() => {
     let aktivno = true
@@ -49,11 +53,11 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
       const r = (await osoblje(akcija, pristup, podaci)) as Odg
       if (!r.ok && /nepoznata akcija/i.test(r.poruka || '')) return { ok: false, poruka: NEMA_SKRIPTE }
       return r
-    } catch { return { ok: false, poruka: 'Nema veze sa serverom.' } }
+    } catch (e) { return { ok: false, poruka: e instanceof SkriptaPrekinuta ? SKRIPTA_PREKINUTA : 'Nema veze sa serverom. Provjerite internet.' } }
   }
   const sviPodaci = () => (obj ? { objava: obj } : {})
   const javi = (tekst: string) => { setInfo(tekst); setGreska(''); window.setTimeout(() => setInfo((x) => (x === tekst ? '' : x)), 6000) }
-  const nova = () => { setObj(praznaObjava()); setUnos(''); setProvjera(null); setPaznja([]); setPotvrda(false); setInfo(''); setGreska('') }
+  const nova = () => { setObj(praznaObjava()); setUnos(''); setProvjera(null); setPaznja([]); setPotvrda(false); setZdravlje(false); setInfo(''); setGreska('') }
   const zatvori = () => { setObj(null); setProvjera(null); setPaznja([]); setOsvjezi((x) => x + 1) }
   const izmjeni = (f: (o: ObjavaUredjaj) => ObjavaUredjaj) => { setObj((o) => (o ? f(o) : o)); setProvjera(null) }
   /** Izmjena prevoda poništava njegovu potvrdu: potvrđuje se ono što je pročitano. */
@@ -64,20 +68,41 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
     const r = await poziv('objave_jedna', { slug })
     setRadi('')
     if (!r.ok) { setGreska(r.poruka || 'Tekst nije otvoren.'); return }
-    setObj(r.objava as ObjavaUredjaj); setProvjera(null); setPaznja([]); setPotvrda(false); setUnos('')
+    setObj(r.objava as ObjavaUredjaj); setProvjera(null); setPaznja([]); setPotvrda(false); setZdravlje(false); setUnos('')
   }
 
+  /** Pripremi u dva poziva (svaki ima svoj vremenski budžet u skripti): 1) nacrt, rubrika, vrsta, oznake, koraci, provjera; 2) prevodi en, ru, tr. */
   const pripremi = async () => {
     setRadi('pripremi'); setGreska(''); setInfo('')
     const r = await poziv('objave_pripremi', { unos })
-    setRadi('')
-    if (!r.ok) { setGreska((r.poruka || 'Priprema nije uspjela.') + ' Možete pisati ručno u koracima ispod.'); return }
+    if (!r.ok) { setRadi(''); setGreska((r.poruka || 'Priprema nije uspjela.') + ' Možete pisati ručno u koracima ispod.'); return }
     const n = r.objava as ObjavaUredjaj
     setObj((o) => ({ ...(o || praznaObjava()), ...n, slug: o?.slug || '', status: o?.status || 'nacrt' }))
-    setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], greske: r.greske as Record<string, string> })
-    setPaznja((r.paznja as Paznja[]) || [])
-    setPotvrda(false)
-    javi('Pregled je spreman. Pročitajte označena mjesta, potvrdite prevode koje želite i objavite.')
+    setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], zdravstvene: (r.zdravstvene as ProvjeraObjave['zdravstvene']) || [], greske: r.greske as Record<string, string> })
+    const paznja1 = (r.paznja as Paznja[]) || []
+    setPaznja(paznja1)
+    setPotvrda(false); setZdravlje(false)
+    if (r.prevodi_slijede !== true) { setRadi(''); javi('Pregled je spreman. Pročitajte označena mjesta i objavite.'); return }
+    setRadi('prevodi')
+    const p = await poziv('objave_pripremi_prevodi', { objava: n })
+    setRadi('')
+    if (!p.ok) {
+      // nacrt na crnogorskom ostaje u formi; prevodi se mogu napraviti kasnije dugmetom Prevedi
+      setGreska((p.poruka || 'Prevodi nijesu napravljeni.') + ' Crnogorski nacrt je ostao u formi; prevode možete napraviti kasnije dugmetom "Prevedi".')
+      return
+    }
+    const po = p.objava as ObjavaUredjaj
+    setObj((o) => {
+      if (!o) return o
+      const nn = { ...o, naslov: { ...o.naslov }, tijelo: { ...o.tijelo }, koraci: { ...o.koraci }, potvrda: { ...o.potvrda } }
+      for (const j of PREVODI) if (po.naslov[j] && po.tijelo[j]) { nn.naslov[j] = po.naslov[j]; nn.tijelo[j] = po.tijelo[j]; nn.koraci[j] = po.koraci?.[j] || []; nn.potvrda[j] = false }
+      if (p.sacuvano_slug) nn.slug = p.sacuvano_slug as string
+      return nn
+    })
+    setProvjera({ blokirano: (p.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (p.upozorenja as string[]) || [], zdravstvene: (p.zdravstvene as ProvjeraObjave['zdravstvene']) || [], greske: p.greske as Record<string, string> })
+    setPaznja([...paznja1.filter((x) => !x.mjesto.startsWith('prevod_')), ...((p.paznja as Paznja[]) || [])])
+    if (p.poruka) setGreska(p.poruka as string)   // npr. prevodi nijesu stigli u roku: tačna poruka skripte
+    else javi('Pregled je spreman. Pročitajte označena mjesta, potvrdite prevode koje želite i objavite.')
   }
 
   const prevedi = async () => {
@@ -93,7 +118,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
       for (const j of PREVODI) if (p.naslov[j] && p.tijelo[j]) { n.naslov[j] = p.naslov[j]; n.tijelo[j] = p.tijelo[j]; n.koraci[j] = p.koraci?.[j] || []; n.potvrda[j] = false }
       return n
     })
-    setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [] })
+    setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], zdravstvene: (r.zdravstvene as ProvjeraObjave['zdravstvene']) || [] })
     const nije = Object.keys(g || {})
     if (nije.length) setGreska('Nije preveden: ' + nije.map((j) => JEZIK_NAZIV[j as keyof typeof JEZIK_NAZIV]).join(', ') + '. ' + Object.values(g).join(' '))
     else javi('Prevodi su spremni. Pročitajte ih, ispravite šta treba i potvrdite.')
@@ -104,21 +129,34 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
     const r = await poziv('objave_provjera', sviPodaci())
     setRadi('')
     if (!r.ok) { setGreska(r.poruka || 'Provjera nije uspjela.'); return }
-    const p: ProvjeraObjave = { blokirano: r.blokirano as ProvjeraObjave['blokirano'], upozorenja: r.upozorenja as string[], greske: r.greske as Record<string, string> }
+    const p: ProvjeraObjave = { blokirano: r.blokirano as ProvjeraObjave['blokirano'], upozorenja: r.upozorenja as string[], zdravstvene: (r.zdravstvene as ProvjeraObjave['zdravstvene']) || [], greske: r.greske as Record<string, string> }
     setProvjera(p)
     setPaznja([])
-    if (!p.blokirano.length && !p.upozorenja.length && !Object.keys(p.greske || {}).length) javi('Provjera je čista. Može se objaviti.')
+    if (!p.blokirano.length && !p.upozorenja.length && !p.zdravstvene?.length && !Object.keys(p.greske || {}).length) javi('Provjera je čista. Može se objaviti.')
   }
 
+  const pitajIzbor = (prevodi: string[], poruka: string) => new Promise<'zadrzi' | 'povuci' | null>((resolve) => setIzbor({ prevodi, poruka, odluka: resolve }))
   const sacuvaj = async (): Promise<Odg> => {
-    const r = await poziv('objave_sacuvaj', { ...sviPodaci(), potvrda_upozorenja: potvrda })
-    if (!r.ok) {
-      setGreska(r.poruka || 'Nije sačuvano.')
-      setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], greske: r.greske as Record<string, string> })
+    let prevodiIzbor: 'zadrzi' | 'povuci' | undefined
+    for (let pokusaj = 0; pokusaj < 3; pokusaj++) {
+      const r = await poziv('objave_sacuvaj', { ...sviPodaci(), potvrda_upozorenja: potvrda, potvrda_zdravlje: zdravlje, prevodi_izbor: prevodiIzbor })
+      if (r.trebaIzbor === true) {
+        // objavljen prevod bi tiho nestao sa sajta ili ostao uz izmijenjen original: pita se urednik
+        const v = await pitajIzbor((r.prevodi as string[]) || [], r.poruka || '')
+        setIzbor(null)
+        if (!v) { setGreska('Čuvanje je otkazano: crnogorski tekst nije sačuvan.'); return { ok: false, poruka: 'otkazano' } }
+        prevodiIzbor = v
+        continue
+      }
+      if (!r.ok) {
+        setGreska(r.poruka || 'Nije sačuvano.')
+        setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], zdravstvene: (r.zdravstvene as ProvjeraObjave['zdravstvene']) || [], greske: r.greske as Record<string, string> })
+        return r
+      }
+      setObj((o) => (o ? { ...o, slug: r.slug as string, status: r.status as ObjavaUredjaj['status'], potvrda: (r.potvrda as ObjavaUredjaj['potvrda']) || o.potvrda } : o))
       return r
     }
-    setObj((o) => (o ? { ...o, slug: r.slug as string, status: r.status as ObjavaUredjaj['status'], potvrda: (r.potvrda as ObjavaUredjaj['potvrda']) || o.potvrda } : o))
-    return r
+    return { ok: false, poruka: 'Nije sačuvano.' }
   }
   const cuvaj = async () => { setRadi('cuvanje'); setGreska(''); setInfo(''); const r = await sacuvaj(); setRadi(''); if (r.ok) javi(r.poruka || 'Sačuvano.') }
 
@@ -132,11 +170,11 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
     setRadi('objava'); setGreska(''); setInfo('')
     const s = await sacuvaj()
     if (!s.ok) { setRadi(''); return }
-    const r = await poziv('objave_objavi', { slug: s.slug, potvrda_upozorenja: potvrda })
+    const r = await poziv('objave_objavi', { slug: s.slug, potvrda_upozorenja: potvrda, potvrda_zdravlje: zdravlje })
     setRadi('')
     if (!r.ok) {
       setGreska(r.poruka || 'Nije objavljeno.')
-      setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], greske: r.greske as Record<string, string> })
+      setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], zdravstvene: (r.zdravstvene as ProvjeraObjave['zdravstvene']) || [], greske: r.greske as Record<string, string> })
       return
     }
     setObj((o) => (o ? { ...o, status: 'objavljeno' } : o))
@@ -157,6 +195,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
 
   const blokirano = !!provjera && (provjera.blokirano.length > 0 || Object.keys(provjera.greske || {}).length > 0)
   const trebaPotvrda = !!provjera && provjera.upozorenja.length > 0
+  const trebaZdravlje = !!provjera && (provjera.zdravstvene?.length || 0) > 0
 
   /* ---------------- lista ---------------- */
   if (!obj) {
@@ -223,13 +262,24 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
       </div>
       {info && <p className="mb-3 flex items-center gap-2 rounded-xl bg-grass p-3 text-sm font-bold text-white shadow"><Check className="h-4 w-4" /> {info}</p>}
       {greska && <p className="mb-3 rounded-xl bg-coral/10 p-3 text-sm text-ink shadow">{greska}</p>}
+      {izbor && (
+        <section role="alertdialog" aria-label="Izbor za objavljene prevode" className="mb-4 rounded-2xl bg-sun p-4 shadow ring-2 ring-coral">
+          <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-extrabold text-ink"><AlertTriangle className="h-5 w-5" /> Šta s objavljenim prevodima?</h2>
+          <p className="mb-3 text-sm text-ink">{izbor.poruka}</p>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => izbor.odluka('zadrzi')} className={dugme + ' bg-white text-ink ring-2 ring-grass-tint'}>Zadrži objavljene prevode ({izbor.prevodi.map((j) => j.toUpperCase()).join(', ')})</button>
+            <button onClick={() => izbor.odluka('povuci')} className={dugme + ' bg-grass text-white'}>Povuci prevode dok ih ne potvrdim</button>
+            <button onClick={() => izbor.odluka(null)} className={dugme + ' bg-white text-coral ring-1 ring-coral/40'}>Odustani</button>
+          </div>
+        </section>
+      )}
 
       <section className={kartica}>
         <h2 className="mb-2 flex items-center gap-2 font-display text-lg font-extrabold text-ink"><Sparkles className="h-5 w-5 text-grass" /> 1. Pripremi</h2>
-        <p className="mb-3 text-sm text-ink/60">Nalijepite link članka (na bilo kom jeziku) ili upišite tekst, pa pritisnite Pripremi. Sistem pročita izvor, napiše nacrt na crnogorskom, predloži rubriku, vrstu, oznake i korake, provjeri tekst i pripremi prevode. Ništa se ne objavljuje bez vašeg klika. Ili pišite sami u koracima ispod.</p>
+        <p className="mb-3 text-sm text-ink/60">Nalijepite link članka (na bilo kom jeziku) ili upišite tekst, pa pritisnite Pripremi. Sistem u dva koraka pročita izvor, napiše nacrt na crnogorskom, predloži rubriku, vrstu, oznake i korake, provjeri tekst, pa pripremi prevode (to može trajati nekoliko minuta; ne zatvarajte stranu). Bilješka ne smije sadržati ime djeteta ni roditelja: takva se ne šalje. Ništa se ne objavljuje bez vašeg klika. Ili pišite sami u koracima ispod.</p>
         <textarea value={unos} onChange={(e) => setUnos(e.target.value)} rows={3} className={inputCls + ' font-normal'} placeholder="https://... ili: od sutra radimo i nedjeljom od 11 do 21 sat." />
         <button onClick={() => void pripremi()} disabled={zauzet || unos.trim().length < 15} className={dugme + ' mt-3 bg-grass text-white'}>
-          {radi === 'pripremi' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} {radi === 'pripremi' ? 'Pripremam (do minut)...' : 'Pripremi'}
+          {radi === 'pripremi' || radi === 'prevodi' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />} {radi === 'pripremi' ? 'Pišem nacrt (do dvije minute)...' : radi === 'prevodi' ? 'Prevodim na en, ru, tr (do četiri minute)...' : 'Pripremi'}
         </button>
       </section>
 
@@ -290,7 +340,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
               <input value={obj.izvor_url} onChange={(e) => izmjeni((o) => ({ ...o, izvor_url: e.target.value }))} className={inputCls + ' mt-1 font-normal'} inputMode="url" />
             </label>
           </div>
-          <p className="mt-2 text-xs text-ink/60">Brojke i zdravstvene tvrdnje bez izvora provjera zaustavlja. Imena i podaci djece i roditelja ne smiju u tekst. Lijekovi protiv vaški, opadanje kose, promjene na koži glave, ishrana za kosu i dijagnoze se ne pišu ni uz izvor.</p>
+          <p className="mt-2 text-xs text-ink/60">Minute, sati, broj puta, koraci, uzrast u godinama, cijene u eurima i datumi prolaze. Procenti, statistika ("svako treće dijete") i zdravstvene tvrdnje traže izvor sa nazivom i linkom; zdravstvenu tvrdnju uz izvor mora potvrditi i druga osoba. Imena i podaci djece i roditelja ne smiju u tekst. Lijekovi protiv vaški, opadanje kose, promjene na koži glave, ishrana za kosu i dijagnoze se ne pišu ni uz izvor.</p>
         </div>
       </section>
 
@@ -309,7 +359,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
             {koraciPolja(j, (k) => ({ [j]: k } as unknown as ObjavaUredjaj['koraci']))}
             <label className="mt-3 flex items-center gap-2 text-sm font-bold text-ink">
               <input type="checkbox" checked={obj.potvrda[j]} disabled={!obj.naslov[j].trim() || !obj.tijelo[j].trim()} onChange={(e) => izmjeni((o) => ({ ...o, potvrda: { ...o.potvrda, [j]: e.target.checked } }))} className="h-4 w-4" />
-              Pročitala sam prevod ({JEZIK_NAZIV[j]}) i potvrđujem ga
+              Pročitano i potvrđeno: prevod ({JEZIK_NAZIV[j]})
             </label>
           </details>
         ))}
@@ -320,17 +370,23 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
         <div className="flex flex-wrap gap-2">
           <button onClick={() => void provjeri()} disabled={zauzet} className={dugme + ' bg-white text-ink ring-2 ring-grass-tint'}>{radi === 'provjera' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />} Provjera</button>
           <button onClick={() => void cuvaj()} disabled={zauzet} className={dugme + ' bg-white text-ink ring-2 ring-grass-tint'}>{radi === 'cuvanje' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Sačuvaj nacrt</button>
-          <button onClick={() => void objavi()} disabled={zauzet || blokirano || (trebaPotvrda && !potvrda)} className={dugme + ' bg-grass text-white'}>{radi === 'objava' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {obj.status === 'objavljeno' ? 'Objavi izmjene' : 'Objavi'}</button>
+          <button onClick={() => void objavi()} disabled={zauzet || blokirano || (trebaPotvrda && !potvrda) || (trebaZdravlje && !zdravlje)} className={dugme + ' bg-grass text-white'}>{radi === 'objava' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />} {obj.status === 'objavljeno' ? 'Objavi izmjene' : 'Objavi'}</button>
         </div>
-        {provjera && (provjera.blokirano.length > 0 || provjera.upozorenja.length > 0 || Object.keys(provjera.greske || {}).length > 0) && (
+        {provjera && (provjera.blokirano.length > 0 || provjera.upozorenja.length > 0 || (provjera.zdravstvene?.length || 0) > 0 || Object.keys(provjera.greske || {}).length > 0) && (
           <div className="mt-3 space-y-2 text-sm">
             {Object.values(provjera.greske || {}).map((g) => <p key={g} className="rounded-xl bg-coral/10 p-2 text-ink">{g}</p>)}
             {provjera.blokirano.map((b, i) => (
               <p key={i} className="flex items-start gap-2 rounded-xl bg-coral/15 p-2 text-ink"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-coral" /><span><b>Zaustavlja objavu</b> ({JEZIK_NAZIV[b.jezik]}): {b.pravilo}{b.nadjeno ? ` - "${b.nadjeno}"` : ''}</span></p>
             ))}
             {provjera.upozorenja.map((u) => <p key={u} className="rounded-xl bg-sun p-2 text-ink"><b>Upozorenje:</b> {u}</p>)}
+            {(provjera.zdravstvene || []).map((x, i) => (
+              <p key={'z' + i} className="rounded-xl bg-sun p-2 text-ink"><b>Zdravstvena tvrdnja uz izvor</b> ({JEZIK_NAZIV[x.jezik]}): "{x.nadjeno}". Provjerite da je izvor stvarno navodi.</p>
+            ))}
+            {trebaZdravlje && !blokirano && (
+              <label className="flex items-center gap-2 font-bold text-ink"><input type="checkbox" checked={zdravlje} onChange={(e) => setZdravlje(e.target.checked)} className="h-4 w-4" /> Druga osoba (ne autor teksta) je provjerila izvor i potvrđuje zdravstvenu tvrdnju</label>
+            )}
             {trebaPotvrda && !blokirano && (
-              <label className="flex items-center gap-2 font-bold text-ink"><input type="checkbox" checked={potvrda} onChange={(e) => setPotvrda(e.target.checked)} className="h-4 w-4" /> Pročitala sam upozorenja i objavljujem svejedno</label>
+              <label className="flex items-center gap-2 font-bold text-ink"><input type="checkbox" checked={potvrda} onChange={(e) => setPotvrda(e.target.checked)} className="h-4 w-4" /> Pročitano i potvrđeno: upozorenja su pregledana, objavljujem</label>
             )}
           </div>
         )}

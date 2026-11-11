@@ -3,6 +3,8 @@
 // Folder _lib se ne pretvara u funkciju (prefiks _). Nema tajni: skripta javno vraća samo objavljene tekstove i samo potvrđene prevode.
 // Rubrike, vrste i oznake NIJESU ovdje: dolaze iz odgovora skripte (taksonomija), jedna lista u Grasak.gs.
 
+import { SALON, radnoRed } from '../../src/data/salon.js'
+
 export const SITE = 'https://grasaksalon.me'
 export const NAZIV = 'Grašak'
 export const JEZICI = ['cnr', 'en', 'ru', 'tr']
@@ -21,7 +23,7 @@ const TEKST = {
     naslov: 'Graškov kutak', kratko: 'Kutak', sub: 'Savjeti, igre i novosti za roditelje mališana iz dječijeg frizerskog salona Grašak.',
     prazno: 'Uskoro ovdje stižu prvi tekstovi.', izvor: 'Izvor', sve: 'Sve', vrsta: 'Vrsta teksta', rubrike: 'Rubrike',
     zakazi: 'Zakažite termin', pocetna: 'Početna', usluge: 'Usluge i cijene', onama: 'O nama', galerija: 'Galerija', kontakt: 'Kontakt',
-    radno: 'Radno vrijeme: uto-pet 15-21, sub-ned 11-21', slogan: 'Bez straha. Kroz igru.', nema: 'Ovaj tekst ne postoji.', skinuta: 'Ovaj tekst je skinut.',
+    salon: 'dječiji frizerski salon', slogan: 'Bez straha. Kroz igru.', nema: 'Ovaj tekst ne postoji.', skinuta: 'Ovaj tekst je skinut.',
     greska: 'Kutak trenutno nije dostupan. Pokušajte za koji minut.', azurirano: 'Ažurirano', danas: 'Šta možete uraditi danas', oznake: 'Oznake',
     povezano: 'Još iz rubrike', oznakaNaslov: 'Oznaka', oznakaOpis: 'Tekstovi iz Graškovog kutka sa oznakom', rubrikaPrazna: 'U ovoj rubrici još nema tekstova.',
     oznakaPrazna: 'Sa ovom oznakom još nema tekstova.', jezik: 'Jezik', nazad: 'Graškov kutak',
@@ -31,7 +33,7 @@ const TEKST = {
     naslov: 'Grašak\'s Corner', kratko: 'Corner', sub: 'Tips, games and news for parents of little ones from Grašak, the children\'s hair salon.',
     prazno: 'The first posts are coming soon.', izvor: 'Source', sve: 'All', vrsta: 'Type', rubrike: 'Topics',
     zakazi: 'Book an appointment', pocetna: 'Home', usluge: 'Services & Prices', onama: 'About us', galerija: 'Gallery', kontakt: 'Contact',
-    radno: 'Open Tue-Fri 15-21, Sat-Sun 11-21', slogan: 'No fear. Just play.', nema: 'This post does not exist.', skinuta: 'This post has been taken down.',
+    salon: 'children\'s hair salon', slogan: 'No fear. Just play.', nema: 'This post does not exist.', skinuta: 'This post has been taken down.',
     greska: 'The Corner is temporarily unavailable. Please try again in a few minutes.', azurirano: 'Updated', danas: 'What you can do today', oznake: 'Tags',
     povezano: 'More from', oznakaNaslov: 'Tag', oznakaOpis: 'Posts from Grašak\'s Corner tagged', rubrikaPrazna: 'There are no posts in this topic yet.',
     oznakaPrazna: 'There are no posts with this tag yet.', jezik: 'Language', nazad: 'Grašak\'s Corner',
@@ -41,7 +43,7 @@ const TEKST = {
     naslov: 'Уголок Grašak', kratko: 'Уголок', sub: 'Советы, игры и новости для родителей малышей от детской парикмахерской Grašak.',
     prazno: 'Первые тексты скоро появятся.', izvor: 'Источник', sve: 'Все', vrsta: 'Тип текста', rubrike: 'Рубрики',
     zakazi: 'Записаться', pocetna: 'Главная', usluge: 'Услуги и цены', onama: 'О нас', galerija: 'Галерея', kontakt: 'Контакты',
-    radno: 'Вт-Пт 15-21, Сб-Вс 11-21', slogan: 'Без страха. Играя.', nema: 'Этот текст не найден.', skinuta: 'Этот текст снят.',
+    salon: 'детская парикмахерская', slogan: 'Без страха. Играя.', nema: 'Этот текст не найден.', skinuta: 'Этот текст снят.',
     greska: 'Уголок временно недоступен. Попробуйте через несколько минут.', azurirano: 'Обновлено', danas: 'Что можно сделать сегодня', oznake: 'Метки',
     povezano: 'Ещё из рубрики', oznakaNaslov: 'Метка', oznakaOpis: 'Тексты из Уголка Grašak с меткой', rubrikaPrazna: 'В этой рубрике пока нет текстов.',
     oznakaPrazna: 'С этой меткой пока нет текстов.', jezik: 'Язык', nazad: 'Уголок Grašak',
@@ -51,7 +53,7 @@ const TEKST = {
     naslov: 'Grašak Köşesi', kratko: 'Köşe', sub: 'Çocuk kuaförü Grašak\'tan minikler için ipuçları, oyunlar ve haberler.',
     prazno: 'İlk yazılar çok yakında burada.', izvor: 'Kaynak', sve: 'Tümü', vrsta: 'Yazı türü', rubrike: 'Konular',
     zakazi: 'Randevu alın', pocetna: 'Ana sayfa', usluge: 'Hizmetler ve Fiyatlar', onama: 'Hakkımızda', galerija: 'Galeri', kontakt: 'İletişim',
-    radno: 'Sal-Cum 15-21, Cmt-Paz 11-21', slogan: 'Korkusuz. Oyunla.', nema: 'Yazı bulunamadı.', skinuta: 'Bu yazı kaldırıldı.',
+    salon: 'çocuk kuaförü', slogan: 'Korkusuz. Oyunla.', nema: 'Yazı bulunamadı.', skinuta: 'Bu yazı kaldırıldı.',
     greska: 'Köşe şu anda kullanılamıyor. Birkaç dakika sonra tekrar deneyin.', azurirano: 'Güncellendi', danas: 'Bugün neler yapabilirsiniz', oznake: 'Etiketler',
     povezano: 'Konudan daha fazlası', oznakaNaslov: 'Etiket', oznakaOpis: 'Grašak Köşesi\'nden şu etiketli yazılar', rubrikaPrazna: 'Bu konuda henüz yazı yok.',
     oznakaPrazna: 'Bu etiketle henüz yazı yok.', jezik: 'Dil', nazad: 'Grašak Köşesi',
@@ -70,9 +72,17 @@ export const BOJE = {
 }
 const bojaKlasa = (boja) => (BOJE[boja] ? boja : 'zelena')
 
-export const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+/** Kontrolni i nevidljivi znaci (npr. U+0008, meki spojnik, nulti razmak) kvare XML feeda i ne nose smisao: skidaju se prije prikaza. Novi red i tabulator ostaju. */
+export const bezKontrolnih = (s) => String(s == null ? '' : s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u00AD\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF\uFFFE\uFFFF]/g, '')
+export const esc = (s) => bezKontrolnih(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+/** Samo https adresa sa imenom domene; sve ostalo (javascript:, data:, http:) daje prazno. CSP sajta dozvoljava inline skripte, pa se shema provjerava i ovdje, ne samo u skripti. */
+export function httpsUrl(u) {
+  const s = bezKontrolnih(u).trim()
+  const m = /^https:\/\/([a-z0-9.-]+)(?::443)?([\/?#][^\s<>"'`\\]*)?$/i.exec(s)
+  return m && m[1].indexOf('.') > 0 && !/^[.-]|[.-]$|\.\./.test(m[1]) && s.length <= 2000 ? s : ''
+}
 /** JSON za <script type="application/ld+json">: nema izlaza iz elementa. */
-export const ldJson = (o) => JSON.stringify(o).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
+export const ldJson = (o) => JSON.stringify(o, (k, v) => (typeof v === 'string' ? bezKontrolnih(v) : v)).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
 
 /* ---------- adrese ---------- */
 
@@ -205,6 +215,9 @@ function prekidac(jez, putanjeZaJezik) {
   return `<div class="jezici" role="navigation" aria-label="${esc(T.jezik)}">${JEZICI.filter((j) => putanjeZaJezik[j] !== undefined).map((j) => (j === jez ? `<span lang="${HTML_LANG[j]}" aria-current="true">${JEZIK_OZNAKA[j]}</span>` : `<a href="${esc(putanjeZaJezik[j])}" lang="${HTML_LANG[j]}">${JEZIK_OZNAKA[j]}</a>`)).join('')}</div>`
 }
 
+/** Radno vrijeme iz iste datoteke kao podnožje sajta (src/data/salon.js): dani i sati po redovima, spojeni sa " · ". */
+export const radnoVrijeme = (jez) => SALON.radno.map((_, i) => radnoRed(jez, i)).join(' · ')
+
 function okvir({ jez, naslov, opis, canonical, robots, glava, tijelo, jeziciPutanje, trenutno }) {
   const T = tekst(jez)
   const veza = (href, tx, sam) => `<a href="${esc(href)}"${sam ? ' aria-current="page"' : ''}>${esc(tx)}</a>`
@@ -230,7 +243,7 @@ ${tijelo}
 ${jeziciPutanje ? prekidac(jez, jeziciPutanje) : ''}
 <div class="cta"><p>${esc(T.slogan)}</p><a class="btn" href="/zakazi">${esc(T.zakazi)}</a></div>
 </main>
-<footer><div class="foot-in">${NAZIV} - dječiji frizerski salon, Branka Deletića bb, Lamela A, New City, Podgorica · <a href="tel:+38269371111">+382 69 371 111</a> · ${esc(T.radno)} · <a href="/">${esc(T.pocetna)}</a></div></footer>
+<footer><div class="foot-in">${NAZIV} - ${esc(T.salon)}, ${esc(SALON.adresa[jez].join(' '))} · <a href="tel:${esc(SALON.telefonTel)}">${esc(SALON.telefon)}</a> · ${esc(radnoVrijeme(jez))} · <a href="/">${esc(T.pocetna)}</a></div></footer>
 </body>
 </html>
 `
@@ -288,7 +301,8 @@ export function renderObjava(ob, jez, tax, lista) {
     author: { '@type': 'Organization', name: NAZIV, url: SITE + '/' },
     publisher: { '@type': 'Organization', name: NAZIV, url: SITE + '/', logo: { '@type': 'ImageObject', url: SITE + '/icon-512.png' } },
   }
-  if (ob.izvor_url) ld.citation = { '@type': 'CreativeWork', name: ob.izvor_naziv || ob.izvor_url, url: ob.izvor_url }
+  const izvorUrl = httpsUrl(ob.izvor_url)
+  if (izvorUrl) ld.citation = { '@type': 'CreativeWork', name: bezKontrolnih(ob.izvor_naziv) || izvorUrl, url: izvorUrl }
   const glava =
     hreflangLinkovi(ob.slug, jezici) + '\n' +
     `<meta property="og:type" content="article">\n<meta property="og:site_name" content="${NAZIV}">\n<meta property="og:locale" content="${OG_LOCALE[jez]}">\n` +
@@ -296,7 +310,7 @@ export function renderObjava(ob, jez, tax, lista) {
     `<meta property="article:published_time" content="${esc(objavljeno)}">\n<meta property="article:modified_time" content="${esc(izmijenjeno)}">\n<meta property="article:section" content="${esc(ld.articleSection)}">\n` +
     oznake.map((o) => `<meta property="article:tag" content="${esc(o.naziv[jez] || o.naziv.cnr)}">\n`).join('') +
     `<meta name="twitter:card" content="summary_large_image">\n<script type="application/ld+json">${ldJson(ld)}</script>\n`
-  const izvor = ob.izvor_url ? `<p class="izvor">${esc(T.izvor)}: <a href="${esc(ob.izvor_url)}" rel="noopener nofollow"${/^[a-z]{2,3}$/.test(ob.izvor_jezik || '') ? ` hreflang="${esc(ob.izvor_jezik)}" lang="${esc(ob.izvor_jezik)}"` : ''}>${esc(ob.izvor_naziv || ob.izvor_url)}</a>${/^[a-z]{2,3}$/.test(ob.izvor_jezik || '') ? ` (${esc(ob.izvor_jezik.toUpperCase())})` : ''}</p>` : ''
+  const izvor = izvorUrl ? `<p class="izvor">${esc(T.izvor)}: <a href="${esc(izvorUrl)}" rel="noopener nofollow"${/^[a-z]{2,3}$/.test(ob.izvor_jezik || '') ? ` hreflang="${esc(ob.izvor_jezik)}" lang="${esc(ob.izvor_jezik)}"` : ''}>${esc(ob.izvor_naziv || izvorUrl)}</a>${/^[a-z]{2,3}$/.test(ob.izvor_jezik || '') ? ` (${esc(ob.izvor_jezik.toUpperCase())})` : ''}</p>` : ''
   const napomena = ob.zdravlje && tax.zdravlje_napomena ? `<p class="napomena">${esc(tax.zdravlje_napomena[jez] || tax.zdravlje_napomena.cnr)}</p>` : ''
   const azur = datum10(izmijenjeno) > datum10(objavljeno) ? ` · ${esc(T.azurirano)}: <time datetime="${esc(izmijenjeno)}">${esc(datumLijep(izmijenjeno, jez))}</time>` : ''
   const minuta = (ob.minuta && ob.minuta[jez]) || 1
@@ -389,7 +403,7 @@ export function renderRss(lista, tax) {
     return `    <item>\n      <title>${esc(o.naslov.cnr)}</title>\n      <link>${esc(adresa('cnr', o.slug))}</link>\n      <guid isPermaLink="true">${esc(adresa('cnr', o.slug))}</guid>\n` +
       `      <pubDate>${rfc822(o.objavljeno || o.datum)}</pubDate>\n` + (r ? `      <category>${esc(r.naziv.cnr)}</category>\n` : '') +
       `      <description>${esc((o.recenica && o.recenica.cnr) || (o.opis && o.opis.cnr) || '')}</description>\n` +
-      (o.izvor_url ? `      <source url="${esc(o.izvor_url)}">${esc(o.izvor_naziv || o.izvor_url)}</source>\n` : '') + '    </item>'
+      (httpsUrl(o.izvor_url) ? `      <source url="${esc(httpsUrl(o.izvor_url))}">${esc(o.izvor_naziv || httpsUrl(o.izvor_url))}</source>\n` : '') + '    </item>'
   }).join('\n')
   return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
@@ -448,14 +462,28 @@ const SKRIPTA_RAZVOJ = 'https://script.google.com/macros/s/AKfycbxsSbajtO0KiVGGF
 /** OBJAVE_API_URL (opciono) > VITE_ZAKAZIVANJE_API (ako je postavljena na Vercelu) > adresa iz koda. */
 export const skriptaAdresa = (env = {}) => env.OBJAVE_API_URL || env.VITE_ZAKAZIVANJE_API || SKRIPTA_RAZVOJ
 
+/** Rok za odgovor skripte: duži čeka hladni start Apps Script-a, ali Vercel funkcija ne smije da visi. */
+export const SKRIPTA_ROK_MS = 8000
+/** Zadnja uspješna kopija (po instanci funkcije) vrijedi do ovoliko, ako skripta zakasni ili ne odgovori. */
+export const STARO_NAJVISE_MS = 24 * 60 * 60 * 1000
+
+const zadnje = { lista: null, objave: new Map() }
+/** Za testove: briše zadnje uspješne kopije. */
+export function zaboraviZadnje() { zadnje.lista = null; zadnje.objave.clear() }
+
+/**
+ * Jedan javni GET prema skripti. Vraća odgovor skripte (JSON), { stara: true } kad skripta odgovara ali ne poznaje Kutak
+ * ("Nepoznata akcija": stara verzija) ili { greska: true } kad ne odgovara (mreža, rok, HTTP greška, neispravan JSON, greška unutar skripte).
+ */
 export async function iSkripte(parametri, env = {}, dohvati = fetch) {
   const kontrola = new AbortController()
-  const sat = setTimeout(() => kontrola.abort(), 9000)
+  const sat = setTimeout(() => kontrola.abort(), Number(env.OBJAVE_ROK_MS) || SKRIPTA_ROK_MS)   // OBJAVE_ROK_MS samo za probu
   try {
     const r = await dohvati(skriptaAdresa(env) + '?' + new URLSearchParams(parametri), { signal: kontrola.signal, redirect: 'follow', headers: { accept: 'application/json' } })
     if (!r.ok) return { greska: true }
     const j = await r.json()
-    if (j && j.greska) return { greska: true }
+    if (j && j.greska === 'Nepoznata akcija') return { stara: true }
+    if (!j || j.greska) return { greska: true }
     return j
   } catch {
     return { greska: true }
@@ -464,9 +492,41 @@ export async function iSkripte(parametri, env = {}, dohvati = fetch) {
   }
 }
 
-/** Lista i taksonomija iz akcije=objave; { greska: true } ako skripta ne odgovori ili je stara (bez taksonomije). */
+const svjeze = (z) => !!z && Date.now() - z.vrijeme < STARO_NAJVISE_MS
+
+/**
+ * Lista i taksonomija iz akcije=objave.
+ *  - { lista, tax }: skripta je odgovorila (lista može biti prazna: prazna strana je 200, ne greška);
+ *  - { lista: [], tax: {}, stara: true }: skripta odgovara, ali je stara (bez Kutka): nema tekstova, ne greška;
+ *  - { lista, tax, staro: true }: skripta ne odgovara, a postoji zadnja uspješna lista (do 24 sata): nju vraća;
+ *  - { greska: true }: skripta ne odgovara i nema zadnje uspješne liste.
+ */
 export async function ucitajLista(env, dohvati) {
   const j = await iSkripte({ akcija: 'objave' }, env, dohvati)
-  if (j.greska || !Array.isArray(j.objave) || !j.taksonomija) return { greska: true }
-  return { lista: j.objave, tax: j.taksonomija }
+  if (j.stara) return { lista: [], tax: {}, stara: true }
+  if (!j.greska && Array.isArray(j.objave) && j.taksonomija) {
+    zadnje.lista = { lista: j.objave, tax: j.taksonomija, vrijeme: Date.now() }
+    return { lista: j.objave, tax: j.taksonomija }
+  }
+  if (svjeze(zadnje.lista)) return { lista: zadnje.lista.lista, tax: zadnje.lista.tax, staro: true }
+  return { greska: true }
+}
+
+/**
+ * Jedan tekst iz akcije=objava. Isti ugovor kao ucitajLista: odgovor skripte (ok:true sa objavom, ili ok:false "nema" / "sklonjena"),
+ * zadnja uspješna kopija tog teksta (staro: true) kad skripta ne odgovara, ili { greska: true }.
+ */
+export async function ucitajObjavu(slug, env, dohvati) {
+  const j = await iSkripte({ akcija: 'objava', slug }, env, dohvati)
+  if (j.stara) return { ok: false, nema: true }
+  if (!j.greska) {
+    if (j.ok && j.objava) {
+      if (zadnje.objave.size >= 100) zadnje.objave.delete(zadnje.objave.keys().next().value)
+      zadnje.objave.set(slug, { odgovor: j, vrijeme: Date.now() })
+    } else zadnje.objave.delete(slug)   // skinut ili nepostojeći tekst se ne vraća iz zadnje kopije
+    return j
+  }
+  const z = zadnje.objave.get(slug)
+  if (svjeze(z)) return Object.assign({}, z.odgovor, { staro: true })
+  return { greska: true }
 }

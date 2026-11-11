@@ -4,7 +4,9 @@
 
 Javne adrese (strane pravi Vercel funkcija, stvarni HTML za Google): `/kutak` (lista), `/kutak/<slug>`, `/kutak/tema/<rubrika>`, `/kutak/oznaka/<oznaka>`, iste pod `/en`, `/ru`, `/tr` (slug `kutak` je isti na svim jezicima), `/kutak/rss.xml` i `/sitemap.xml`. Filter po vrsti: `?vrsta=savjet` (nije indeksiran).
 
-Grana je `p14-objave`. Ništa nije u `main` i ništa nije objavljeno dok se grana ne spoji. Koraci 1 do 5 su u Google nalogu salona i mogu prije spajanja grane; panel će do spajanja koristiti staru verziju koja kartice nema.
+Grana je `p14-objave`. Ništa nije u `main` i ništa nije objavljeno dok se grana ne spoji.
+
+**Grana se spaja tek poslije koraka sa skriptom (koraci 1 do 5) i jednog probnog teksta (korak 6, tačke 1 do 4).** Razlog: spojena grana bez nove skripte ima panel koji traži verziju `2026-11-11c`, a sajt ne zna da li ima tekstova. Link "Graškov kutak" u meniju, podnožju i na početnoj strani pojavljuje se tek kad javni odgovor skripte vrati bar jedan objavljen tekst (provjera pri učitavanju, pamti se 10 minuta; ako skripta ne odgovara ili je stara, link se ne prikazuje). Strana `/kutak` bez tekstova daje 200 sa mirnom praznom stranom, a 503 samo kad skripta zaista ne odgovara (taj odgovor se ne kešira).
 
 ## Taksonomija: gdje se mijenja
 
@@ -16,7 +18,7 @@ Pravila: tačno jedna rubrika, jedna vrsta, 2 do 4 oznake (najviše jedna oznaka
 
 1. Otvoriti tabelu "Grašak - termini", pa Extensions > Apps Script.
 2. U fajlu `Grasak.gs` označiti sve (Ctrl+A) i zalijepiti cijeli sadržaj fajla `google-skripta/Grasak.gs` iz ove grane. Sačuvati (Ctrl+S).
-3. Nova verzija skripte nosi oznaku `2026-11-11b` (`VERZIJA_SKRIPTE`).
+3. Nova verzija skripte nosi oznaku `2026-11-11c` (`VERZIJA_SKRIPTE`); panel je traži (`OCEKIVANA_VERZIJA_SKRIPTE` u `src/lib/osoblje.ts`).
 
 ## 2. List "Objave"
 
@@ -38,7 +40,7 @@ Apps Script > Project Settings (zupčanik) > Script properties > Add script prop
 | `ANTHROPIC_API_KEY` | glavni ključ (priprema, nacrt i prevod) |
 | `DEEPSEEK_API_KEY` | rezerva, koristi se kad glavni ne odgovori |
 
-Opciono, samo ako se mijenja model: `OBJAVE_MODEL_ANTHROPIC` (zadano `claude-haiku-5-5`), `OBJAVE_MODEL_DEEPSEEK` (zadano `deepseek-flash`). Ključevi se ne šalju mejlom ni porukom i ne upisuju u kod ni u repo. Bez ključa panel to kaže jasnom porukom, a ručno pisanje, čuvanje i objava rade. Pripremi traži 4 poziva modela (nacrt + 3 prevoda); granica je 40 poziva na sat.
+Opciono, samo ako se mijenja model: `OBJAVE_MODEL_ANTHROPIC` (zadano `claude-haiku-5-5`), `OBJAVE_MODEL_DEEPSEEK` (zadano `deepseek-flash`). Ključevi se ne šalju mejlom ni porukom i ne upisuju u kod ni u repo. Bez ključa panel to kaže jasnom porukom, a ručno pisanje, čuvanje i objava rade. Pripremi traži 4 poziva modela (nacrt + 3 prevoda); granica je 40 poziva na sat. Pripremi su dva poziva panela: prvi (nacrt, rubrika, oznake, koraci, provjera), drugi (tri prevoda istovremeno). Svaki ima budžet 4 minuta u skripti; ako prevodi ne stignu, crnogorski nacrt se čuva kao nacrt i poruka to kaže, a panel prikazuje tačnu poruku skripte.
 
 ## 5. Kristinin red u listu Osoblje
 
@@ -47,7 +49,7 @@ List "Osoblje": Ime (npr. Kristina), Uloga `vlasnik`, Šifra (najmanje 8 znakova
 ## 6. Provjeriti poslije (redom)
 
 1. Panel: prijava, kartica **Kutak** se otvara, lista je prazna i bez crvene poruke. Ako piše "traže novu verziju Google skripte", korak 3 nije prošao (New version).
-2. Pripremi iz jedne rečenice (bez brojki): bez ključa poruka o ključu; sa ključem pregled sa rubrikom, vrstom, oznakama, koracima i prevodima, i žutim okvirom "Traže vašu pažnju".
+2. Pripremi iz jedne rečenice (bez brojki; mogu se pominjati minuti, sati, dani i cijene u eurima): bez ključa poruka o ključu; sa ključem pregled sa rubrikom, vrstom, oznakama, koracima i prevodima, i žutim okvirom "Traže vašu pažnju".
 3. Probni slučaj za blokadu: u tekst upisati "preko 5000 djece" bez izvora, pa Provjera: **Zaustavlja objavu**. Isto za "šampon protiv vaški" (zaustavlja i uz izvor).
 4. Potvrditi samo EN, objaviti. U pregledniku otvoriti adresu web appa (`GRASAK_APPS_SCRIPT` iz `src/lib/zakazivanje.ts`) sa `?akcija=objave`: JSON ima samo cnr i en, i `taksonomija`. RU i TR nijesu javni.
 5. Poslije spajanja grane i Vercel deploya otvoriti: `/kutak`, `/kutak/<slug>`, `/en/kutak/<slug>`, `/ru/kutak/<slug>` (mora dati 404 dok RU nije potvrđen), `/kutak/tema/<rubrika>`, `/kutak/oznaka/<oznaka>` (noindex dok oznaka nema 5 tekstova), `/kutak/rss.xml`, `/sitemap.xml` (host `grasaksalon.me`).
@@ -58,14 +60,20 @@ List "Osoblje": Ime (npr. Kristina), Uloga `vlasnik`, Šifra (najmanje 8 znakova
 
 ## Šta zaustavlja objavu
 
-- Brojka bez izvora (osim vremena, datuma, cijena u eurima, uzrasta, godine i broja salona 069 371 111).
-- Zdravstvena tvrdnja bez izvora (četiri jezika). Izvor otključava samo brojke i takve tvrdnje.
+- Postotak ili statistika (brojka, razlomak ili riječima: "trideset posto", "dvije trećine") bez izvora. Uobičajene količine prolaze bez izvora: minuti, sati, dani, "3 puta", koraci, komadi, uzrast u godinama, cijene u eurima, datum, vrijeme, popust salona u rubrici Iz Graška, broj salona. Tvrdo se zaustavljaju postoci i statistike o djeci, zdravlju i rastu kose.
+- Zdravstvena TVRDNJA (liječi, sprječava bolest, ubrzava rast, preporučena doza, dijagnoza) bez izvora, na četiri jezika. Riječ "zdravlje" ili "sprječava dosadu" nije tvrdnja.
+- Link otključava brojku ili tvrdnju samo ako je upisan naziv izvora. Zdravstvena tvrdnja ni uz izvor ne izlazi bez potvrde druge osobe (vlasnik ili administrator, ne autor): panel traži štiklir, a skripta provjerava da potvrđuje druga osoba. Jedan red `OBJAVE_ZDRAVLJE_DRUGA_OSOBA` u `Grasak.gs` ublažava to na potvrdu autora.
 - **Rizične teme, i uz izvor**: lijekovi i preparati protiv vaški (dozvoljeno samo "posavjetujte se sa pedijatrom", uz izvor), opadanje kose, promjene na koži glave, ishrana "za jaču kosu", tvrdnja da šišanje ubrzava rast kose, dijagnoze i stanja (autizam, ekcem, perut i slično).
-- Ime ili uzrast djeteta ili roditelja, tuđi telefon, email.
+- Lično ime samo kad stoji uz oznaku srodstva ili uzrasta u istoj rečenici ("mala Ana (4)", "Markova mama", "naš klijent Luka"); veliko slovo u naslovu ili na početku rečenice nije dovoljno. Provjera ide samo nad jezicima koji idu u objavu (crnogorski i potvrđeni prevodi). Tuđi telefon i email.
 - Nepoznata ili nedostajuća rubrika i vrsta, oznaka koje nema na listi ili broj oznaka van 2 do 4, više od jedne oznake uzrasta.
 - Savjet ili Aktivnost bez 2 do 3 koraka; Vijest bez naziva i https linka izvora; nepotpun prevod; potvrđen prevod bez koraka; tekst koji je prazan okvir (STUB).
 - Upozorenja traže potvrdu: superlativi i garancije, dužina izvan raspona vrste (Savjet 150-400 riječi, Aktivnost 150-300, Vijest 150-300, Članak 600+, Iz salona 100-250), prepisan niz iz izvora, Aktivnost bez oznake uzrasta.
-- Prevod bez potvrde ne izlazi (nije greška, samo ostaje nejavan). Izmjena crnogorskog teksta poništava potvrdu prevoda koji nije dirnut.
+- Prevod bez potvrde ne izlazi (nije greška, samo ostaje nejavan). Izmjena crnogorskog teksta objavljene objave koja ima objavljen prevod: panel pita "Zadrži objavljene prevode" ili "Povuci prevode dok ih ne potvrdim"; nikad se ne odlučuje tiho.
+- Provjera prvo normalizuje tekst (NFKC, skriveni znakovi, razmaknuta slova, ćirilična slova u latiničnim riječima), pa se varanje razmacima ili skrivenim znakovima ne propušta.
+
+## Šta ide modelu
+
+Telefon i adresa e-pošte u bilješci se uklanjaju prije slanja modelu, a ime uz oznaku srodstva (npr. "Markova mama") zaustavlja poziv uz poruku da ga treba izbrisati. Lično ime urednika nije u uputstvu modelu. Link izvora (`izvor_url`) čuva se i prikazuje samo ako je https; `javascript:` i `http:` se odbacuju u skripti i pri prikazu.
 
 Stalni red "Ovaj tekst nije medicinski savjet. Za zdravstvena pitanja obratite se pedijatru." (i prevodi) dodaje sajt na dno svakog teksta iz rubrika Šišanje i njega i Za roditelje, svakog teksta u kojem se pominje zdravlje i svakog sa oznakom "vaške". Ne upisuje se u tekst.
 
@@ -84,6 +92,8 @@ Stalni red "Ovaj tekst nije medicinski savjet. Za zdravstvena pitanja obratite s
 - Izgled u pregledniku: strane iz funkcije (dugmad u boji rubrike, kartice, okvir "Šta možete uraditi danas") i kartica Kutak u panelu nijesu otvarane u browseru; boje su provjerene računom kontrasta, ne okom.
 - Google: prihvatanje `hreflang` `sr-ME`, indeksiranje, Search Console.
 - Keš: do oko 10 minuta od objave do sajta (5 min skripta + 5 min Vercel).
+- Javno čitanje (`?akcija=objave`) nikad ne pravi ni ne mijenja list "Objave"; samo korak 2 (meni Grasak > Postavi) i panel ga prave. Ako lista nema, javni odgovor je prazna lista.
+- Vremenski budžet 240 s i paralelni prevodi (`UrlFetchApp.fetchAll`) provjereni samo na lažnom servisu, ne na pravom Apps Scriptu.
 
 ## Vercel
 
@@ -91,4 +101,4 @@ Nijedna varijabla okruženja nije obavezna: adresa skripte je ista kao u `src/li
 
 ## Ako nešto pođe po zlu
 
-Apps Script > Deploy > Manage deployments > Edit > prethodna verzija. List "Objave" ostaje netaknut. Ako skripta ne odgovara, strane Kutka vraćaju 503 (Google ponovi), a sitemap izlazi bez Kutka na 30 sekundi; ostali dijelovi sajta se ne mijenjaju.
+Apps Script > Deploy > Manage deployments > Edit > prethodna verzija. List "Objave" ostaje netaknut. Ako skripta ne odgovara (rok 8 sekundi), strane Kutka prikazuju zadnju uspješnu listu iz keša instance (do 24 sata, sa kratkim kešom od 30 sekundi); bez nje vraćaju 503 sa `no-store`. Sitemap izlazi bez Kutka. Ostali dijelovi sajta se ne mijenjaju. Radno vrijeme i adresa u Kutku čitaju se iz `src/data/salon.js`, istog izvora kao ostatak sajta.

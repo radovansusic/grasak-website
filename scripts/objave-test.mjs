@@ -21,7 +21,7 @@ const a = gs.indexOf('// ===== OBJAVE-CISTE-POCETAK')
 const b = gs.indexOf('// ===== OBJAVE-CISTE-KRAJ')
 assert.ok(a > 0 && b > a, 'markeri bloka OBJAVE-CISTE nijesu nađeni u Grasak.gs')
 const ctx = vm.createContext({})
-const F = vm.runInContext(gs.slice(a, b) + `\n;({ objaveCisti_, objaveSlug_, objaveBrojke_, objaveLicno_, objaveProvjeri_, objaveSigurnaAdresa_, objavePreusmjerenje_, objaveNajduziNiz_, objaveParsirajOdgovor_, objaveClanak_, objaveOpis_, objaveNalogNacrt_, objaveNalogPrevod_, objaveHttps_, OBJAVE_JEZICI, objaveRizicno_, objaveSaListe_, objaveNepoznato_, objaveUnos_, objaveJezikIzvora_, objaveKodJezika_, objaveMinuta_, objaveRecenica_, objaveTrebaNapomenu_, objaveTaksonomija_, objaveKoraci_ })`, ctx)
+const F = vm.runInContext(gs.slice(a, b) + `\n;({ objaveCisti_, objaveSlug_, objaveBrojke_, objaveLicno_, objaveProvjeri_, objaveSigurnaAdresa_, objavePreusmjerenje_, objaveNajduziNiz_, objaveParsirajOdgovor_, objaveClanak_, objaveOpis_, objaveNalogNacrt_, objaveNalogPrevod_, objaveHttps_, OBJAVE_JEZICI, objaveRizicno_, objaveSaListe_, objaveNepoznato_, objaveUnos_, objaveJezikIzvora_, objaveKodJezika_, objaveMinuta_, objaveRecenica_, objaveTrebaNapomenu_, objaveTaksonomija_, objaveKoraci_, objaveNorm_, objaveImena_, objaveStatistika_, objaveTvrdnje_, objaveZaModel_, objaveVlastitiIzvor_, objaveNaslovnaRecenica_ })`, ctx)
 const EM = String.fromCharCode(0x2014)
 const TAX = JSON.parse(JSON.stringify(F.objaveTaksonomija_()))
 
@@ -116,13 +116,13 @@ t('dužina prema vrsti je upozorenje, ne zabrana', () => {
 })
 
 t('brojke bez izvora: blokirano; vrijeme, datum, cijena, uzrast, broj salona prolaze', () => {
-  assert.ok(pravila(objava('Kosa djetetu raste do 30% brže.' + DUG)).includes('brojka bez izvora'))
+  assert.ok(pravila(objava('Kosa djetetu raste do 30% brže.' + DUG)).includes('postotak ili statistika bez izvora'))
   assert.ok(pravila(objava('Preko 5000 djece nam vjeruje.' + DUG)).includes('brojka bez izvora'))
   assert.ok(pravila(objava('Hiljade porodica nam vjeruje.' + DUG)).includes('brojka bez izvora'))
   jeste(F.objaveBrojke_('Radimo od 15:00 do 21:00. Kratko šišanje 9€, srednje 11 eura. Od 1. oktobra, 13.11.2026. Za djecu od 2 godine. Zovite 069 371 111. Godina 2026. Termini 15-21 h.'), [])
   jeste(F.objaveBrojke_('Open from October 1, price 9 EUR, ages 3-12 years, 2026-11-11.'), [])
   jeste(F.objaveBrojke_('Мы работаем с 15:00 до 21:00, 1 октября.'), [])
-  assert.ok(pravila(objava('Tekst.' + DUG, { koraci: { cnr: ['Uradite to 3 puta dnevno.', 'Druga stvar.'] } })).includes('brojka bez izvora'))   // brojke u koracima se isto provjeravaju
+  assert.ok(pravila(objava('Tekst.' + DUG, { koraci: { cnr: ['Pozovite 17 porodica.', 'Druga stvar.'] } })).includes('brojka bez izvora'))   // brojke u koracima se isto provjeravaju
 })
 
 t('zdravstvene tvrdnje bez izvora: blokirano na sva četiri jezika', () => {
@@ -138,8 +138,10 @@ t('zdravstvene tvrdnje bez izvora: blokirano na sva četiri jezika', () => {
   jeste(F.objaveProvjeri_(objava('A little bit of fun.' + DUG)).blokirano, [])   // "bit" nije tvrdnja
 })
 
-t('sa izvorom: brojka i zdravstvena tvrdnja prolaze, ali lični podaci i rizične teme ne', () => {
-  jeste(F.objaveProvjeri_(objava('Kosa raste do 30% brže u prvim godinama, kaže studija.' + DUG, { ...IZVOR, vrsta: 'vijest' })).blokirano.filter((x) => x.pravilo.startsWith('brojka') || x.pravilo.startsWith('zdravstvena')), [])
+t('sa izvorom: brojka i zdravstvena tvrdnja prolaze zaustavljanje (uz potvrde), ali lični podaci i rizične teme ne', () => {
+  const sa = F.objaveProvjeri_(objava('Kosa raste brže u prvim godinama, a prema studiji čak 30%.' + DUG, { ...IZVOR, vrsta: 'vijest' }))
+  jeste(sa.blokirano.filter((x) => x.pravilo.startsWith('brojka') || x.pravilo.startsWith('zdravstvena') || x.pravilo.startsWith('postotak')), [])
+  assert.ok(sa.upozorenja.some((x) => /stoji u izvoru/.test(x)) && sa.zdravstvene.length === 1)   // izvor ne otključava sve: postotak traži potvrdu, zdravstvena tvrdnja drugu potvrdu
   assert.ok(pravila(objava('Dječak Luka je bio hrabar.' + DUG, IZVOR)).includes('lični podaci nijesu dozvoljeni'))
   assert.ok(pravila(objava('Šampon protiv vaški ubija sve.' + DUG, IZVOR)).includes('rizična tema, ne objavljuje se ni uz izvor'))
 })
@@ -244,7 +246,7 @@ t('sistemski nalozi: glas Graška, taksonomija, senzorna osjetljivost iz iskustv
   const nalozi = [F.objaveNalogNacrt_(), ...['en', 'ru', 'tr'].map((j) => F.objaveNalogPrevod_(j))]
   for (const n of nalozi) {
     assert.ok(!n.includes(EM), 'duga crta u nalogu')
-    assert.ok(/frizerski salon za djecu/.test(n) && /"vi"/.test(n) && /Nikad ne piši brojke/.test(n) && /lični podatak/.test(n))
+    assert.ok(/frizerski salon za djecu/.test(n) && /"vi"/.test(n) && /Nikad ne piši procente/.test(n) && /lični podatak/.test(n))
     assert.ok(/šta mi radimo/.test(n) && /Senzorna osjetljivost/.test(n))
   }
   const nacrt = nalozi[0]
@@ -252,6 +254,113 @@ t('sistemski nalozi: glas Graška, taksonomija, senzorna osjetljivost iz iskustv
   for (const r of TAX.rubrike) assert.ok(nacrt.includes(r.slug)); for (const v of TAX.vrste) assert.ok(nacrt.includes(v.slug)); for (const o of TAX.oznake) assert.ok(nacrt.includes(o.slug))
   assert.ok(/bilo kom jeziku/.test(nacrt) && /UVIJEK piši na crnogorskom/.test(nacrt) && /najviše jedna kratka rečenica citata/.test(nacrt) && /samo ako stoje u izvoru/.test(nacrt) && /izvor_jezik/.test(nacrt))
   assert.ok(/ruski/.test(nalozi[2]) && /turski/.test(nalozi[3]) && /engleski/.test(nalozi[1]) && /koraci/.test(nalozi[1]))
+})
+
+/* ---------- KRUG 3: lažni zastoji (V2), zaobilaženje (S1), lični podaci prema modelu (S3) ---------- */
+
+const OBICNE = [
+  'Child Haircut Tips for Parents', 'Baby Steps to a Calm Haircut', 'Kid Friendly Haircuts', 'Çocuk Saç Kesimi İçin İpuçları', 'Bebek Saç Bakımı Rehberi',
+  'Anne Baba Rehberi', 'Ребенок Первая Стрижка', 'Dijete Je Hrabro', 'Dijete Mjeseca', 'Pokažite dijete\nSljedeći korak je mala pauza.',
+  'Igrajte se 10 minuta.', 'Ponovite 2 puta, pa još 3 koraka.', 'Pričekajte oko 20 minuta u igraonici.', 'Zdravlje vašeg djeteta je na prvom mjestu.', 'Igra sprječava dosadu.',
+  'Doktor Lutka čeka u igraonici.', 'Mama i tata mogu da sjede pored djeteta.', 'Šišanje je za djecu od 3 do 6 godina i košta 9 eura.',
+]
+const jedna = (s, rubrika = '') => ({ licno: F.objaveLicno_(s), brojke: F.objaveBrojke_(s), stat: F.objaveStatistika_(s, rubrika), tvrdnje: F.objaveTvrdnje_(s), rizicno: F.objaveRizicno_(s) })
+const cisto = (x) => JSON.stringify(x) === JSON.stringify({ licno: [], brojke: [], stat: [], tvrdnje: [], rizicno: [] })
+
+t('V2: obične rečenice i naslovi (en, tr, ru, cnr) prolaze sve provjere; "10 minuta", "2 puta", "3 koraka", zdravlje kao riječ nijesu zastoj', () => {
+  for (const s of OBICNE) assert.ok(cisto(jedna(s)), 'lažni zastoj: ' + s.replace(/\n/g, '/') + ' -> ' + JSON.stringify(jedna(s)))
+  // cijela objava sa takvim naslovom i tekstom (i potvrđenim prevodima na en i tr) prolazi bez zaustavljanja
+  const o = objava('Igrajte se 10 minuta, ponovite 2 puta i uradite 3 koraka. Zdravlje vašeg djeteta je na prvom mjestu, a igra sprječava dosadu.' + DUG,
+    { naslov: { cnr: 'Dijete Mjeseca', en: 'Child Haircut Tips for Parents', ru: 'Ребенок Первая Стрижка', tr: 'Çocuk Saç Kesimi İçin İpuçları' }, potvrda: { en: true, ru: true, tr: true } },
+    { en: 'Baby Steps to a Calm Haircut for you and your little one, in a text that is long enough.', ru: 'Ребенок Первая Стрижка: короткий текст для родителей малышей, достаточно длинный.', tr: 'Anne Baba Rehberi: minikler için kısa bir yazı, yeterince uzun bir metin.' })
+  o.naslov.en = 'Child Haircut Tips for Parents'; o.koraci = { cnr: K2, en: K2, ru: K2, tr: K2 }
+  jeste(F.objaveProvjeri_(o).blokirano, [])
+})
+
+t('V2a: ime se hvata samo uz oznaku odnosa ili uzrasta u istoj rečenici; velika slova u naslovu i na početku rečenice nijesu ime', () => {
+  for (const s of ['mala Ana (4) je plakala.', 'Markova mama je čekala.', 'Naš klijent Luka je došao.', 'Dječak Luka je bio hrabar.', 'Hvala mama Ana na povjerenju.', 'Our little girl Mia loved it.', 'Marko, 4 godine, nije plakao.', 'Mama Ana i tata Luka su čekali.', '4-godišnji Marko voli autić.', 'Ana (4 godine) se smijala.', 'Marko\'s mom waited outside.'])
+    assert.ok(F.objaveLicno_(s).length, 'propušteno ime: ' + s)
+  // ne prelazi preko novog reda ni tačke
+  jeste(F.objaveLicno_('Pokažite dijete\nSljedeći korak je pauza.'), []); jeste(F.objaveLicno_('Pokažite dijete. Sljedeći korak je pauza.'), [])
+  jeste(F.objaveLicno_('Savjet (3) je jednostavan.'), [])           // broj u zagradi bez odnosa nije uzrast
+  assert.equal(F.objaveNaslovnaRecenica_('Child Haircut Tips for Parents'), true); assert.equal(F.objaveNaslovnaRecenica_('Dijete Luka je hrabar'), false)
+  // provjera ličnih podataka ide samo kroz jezike koji izlaze: crnogorski i potvrđeni prevodi
+  const sa = (potvrda) => objava('Tekst.' + DUG, { potvrda }, { en: 'Our little girl Mia was so brave in the chair, a text long enough to count.', ru: '', tr: '' })
+  const en = (o) => ({ ...o, naslov: { ...o.naslov, en: 'Brave girl' }, koraci: { cnr: K2, en: K2, ru: [], tr: [] } })
+  assert.ok(!pravila(en(sa({ en: false }))).includes('lični podaci nijesu dozvoljeni'))     // nepotvrđen prevod ne izlazi, pa se tu ne traži
+  assert.ok(pravila(en(sa({ en: true }))).includes('lični podaci nijesu dozvoljeni'))        // potvrđen izlazi: staje
+})
+
+t('V2b: svakodnevne količine prolaze bez izvora; procenti i statistika o djeci staju (i riječima); popust salona samo u rubrici Iz Graška', () => {
+  for (const s of ['Igrajte se 10 minuta.', 'Ponovite 2 puta.', 'Uradite 3 koraka.', 'Pričekajte oko 20 minuta.', 'Dođite 15 minuta ranije, oko 2 sata prije.', '1. Dođite mirno.\n2. Pitajte dijete.', 'Radimo 3 dana u sedmici, termin traje 30 min.', 'Uzrast 3-6, ukupno 4 komada.', 'Cijena 9 eura.', 'Uputstvo od 10 do 15 minuta.'])
+    jeste(F.objaveBrojke_(s), [], 'brojka: ' + s)
+  for (const s of ['Kosa raste do 30% brže.', 'Pedeset posto djece se plaši.', 'Trideset odsto roditelja.', 'Devet od deset roditelja to zna.', 'Svako treće dijete se boji.', 'Every third child is afraid.', 'Nine out of ten parents agree.', 'Half of all children cry.', 'Каждый третий ребенок боится.', 'Девять из десяти родителей.', 'Yüzde otuz çocuk korkar.', 'Her üç çocuktan biri korkar.', 'Dvije trećine djece.'])
+    assert.ok(F.objaveStatistika_(s).length, 'propuštena statistika: ' + s)
+  jeste(F.objaveStatistika_('Do kraja mjeseca 10% popusta na šišanje.', 'iz-graska'), [])
+  assert.ok(F.objaveStatistika_('Do kraja mjeseca 10% popusta na šišanje.', 'igraonica').length)
+  assert.ok(!pravila(objava('Do kraja mjeseca 10% popusta na šišanje.' + DUG, { vrsta: 'iz-salona', rubrika: 'iz-graska', oznake: ['praznici', 'vrtic'] })).includes('postotak ili statistika bez izvora'))
+  assert.ok(pravila(objava('Do kraja mjeseca 10% popusta na šišanje.' + DUG, { vrsta: 'iz-salona', rubrika: 'igraonica' })).includes('postotak ili statistika bez izvora'))
+})
+
+t('V2c: zaustavlja se zdravstvena TVRDNJA, ne riječ "zdravlje"; rizične teme ostaju tvrdi zastoj', () => {
+  for (const s of ['Šišanje liječi perut.', 'Ovaj šampon sprječava infekcije.', 'Kosa raste brže ljeti.', 'Zdravlje kose počinje redovnim šišanjem.', 'Doctors recommend this every day.', 'Clinically proven to strengthen hair.', 'Preporučena doza je jedna kapsula.', 'Studije pokazuju da je tako.', 'Naučno dokazano.', 'Врачи рекомендуют это.', 'Bilimsel olarak kanıtlanmış.', 'Jača imunitet djeteta.'])
+    assert.ok(F.objaveTvrdnje_(s).length, 'propuštena tvrdnja: ' + s)
+  for (const s of ['Zdravlje vašeg djeteta je na prvom mjestu.', 'Igra sprječava dosadu.', 'Doktor Lutka čeka u igraonici.', 'Ljekar nam je gost na radionici.', 'Healthy habits start with a smile.'])
+    jeste(F.objaveTvrdnje_(s), [], 'lažna tvrdnja: ' + s)
+  assert.ok(pravila(objava('Šampon protiv vaški ubija sve.' + DUG, IZVOR)).includes('rizična tema, ne objavljuje se ni uz izvor'))
+  assert.ok(pravila(objava('Opadanje kose je rijetko.' + DUG, IZVOR)).includes('rizična tema, ne objavljuje se ni uz izvor'))
+})
+
+t('V2d: izvor otključava samo uz naziv; broj i postotak uz izvor traže potvrdu, zdravstvena tvrdnja drugu potvrdu, vlastiti sajt nije izvor', () => {
+  const tv = 'Kosa raste brže u prvim godinama.' + DUG
+  assert.ok(pravila(objava(tv, { izvor_url: 'https://portal.me/a' })).includes('zdravstvena tvrdnja bez izvora'))        // link bez naziva
+  assert.ok(greske(objava(tv, { izvor_url: 'https://portal.me/a' })).izvor_naziv)
+  assert.ok(pravila(objava(tv, { izvor_naziv: 'Portal' })).includes('zdravstvena tvrdnja bez izvora'))                      // naziv bez linka
+  assert.ok(pravila(objava(tv, { izvor_naziv: 'x', izvor_url: 'https://portal.me/a' })).includes('zdravstvena tvrdnja bez izvora'))   // naziv prekratak
+  const sa = F.objaveProvjeri_(objava(tv, IZVOR))
+  jeste(sa.blokirano, []); assert.equal(sa.zdravstvene.length, 1); assert.equal(sa.zdravstvene[0].jezik, 'cnr')
+  assert.ok(F.objaveProvjeri_(objava('Preko 5000 djece nam vjeruje, kaže izvor.' + DUG, IZVOR)).blokirano.length === 0)
+  const vl = objava('Običan tekst.' + DUG, { izvor_naziv: 'Naš sajt', izvor_url: 'https://grasaksalon.me/kutak/a' })
+  assert.ok(greske(vl).izvor_url); assert.ok(pravila({ ...vl, tijelo: { cnr: 'Kosa raste brže ljeti.' + DUG } }).includes('zdravstvena tvrdnja bez izvora'))
+  assert.ok(F.objaveVlastitiIzvor_('https://sub.vercel.app/x') && !F.objaveVlastitiIzvor_('https://portal.me/x'))
+  // izbačen http link: greška, ne tiho
+  assert.ok(greske(objava('Tekst.' + DUG, { izvor_naziv: 'Portal', izvor_url: '', izvor_url_odbacen: true })).izvor_url)
+})
+
+t('S1: normalizacija prije provjera: razmaknuta slova, nevidljivi znaci, ćirilični dvojnici, e-pošta zaobilazno, brojevi riječima', () => {
+  const ZW = String.fromCharCode(0x200B), SHY = String.fromCharCode(0x00AD), CIR_A = String.fromCharCode(0x0430)
+  const stop = (s, polje) => assert.ok(F[polje](s).length, polje + ' propustio: ' + JSON.stringify(s))
+  stop('K o s a  r a s t e  b r ž e  u z  v i t a m i n e', 'objaveTvrdnje_')
+  stop('K.o.s.a r.a.s.t.e b.r.ž.e', 'objaveTvrdnje_')
+  stop('O' + ZW + 'padanje kose', 'objaveRizicno_')
+  stop('Opa' + SHY + 'danje kose', 'objaveRizicno_')
+  stop('dijete ' + ZW + 'Luka je došao', 'objaveLicno_')
+  stop('zdr' + CIR_A + 'vlje kose', 'objaveTvrdnje_')                   // "а" je ćirilično
+  stop('kosa raste br' + String.fromCharCode(0x017E) + String.fromCharCode(0x0435), 'objaveTvrdnje_')   // ćirilično "е" na kraju
+  stop('mail: marko[at]gmail.com', 'objaveLicno_'); stop('piši na marko (at) gmail dot com', 'objaveLicno_'); stop('marko at gmail.com', 'objaveLicno_')
+  stop('K o s a', 'objaveNorm_'); assert.equal(F.objaveNorm_('K o s a  r a s t e'), 'Kosa  raste')
+  assert.equal(F.objaveNorm_('ｚｄｒａｖｌｊｅ'), 'zdravlje')      // NFKC: široka slova
+  stop('Pedeset posto djece.', 'objaveStatistika_'); stop('Devet od deset roditelja.', 'objaveStatistika_'); stop('Svako treće dijete.', 'objaveStatistika_')
+  assert.equal(F.objaveNorm_('O' + ZW + 'dgovor'), 'Odgovor')
+  // obična rečenica sa pojedinačnim slovima ostaje netaknuta
+  assert.equal(F.objaveNorm_('Vitamin A i B su u hrani.'), 'Vitamin A i B su u hrani.')
+  // normalizacija je dio pune provjere
+  assert.ok(pravila(objava('K o s a  r a s t e  b r ž e  u z  v i t a m i n e.' + DUG)).includes('zdravstvena tvrdnja bez izvora'))
+  assert.ok(pravila(objava('O' + ZW + 'padanje kose kod djece.' + DUG, IZVOR)).includes('rizična tema, ne objavljuje se ni uz izvor'))
+})
+
+t('S3: bilješka prema modelu: telefon i e-pošta se uklanjaju, ime uz oznaku odnosa se vraća (zaustavlja), tekst je normalizovan', () => {
+  const r = F.objaveZaModel_('Mama Ana, 067 123 456, ana.k@gmail.com traži termin za subotu.')
+  assert.ok(!/067|gmail|123 456/.test(r.tekst)); jeste(r.uklonjeno, ['broj telefona', 'adresa e-pošte']); assert.ok(r.imena.includes('Ana'))
+  const cisto2 = F.objaveZaModel_('Od sutra radimo i nedjeljom od 11:00 do 21:00. Zovite 069 371 111.')
+  jeste(cisto2.imena, []); assert.ok(cisto2.tekst.includes('11:00') && !cisto2.tekst.includes('069 371 111'))
+  assert.ok(!F.objaveNalogNacrt_().includes('Kristina'))   // ime urednika nije u sistemskom nalogu
+})
+
+t('S6: izvor_url samo https (u provjeri i u renderu): javascript:, data:, http: otpadaju', () => {
+  for (const lose of ['javascript:alert(document.domain)', 'JaVaScRiPt:alert(1)', 'data:text/html,<script>', 'http://portal.me/a', '//portal.me/a', 'https://', 'https://portal', ' javascript:alert(1)'])
+    assert.ok(!F.objaveHttps_(lose), 'prošlo: ' + lose)
+  assert.equal(F.objaveHttps_('https://portal.me/a?x=1'), 'https://portal.me/a?x=1')
 })
 
 /* ---------- 2) api/_lib/kutak.js ---------- */
@@ -351,6 +460,36 @@ t('strana oznake: noindex,follow dok oznaka nema 5 tekstova na tom jeziku; sa 5 
   assert.ok(st(sa(5)).includes('Oznaka: igre napolju'))
 })
 
+t('S6 i N: izvor se u renderu prikazuje samo kao https (javascript: otpada iz href, JSON-LD i RSS); kontrolni znaci ne kvare RSS ni HTML', () => {
+  const zlo = { ...ob, izvor_url: 'javascript:alert(document.domain)', izvor_naziv: 'Zlo', naslov: { cnr: 'Naslov\u0008 sa znakom\u0000 i\u200B nevidljivim', en: 'x' } }
+  const h = R.renderObjava(zlo, 'cnr', TAX, [])
+  assert.ok(!/javascript:/i.test(h) && !h.includes('class="izvor"') && !h.includes('"citation"'))
+  assert.ok(!/[\u0000-\u0008\u200B]/.test(h) && h.includes('Naslov sa znakom i nevidljivim'))
+  const rss = R.renderRss([{ ...zlo, tijelo: undefined }], TAX)
+  assert.ok(!/javascript:/i.test(rss) && !rss.includes('<source') && !/[\u0000-\u0008]/.test(rss))
+  for (const lose of ['data:text/html,x', 'http://portal.me/a', 'JAVASCRIPT:alert(1)', 'https://', '//portal.me', 'https://portal.me/a"onmouseover="x']) assert.equal(R.httpsUrl(lose), '', lose)
+  assert.equal(R.httpsUrl('https://portal.me/a?x=1&y=2'), 'https://portal.me/a?x=1&y=2')
+  const dobar = R.renderObjava(ob, 'cnr', TAX, [])
+  assert.ok(dobar.includes('href="https://portal.me/a?x=1&amp;y=2"') && dobar.includes('"citation"'))
+  assert.equal(R.bezKontrolnih('a\u0008b\u00ADc\td\n'), 'abc\td\n')
+})
+
+import { SALON } from '../src/data/salon.js'
+t('S8: radno vrijeme, adresa i telefon u Kutku dolaze iz iste datoteke kao podnožje sajta (src/data/salon.js), ne iz koda Kutka', () => {
+  const h = R.renderObjava(ob, 'cnr', TAX, [])
+  assert.ok(h.includes('Branka Deletića bb') && h.includes('Uto–Pet: 15:00–21:00') && h.includes('Sub–Ned: 11:00–21:00') && h.includes('+382 69 371 111') && h.includes('tel:+38269371111'))
+  const sacuvano = SALON.radno[0].od
+  try {
+    SALON.radno[0].od = '16:00'; SALON.telefon = '+382 69 000 000'
+    const h2 = R.renderLista([], 'en', TAX)
+    assert.ok(h2.includes('Tue–Fri: 16:00–21:00') && h2.includes('+382 69 000 000'), 'promjena u salon.js se mora vidjeti u Kutku')
+  } finally { SALON.radno[0].od = sacuvano; SALON.telefon = '+382 69 371 111' }
+  const kod = fs.readFileSync(path.join(koren, 'api/_lib/kutak.js'), 'utf8')
+  assert.ok(!/15-21|15:00|Deletića|371 111/.test(kod), 'u kutak.js nema upisanog radnog vremena, adrese ni telefona')
+  const prevodi = fs.readFileSync(path.join(koren, 'src/i18n/translations.ts'), 'utf8')
+  assert.ok(/radnoRed\('cnr', 0\)/.test(prevodi) && /SALON\.adresa\.cnr\[0\]/.test(prevodi) && !/15:00–21:00/.test(prevodi), 'podnožje sajta čita istu datoteku')
+})
+
 t('greške, RSS, sitemap bez praznih rubrika i slabih oznaka, hreflang samo među stvarnim prevodima', () => {
   assert.ok(R.renderGreska('en', 'skinuta').includes('taken down') && R.renderGreska('cnr', 'nema').includes('noindex'))
   const rss = R.renderRss(LISTA, TAX)
@@ -387,7 +526,6 @@ t('rute i adresa skripte', async () => {
   assert.ok(ok.ok && ok.u.includes('akcija=objave'))
   jeste(await R.iSkripte({}, {}, async () => { throw new Error('mreža') }), { greska: true })
   jeste(await R.iSkripte({}, {}, async () => ({ ok: false })), { greska: true })
-  jeste(await R.ucitajLista({}, async () => ({ ok: true, json: async () => ({ ok: true, objave: [] }) })), { greska: true })   // stara skripta bez taksonomije
 })
 
 t('funkcije api/*.js: statusi, keš, rubrika, oznaka, filter (skripta zamijenjena lažnim fetch-om)', async () => {
@@ -412,10 +550,36 @@ t('funkcije api/*.js: statusi, keš, rubrika, oznaka, filter (skripta zamijenjen
     r = await poziv(H, '/kutak/tema/igraonica?vrsta=savjet'); assert.equal(r.status, 200); assert.ok(r.tijelo.includes('noindex, follow'))   // rezerva: putanja + upit
     r = await poziv(RSS, '/kutak/rss.xml'); assert.equal(r.status, 200); assert.ok(r.hd['content-type'].startsWith('application/rss+xml'))
     r = await poziv(SM, '/sitemap.xml'); assert.equal(r.status, 200); assert.ok(r.tijelo.includes('grasaksalon.me/en/kutak/prvo-sisanje'))
+    // V1: nema nijednog teksta = prazna strana 200 (noindex), ne 503; stara skripta (bez Kutka) je takođe prazna strana, kratko keširana
+    R.zaboraviZadnje()
+    lazno(() => ({ ok: true, objave: [], taksonomija: TAX }))
+    r = await poziv(H, '/api/kutak'); assert.equal(r.status, 200); assert.ok(r.tijelo.includes('Uskoro ovdje stižu prvi tekstovi.') && r.tijelo.includes('noindex')); assert.ok(/s-maxage=300/.test(r.hd['cache-control']))
+    lazno(() => ({ greska: 'Nepoznata akcija' }))
+    r = await poziv(H, '/api/kutak'); assert.equal(r.status, 200); assert.ok(r.tijelo.includes('noindex')); assert.equal(r.hd['cache-control'], 'public, s-maxage=30')
+    r = await poziv(RSS, '/kutak/rss.xml'); assert.equal(r.status, 200)
+    // S7: skripta kasni ili ne odgovara, a postoji zadnja uspješna kopija: lista i tekst se vraćaju iz nje (kratki keš); bez kopije 503 bez keša
+    R.zaboraviZadnje()
+    lazno((u) => (u.searchParams.get('akcija') === 'objave' ? { ok: true, objave: LISTA, taksonomija: TAX } : { ok: true, objava: ob, taksonomija: TAX }))
+    r = await poziv(H, '/api/kutak'); assert.equal(r.status, 200); r = await poziv(H, '/api/kutak?jez=en&slug=prvo-sisanje'); assert.equal(r.status, 200)
+    lazno(() => new Error('skripta kasni'))
+    r = await poziv(H, '/api/kutak'); assert.equal(r.status, 200); assert.ok(r.tijelo.includes('/kutak/prvo-sisanje')); assert.equal(r.hd['cache-control'], 'public, s-maxage=30')
+    r = await poziv(H, '/api/kutak?jez=en&slug=prvo-sisanje'); assert.equal(r.status, 200); assert.ok(r.tijelo.includes('First haircut')); assert.equal(r.hd['cache-control'], 'public, s-maxage=30')
+    r = await poziv(H, '/api/kutak?slug=drugi-tekst'); assert.equal(r.status, 503); assert.equal(r.hd['cache-control'], 'no-store')   // taj tekst nikad nije uspješno stigao
+    r = await poziv(RSS, '/kutak/rss.xml'); assert.equal(r.status, 200); assert.ok(r.tijelo.includes('prvo-sisanje')); assert.ok(/s-maxage=30/.test(r.hd['cache-control']))
+    // rok za odgovor: spora skripta se prekida (ovdje 40 ms), i to je greška, ne vječito čekanje
+    const spor = (u, o) => new Promise((resolve, reject) => { o.signal.addEventListener('abort', () => reject(new Error('prekinuto'))) })
+    const t0 = Date.now(); jeste(await R.iSkripte({ akcija: 'objave' }, { OBJAVE_ROK_MS: '40' }, spor), { greska: true }); assert.ok(Date.now() - t0 < 2000)
+    const kasni = await R.ucitajLista({ OBJAVE_ROK_MS: '40' }, spor); assert.equal(kasni.staro, true); assert.equal(kasni.lista.length, LISTA.length)   // spora skripta: zadnja uspješna lista
+    // skripta odgovara bez taksonomije (neispravan odgovor) i nema zadnje kopije: greška
+    R.zaboraviZadnje()
+    jeste(await R.ucitajLista({}, async () => ({ ok: true, json: async () => ({ ok: true, objave: [] }) })), { greska: true })
+    // skripta zaista ne odgovara i nema zadnje uspješne kopije: 503 samo tada, i NIKAD u CDN kešu
+    R.zaboraviZadnje()
     lazno(() => new Error('skripta ne odgovara'))
-    r = await poziv(H, '/api/kutak?slug=prvo-sisanje'); assert.equal(r.status, 503); assert.equal(r.hd['retry-after'], '60'); assert.ok(/s-maxage=10/.test(r.hd['cache-control']))
-    r = await poziv(H, '/api/kutak'); assert.equal(r.status, 503)
-    r = await poziv(SM, '/sitemap.xml'); assert.equal(r.status, 200); assert.ok(!r.tijelo.includes('/kutak') && r.tijelo.includes('/usluge')); assert.ok(/s-maxage=30/.test(r.hd['cache-control']))
+    r = await poziv(H, '/api/kutak?slug=prvo-sisanje'); assert.equal(r.status, 503); assert.equal(r.hd['retry-after'], '60'); assert.equal(r.hd['cache-control'], 'no-store')
+    r = await poziv(H, '/api/kutak'); assert.equal(r.status, 503); assert.equal(r.hd['cache-control'], 'no-store')
+    r = await poziv(RSS, '/kutak/rss.xml'); assert.equal(r.status, 503); assert.equal(r.hd['cache-control'], 'no-store')
+    r = await poziv(SM, '/sitemap.xml'); assert.equal(r.status, 200); assert.ok(!r.tijelo.includes('/kutak') && r.tijelo.includes('/usluge')); assert.equal(r.hd['cache-control'], 'no-store')
   } finally { globalThis.fetch = stari }
 })
 

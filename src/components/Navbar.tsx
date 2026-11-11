@@ -3,7 +3,7 @@ import { Link, NavLink } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Phone, CalendarCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { kutakPutanja } from '@/lib/kutak'
+import { kutakPutanja, useKutakIma } from '@/lib/kutak'
 import { useLang } from '@/i18n/LanguageContext'
 import type { Lang } from '@/i18n/translations'
 
@@ -37,6 +37,7 @@ function LangSwitcher({ className }: { className?: string }) {
 
 export default function Navbar() {
   const { tr, lang } = useLang()
+  const kutakIma = useKutakIma()
   const links = [
     { to: '/', label: tr('nav.home') },
     { to: '/usluge', label: tr('nav.usluge') },
@@ -106,9 +107,11 @@ export default function Navbar() {
               </NavLink>
             </li>
           ))}
-          <li>
-            <a href={kutakPutanja(lang)} className="whitespace-nowrap rounded-full px-3 py-2 text-sm font-bold text-ink transition-colors hover:bg-grass-tint hover:text-grass-deep">{tr('nav.kutak')}</a>
-          </li>
+          {kutakIma && (
+            <li>
+              <a href={kutakPutanja(lang)} className="whitespace-nowrap rounded-full px-3 py-2 text-sm font-bold text-ink transition-colors hover:bg-grass-tint hover:text-grass-deep">{tr('nav.kutak')}</a>
+            </li>
+          )}
         </ul>
 
         <div className="hidden items-center gap-2 lg:flex">
@@ -171,9 +174,11 @@ export default function Navbar() {
                   </NavLink>
                 </motion.li>
               ))}
-              <li className="w-full max-w-xs">
-                <a href={kutakPutanja(lang)} onClick={() => setOpen(false)} className="block rounded-full bg-white px-6 py-4 text-center font-display text-2xl font-bold text-ink shadow-md">{tr('nav.kutak')}</a>
-              </li>
+              {kutakIma && (
+                <li className="w-full max-w-xs">
+                  <a href={kutakPutanja(lang)} onClick={() => setOpen(false)} className="block rounded-full bg-white px-6 py-4 text-center font-display text-2xl font-bold text-ink shadow-md">{tr('nav.kutak')}</a>
+                </li>
+              )}
               <motion.li
                 initial={{ opacity: 0, x: 24 }}
                 animate={{ opacity: 1, x: 0 }}
