@@ -944,6 +944,10 @@ t('gola zagrada "Riječ (N)": oznaka odnosa i riječ usred rečenice zadržavaju
   for (const r of ['Korak (1) je razgovor.', 'Slika (2) pokazuje stolicu.', 'Za više informacija pogledajte Tabelu (2).', 'Vidi Sliku (3) iznad.', 'U Fazi (2) dijete gleda.', 'Opcija (1) je bolja.', 'Pogledajte Opciju (2) ispod.']) { jeste(F.objaveImena_(r), [], 'zadržavanje: ' + r); jeste(F.objaveImePrezime_(r), [], 'upozorenje: ' + r) }
   // ime salona u padežima (nepostojano a): ni zadržavanje ni upozorenje
   for (const r of ['Šišanje u Grašku (1) traje kratko.', 'U Grašku od 2 godine šišamo djecu.', 'Graškov tim, 3 godine rada sa djecom.', 'Graškom (2) se bavi Kristina.', 'Grašak (3) je salon.']) { jeste(F.objaveImena_(r), [], 'zadržavanje: ' + r); jeste(F.objaveImePrezime_(r), [], 'upozorenje: ' + r) }
+  // prezimena koja počinju osnovom Grašk- zadržavaju kao na f; padeži salona i Slici/Koraci ne daju ništa
+  for (const r of ['Mala Graškić (3) je došla.', 'Dijete Grašković, 4 godine, plače.']) { assert.ok(F.objaveImena_(r).length > 0, 'propust (prezime): ' + r); assert.ok(F.objaveLicno_(r).length > 0, 'propust (prezime, lično): ' + r) }
+  for (const r of ['Graškovim klijentima (3) šaljemo podsjetnik.', 'Slici (2) dodajemo opis.', 'Koraci (3) su jednostavni.', 'Koracima (2) dodajemo slike.']) { jeste(F.objaveImena_(r), [], 'zadržavanje: ' + r); jeste(F.objaveImePrezime_(r), [], 'upozorenje: ' + r) }
+  assert.ok(F.objaveImena_('Dijete Korać (4) je plakalo.').length > 0, 'prezime Korać ne smije proći')
   // ista riječ ne daje oba ishoda
   for (const r of ['Dijete Mila (4) je plakalo.', 'Tog dana je Martina (4) plakala.', 'Martina (4) je plakala.']) assert.ok(F.objaveImena_(r).length === 0 || F.objaveImePrezime_(r).length === 0, 'oba ishoda: ' + r)
   // tekst upozorenja: jedno ime kaže "ime", ime i prezime kaže "ime i prezime"
