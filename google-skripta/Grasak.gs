@@ -2787,7 +2787,7 @@ const OBJAVE_REL = [
   '\\u0440\\u0435\\u0431\\u0435\\u043d\\u043e\\u043a', '\\u0440\\u0435\\u0431\\u0451\\u043d\\u043e\\u043a', '\\u043c\\u0430\\u043b\\u044c\\u0447\\u0438\\u043a\\w*', '\\u0434\\u0435\\u0432\\u043e\\u0447\\u043a\\w*', '\\u0441\\u044b\\u043d\\w*', '\\u0434\\u043e\\u0447\\u044c', '\\u0434\\u043e\\u0447\\u043a\\w*', '\\u043c\\u0430\\u043b\\u044b\\u0448\\w*', '\\u043c\\u0430\\u043c\\u0430', '\\u043c\\u0430\\u043c\\u0443', '\\u043f\\u0430\\u043f\\u0430', '\\u043f\\u0430\\u043f\\u0443', '\\u043a\\u043b\\u0438\\u0435\\u043d\\u0442\\w*',
   '\\u00e7ocuk\\w*', 'o\\u011f\\w*', 'k\\u0131z\\w*', 'bebek\\w*', 'anne\\w*', 'baba\\w*', 'm\\u00fc\\u015fteri\\w*',
 ].join('|');
-const OBJAVE_IMENA_OK = /^(?:gra[šs]ak.*|грашак.*|podgoric.*|crn[aeou].*|montenegro.*|mjesec.*|januar.*|februar.*|mart|martu|martom|martovsk.*|april.*|maj|maju|majem|majk.*|majst.*|majsk.*|jun|junu|junom|junsk.*|junak.*|jul|julu|julom|julsk.*|avgust.*|septemb.*|oktob.*|novemb.*|decemb.*|ponedjelj.*|utorak.*|srijed.*|četvrt.*|petak.*|subot.*|nedjelj.*|koje|koji|kada|kako|gdje|ako|bez|kroz|pri|ali|ili|kao|šta|što|savjet.*|korak.*|slika|slike|tabela|izvor.*|napomena|faza|opcija|primjer.*|igra.*|kosa|danas|sada|tada|ovdje|obično|često|ponekad|uvijek|dječij.*|kutak.*|frizersk.*|salon.*|evropsk.*|svjetsk.*|nova|novo|novi|the|and|for|with|are|you|your|our|from|that|this|dijet.*|djec.*|dje[cč]ak.*|djevoj.*|dete(?:t.*)?|dec(?:a|e|i|u|om)|de[cč]ak.*|devoj.*|dečij.*|mali[sš]an.*|beb[aeiu]|child.*|kids?|baby|toddler)$/i;   // nije ime: Grašak, Podgorica, mjeseci, dani, veznici. Mjesec je tačan oblik riječi (ne prefiks): Maja, Marta, Martina, Julija, Jula, Juna su imena; "maja/marta/jula/juna" kao mjesec rješava objaveImena_ po kontekstu (iza dolazi godina, riječ mjesec ili drugi mjesec)
+const OBJAVE_IMENA_OK = /^(?:gra[šs]ak.*|грашак.*|podgoric.*|crn[aeou].*|montenegro.*|mjesec.*|januar.*|februar.*|mart|martu|martom|martovsk.*|april.*|maj|maju|majem|majk.*|majst.*|majsk.*|jun|junu|junom|junsk.*|junak.*|jul|julu|julom|julsk.*|avgust.*|septemb.*|oktob.*|novemb.*|decemb.*|ponedjelj.*|utorak.*|srijed.*|četvrt.*|petak.*|subot.*|nedjelj.*|koje|koji|kada|kako|gdje|ako|bez|kroz|pri|ali|ili|kao|šta|što|savjet.*|korak.*|slik[aeiu]|tabel[aeiu]|izvor.*|napomena|faz[aeiu]|opcij[aeiu]|primjer.*|igra.*|kosa|danas|sada|tada|ovdje|obično|često|ponekad|uvijek|dječij.*|kutak.*|frizersk.*|salon.*|evropsk.*|svjetsk.*|nova|novo|novi|the|and|for|with|are|you|your|our|from|that|this|dijet.*|djec.*|dje[cč]ak.*|djevoj.*|dete(?:t.*)?|dec(?:a|e|i|u|om)|de[cč]ak.*|devoj.*|dečij.*|mali[sš]an.*|beb[aeiu]|child.*|kids?|baby|toddler)$/i;   // nije ime: Grašak, Podgorica, mjeseci, dani, veznici. Mjesec je tačan oblik riječi (ne prefiks): Maja, Marta, Martina, Julija, Jula, Juna su imena; "maja/marta/jula/juna" kao mjesec rješava objaveImena_ po kontekstu (iza dolazi godina, riječ mjesec ili drugi mjesec)
 const OBJAVE_VELIKO = 'A-ZÀ-ÞČĆŠŽĐĞİŞЀ-Я';
 const OBJAVE_MALO = 'a-zà-ÿĀ-ɏа-џ';
 const OBJAVE_IME = '[' + OBJAVE_VELIKO + '][' + OBJAVE_MALO + ']{2,}';
@@ -2863,7 +2863,14 @@ function objaveImena_(tekst) {
         const mala = r.replace(new RegExp('[' + OBJAVE_VELIKO + ']{3,}', 'g'), w => (/^(?:GOD|MJES|YEAR|MONTH|YO$)/.test(w) ? w.toLowerCase() : w.charAt(0) + w.slice(1).toLowerCase()));
         if (mala !== r) { uzRe.lastIndex = 0; while ((m = uzRe.exec(mala)) !== null) { if (ok(m[1])) nalazi.push(m[1]); } }
       }
-      uzGoleRe.lastIndex = 0; while ((m = uzGoleRe.exec(r)) !== null) { if (ok(m[1])) nalazi.push(m[1]); }   // "Martina (4) je plakala": i bez oznake odnosa; oznake rednog broja (Korak (1), Slika (2)) su u OBJAVE_IMENA_OK
+      // gola zagrada "Riječ (N)": uz oznaku odnosa ili kad riječ stoji usred rečenice (vlastito ime: "Tog dana je Martina (4) plakala") zadržava; riječ na početku rečenice ili naslovna rečenica daje samo upozorenje (objaveImePrezime_)
+      const imaRel = new RegExp('(?:^|[^' + OB_L + '])(?:' + objaveSlova_(OBJAVE_REL) + ')(?![' + OB_L + '])', 'i').test(r);
+      uzGoleRe.lastIndex = 0;
+      while ((m = uzGoleRe.exec(r)) !== null) {
+        if (!ok(m[1])) continue;
+        const naPocetku = !new RegExp('[' + OB_L + ']').test(r.slice(0, m.index));
+        if (imaRel || (!naPocetku && !naslovna)) nalazi.push(m[1]);
+      }
       preRe.lastIndex = 0;
       while ((m = preRe.exec(r)) !== null) { if (ok(m[1])) nalazi.push(m[1]); }
     });
@@ -2880,6 +2887,7 @@ function objaveImePrezime_(tekst) {
   const t = objaveNorm_(tekst);
   const ok = (sl) => new RegExp('^' + OBJAVE_IME + '$').test(sl) && !OBJAVE_IMENA_OK.test(sl);
   const re = new RegExp('(^|[^' + OB_L + '])(' + OBJAVE_IME + ')[ \\t]+(' + OBJAVE_IME + ')(?![' + OB_L + '])', 'g');
+  const golaRe = new RegExp('(' + OBJAVE_IME + ')\\s*\\(\\s*(?:[1-9]|1[0-8])\\s*\\)', 'g');
   const nalazi = [];
   // ime uz trajanje ('Marko, 4 godine zaredom'): nije uzrast pa ne zadržava tekst, ali urednik dobija upozorenje (pogađa i opštu imenicu na početku rečenice: 'Sunce, 4 godine zaredom')
   const trajRe = new RegExp('(' + OBJAVE_IME + ')(?:[ \\t]*,[ \\t]*|[ \\t]*\\([ \\t]*|[ \\t]+(?:od|ima)[ \\t]+)(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')[ \\t]?(?:god\\w*|years?)[ \\t]+(?:zaredom|za[ \\t]+redom|uzastopno|u[ \\t]+nizu|rada|postojanja|iskustva|tradicije)(?![' + OB_L + '])', 'g');
@@ -2889,6 +2897,9 @@ function objaveImePrezime_(tekst) {
       if (r.length < 4) return;
       let m;
       trajRe.lastIndex = 0; while ((m = trajRe.exec(r)) !== null) { if (ok(m[1])) nalazi.push(m[1]); }
+      // gola zagrada na početku rečenice ili u naslovnoj rečenici ("Martina (4) je plakala", "Dio (3) govori o pripremi"): upozorenje, nikad zadržavanje; ono što objaveImena_ već zadržava ne upozorava
+      const zadrzana = objaveImena_(r);
+      golaRe.lastIndex = 0; while ((m = golaRe.exec(r)) !== null) { if (ok(m[1]) && zadrzana.indexOf(m[1]) === -1) nalazi.push(m[1]); }
       if (objaveNaslovnaRecenica_(r)) return;
       re.lastIndex = 0;
       while ((m = re.exec(r)) !== null) {
@@ -3213,7 +3224,7 @@ function objaveProvjeri_(o) {
     if (j === 'cnr' || potvrda[j]) objaveLicno_(tekst).forEach(n => blokirano.push({ jezik: j, pravilo: 'lični podaci nijesu dozvoljeni', nadjeno: n }));
     OBJAVE_UPOZORENJA.forEach(u => { if (u[1].test(objaveNorm_(tekst)) && upozorenja.indexOf(u[0]) === -1) upozorenja.push(u[0]); });
     const ip = objaveImePrezime_(tekst);
-    if (ip.length) { const u2 = 'ime i prezime u tekstu (' + ip[0] + '): potvrdite da to nije dijete ni roditelj iz salona'; if (upozorenja.indexOf(u2) === -1) upozorenja.push(u2); }
+    if (ip.length) { const u2 = (ip[0].indexOf(' ') === -1 ? 'ime' : 'ime i prezime') + ' u tekstu (' + ip[0] + '): potvrdite da to nije dijete ni roditelj iz salona'; if (upozorenja.indexOf(u2) === -1) upozorenja.push(u2); }
   });
 
   // dužina crnogorskog teksta prema vrsti: izvan raspona je upozorenje (uz potvrdu), ne zabrana

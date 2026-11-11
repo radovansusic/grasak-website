@@ -915,7 +915,7 @@ t('pravilo imena (g): ekavske opšte imenice i trajanje nijesu ime; prava imena 
 })
 t('pravilo imena (g, drugi krug): ime iza uzrasta uz opštu imenicu, imena koja liče na mjesece', () => {
   const zadrzava = ['Dečak od 5 godina, Luka, voli makaze.', 'Devojčica od 3 godine, Mila, je plakala.', 'Dete od 4 godine po imenu Marko je sjedilo mirno.', 'Dječak od 5 godina, Luka, voli makaze.', 'Djevojčica od 3 godine, Mila, je plakala.', 'Dijete od 4 godine po imenu Marko je sjedilo mirno.',
-    'Maja, 4 godine, bila je hrabra.', 'Marta, 5 godina, voli ostrvo.', 'Martina (4) je plakala.', 'Julija, petogodišnjakinja, sjedi sama.', 'Mala Maja (3) je došla sa mamom.',
+    'Maja, 4 godine, bila je hrabra.', 'Marta, 5 godina, voli ostrvo.', 'Julija, petogodišnjakinja, sjedi sama.', 'Mala Maja (3) je došla sa mamom.',
     'Petogodišnji dječak, Luka, voli makaze.', 'Dijete od 4 godine, zvano Marko, sjedi mirno.', 'Deca od 4 godine, Marko i Mia, su sjedila mirno.']
   for (const r of zadrzava) { assert.ok(F.objaveImena_(r).length > 0, 'propust (imena): ' + r); assert.ok(F.objaveLicno_(r).length > 0, 'propust (lično): ' + r) }
   const prolazi = ['Maja 2026. otvaramo novu igraonicu.', 'U maju radimo do 20 časova.', 'Od 1. marta nove cijene.', 'Jula i avgusta radimo skraćeno.', 'Marta mjeseca slavimo rođendan salona.',
@@ -927,6 +927,27 @@ t('pravilo imena (g, drugi krug): ime iza uzrasta uz opštu imenicu, imena koja 
   jeste(F.objaveImePrezime_('Marko, 4 godine zaredom, dolazi kod nas.'), ['Marko'])
   jeste(F.objaveImePrezime_('Grašak, 3 godine rada, slavi.'), [])
   jeste(F.objaveImePrezime_('Maja Petrović je došla.'), ['Maja Petrović'])
+})
+t('gola zagrada "Riječ (N)": oznaka odnosa i riječ usred rečenice zadržavaju, riječ na početku samo upozorava, ni jedno ni drugo za spisak', () => {
+  // (a) oznaka odnosa: zadržavanje
+  for (const r of ['Mala Maja (3) je došla sa mamom.', 'Dijete Mila (4) je plakalo.']) { assert.ok(F.objaveImena_(r).length > 0, 'propust (a): ' + r); assert.ok(F.objaveLicno_(r).length > 0, 'propust (a, lično): ' + r) }
+  // (b) bez oznake odnosa, riječ usred rečenice: vlastito ime, zadržavanje
+  for (const r of ['Tog dana je Martina (4) plakala.', 'Jutros je Luka (5) sjeo prvi.']) { assert.ok(F.objaveImena_(r).includes(r.includes('Martina') ? 'Martina' : 'Luka'), 'propust (b): ' + r); assert.ok(F.objaveLicno_(r).length > 0, 'propust (b, lično): ' + r); jeste(F.objaveImePrezime_(r), [], 'ne oba odjednom: ' + r) }
+  // (c) bez oznake odnosa, riječ prva u rečenici: samo upozorenje
+  for (const [r, ime] of [['Martina (4) je plakala.', 'Martina'], ['Dio (3) govori o pripremi.', 'Dio'], ['Uzrast (5) donosi veću samostalnost.', 'Uzrast'], ['Stolica (3) je za najmlađe.', 'Stolica']]) {
+    jeste(F.objaveImena_(r), [], 'lažno zadržavanje (c): ' + r); jeste(F.objaveLicno_(r), [], 'lažno zadržavanje (c, lično): ' + r)
+    jeste(F.objaveImePrezime_(r), [ime], 'nedostaje upozorenje (c): ' + r)
+  }
+  // (c) naslovna rečenica: samo upozorenje, i kad riječ nije prva
+  jeste(F.objaveImena_('Prvo Šišanje Martina (4) Priča'), [], 'naslovna rečenica ne zadržava'); jeste(F.objaveImePrezime_('Prvo Šišanje Martina (4) Priča').includes('Martina'), true)
+  // spisak OBJAVE_IMENA_OK: ni zadržavanje ni upozorenje, i u padežima
+  for (const r of ['Korak (1) je razgovor.', 'Slika (2) pokazuje stolicu.', 'Za više informacija pogledajte Tabelu (2).', 'Vidi Sliku (3) iznad.', 'U Fazi (2) dijete gleda.', 'Opcija (1) je bolja.', 'Pogledajte Opciju (2) ispod.']) { jeste(F.objaveImena_(r), [], 'zadržavanje: ' + r); jeste(F.objaveImePrezime_(r), [], 'upozorenje: ' + r) }
+  // ista riječ ne daje oba ishoda
+  for (const r of ['Dijete Mila (4) je plakalo.', 'Tog dana je Martina (4) plakala.', 'Martina (4) je plakala.']) assert.ok(F.objaveImena_(r).length === 0 || F.objaveImePrezime_(r).length === 0, 'oba ishoda: ' + r)
+  // tekst upozorenja: jedno ime kaže "ime", ime i prezime kaže "ime i prezime"
+  const u = (t) => F.objaveProvjeri_(objava(t + ' ' + DUG.trim())).upozorenja.filter((x) => /u tekstu \(/.test(x))
+  assert.ok(u('Martina (4) je plakala.').some((x) => x.startsWith('ime u tekstu (Martina)')), 'jedno ime')
+  assert.ok(u('Danas je u salonu bio Luka Petrović.').some((x) => x.startsWith('ime i prezime u tekstu (Luka Petrović)')), 'ime i prezime')
 })
 t('verzija skripte i panela je ista', () => {
   assert.ok(/VERZIJA_SKRIPTE = '2026-11-11g'/.test(gs))
