@@ -21,7 +21,7 @@ const a = gs.indexOf('// ===== OBJAVE-CISTE-POCETAK')
 const b = gs.indexOf('// ===== OBJAVE-CISTE-KRAJ')
 assert.ok(a > 0 && b > a, 'markeri bloka OBJAVE-CISTE nijesu nađeni u Grasak.gs')
 const ctx = vm.createContext({})
-const F = vm.runInContext(gs.slice(a, b) + `\n;({ objaveCisti_, objaveSlug_, objaveBrojke_, objaveLicno_, objaveProvjeri_, objaveSigurnaAdresa_, objavePreusmjerenje_, objaveNajduziNiz_, objaveParsirajOdgovor_, objaveClanak_, objaveOpis_, objaveNalogNacrt_, objaveNalogPrevod_, objaveHttps_, OBJAVE_JEZICI, objaveRizicno_, objaveSaListe_, objaveNepoznato_, objaveUnos_, objaveJezikIzvora_, objaveKodJezika_, objaveMinuta_, objaveRecenica_, objaveTrebaNapomenu_, objaveTaksonomija_, objaveKoraci_, objaveNorm_, objaveImena_, objaveStatistika_, objaveTvrdnje_, objaveZaModel_, objaveVlastitiIzvor_, objaveNaslovnaRecenica_, objaveKutakDozvoljeno_, objaveKutakOznaceno_, objaveKutakBilo_, objaveKutakBioJavan_, objaveKutakVrijednost_, objaveNaKutku_, objaveKutakStrane_, objaveBajtova_, objaveCirUlat_, objaveImePrezime_, OBJAVE_KUTAK_RUBRIKE_NE, OBJAVE_KUTAK_VRSTE_NE })`, ctx)
+const F = vm.runInContext(gs.slice(a, b) + `\n;({ objaveCisti_, objaveSlug_, objaveBrojke_, objaveLicno_, objaveProvjeri_, objaveSigurnaAdresa_, objavePreusmjerenje_, objaveNajduziNiz_, objaveParsirajOdgovor_, objaveClanak_, objaveOpis_, objaveNalogNacrt_, objaveNalogPrevod_, objaveHttps_, OBJAVE_JEZICI, objaveRizicno_, objaveSaListe_, objaveNepoznato_, objaveUnos_, objaveJezikIzvora_, objaveKodJezika_, objaveMinuta_, objaveRecenica_, objaveTrebaNapomenu_, objaveTaksonomija_, objaveKoraci_, objaveNorm_, objaveImena_, objaveStatistika_, objaveTvrdnje_, objaveZaModel_, objaveVlastitiIzvor_, objaveNaslovnaRecenica_, objaveKutakDozvoljeno_, objaveKutakOznaceno_, objaveKutakBilo_, objaveKutakBioJavan_, objaveKutakBioVrijednost_, objaveKutakVrijednost_, objaveNaKutku_, objaveKutakStrane_, objaveBajtova_, objaveCirUlat_, objaveImePrezime_, OBJAVE_KUTAK_RUBRIKE_NE, OBJAVE_KUTAK_VRSTE_NE })`, ctx)
 const EM = String.fromCharCode(0x2014)
 const TAX = JSON.parse(JSON.stringify(F.objaveTaksonomija_()))
 
@@ -643,6 +643,13 @@ t('V1: u povuceno ide samo tekst koji je MOGAO biti na Kutku (oznaka ikad uklju�
   for (const lose of [{ status: 'nacrt' }, { status: 'nacrt', objavljeno: '', datum: '' }, { kutak: '' }, { kutak: 'ne' }, { objavljeno: '', datum: '' }, { rubrika: 'iz-graska' }, { vrsta: 'iz-salona' }])
     assert.equal(F.objaveKutakBioJavan_({ ...o, ...lose }), false, JSON.stringify(lose))
   assert.equal(F.objaveKutakBioJavan_(null), false)
+  // trajna oznaka "Kutak bio" nadjačava ćeliju i status: ručno "ne", prazno, nacrt
+  for (const ekstra of [{ kutak: '' }, { kutak: 'ne' }, { kutak: '0' }, { status: 'nacrt' }, { status: 'nacrt', kutak: '' }]) assert.equal(F.objaveKutakBioJavan_({ ...o, ...ekstra, kutak_bio: '2026-11-11T10:00:00+01:00' }), true, JSON.stringify(ekstra))
+  assert.equal(F.objaveKutakBioJavan_({ status: 'nacrt', kutak: '2026-11-11T10:00:00+01:00', rubrika: 'igraonica', vrsta: 'aktivnost', kutak_bio: '' }), false)   // nacrt sa štiklirom, nikad objavljen
+  // oznaku upisuje samo objavljen, označen tekst; jednom upisana se ne mijenja ni ne briše
+  assert.equal(F.objaveKutakBioVrijednost_(o, '', 'sada'), 'sada'); assert.equal(F.objaveKutakBioVrijednost_(o, 'ranije', 'sada'), 'ranije')
+  assert.equal(F.objaveKutakBioVrijednost_({ ...o, status: 'nacrt' }, '', 'sada'), ''); assert.equal(F.objaveKutakBioVrijednost_({ ...o, kutak: '' }, '', 'sada'), '')
+  assert.equal(F.objaveKutakBioVrijednost_({ ...o, kutak: '', status: 'nacrt' }, 'ranije', 'sada'), 'ranije')
 })
 
 t('S5: objaveKutakStrane_ dijeli u strane do budžeta, čuva redoslijed, jedna prevelika stavka ide sama, prazan ulaz daje jednu praznu stranu; veličina računa dvobajtne znakove', () => {
@@ -680,6 +687,10 @@ t('S2: ime uz uzrast ("Luka od 4 godine", "Luka ima 4 godine", "Luka, 4 godine")
   const blok = (tekst) => F.objaveLicno_(tekst).some((x) => /ime djeteta/.test(x))
   for (const tekst of ['Danas je sjeo Luka od 4 godine mirno u stolicu.', 'Luka ima 4 godine i voli auto.', 'Luka, 4 godine, nije htio da sjedne.', 'Ana (4 godine) je plakala.', 'Luka od četiri godine je sjeo.'])
     assert.ok(blok(tekst), 'nije blokirano: ' + tekst)
+  for (const tekst of ['Luka je imao 4 godine kad je došao.', 'Ana je imala četiri godine.', 'LUKA, 4 GODINE, JE SJEO.', 'Luka je napunio 4 godine.']) assert.ok(blok(tekst), 'nije blokirano: ' + tekst)
+  assert.ok(F.objaveProvjeri_(objava('ЛУКА, 4 ГОДИНЕ, ЈЕ СЈЕО U STOLICU I BIO JE MIRAN. ' + DUG.trim())).blokirano.some((x) => /lični/.test(x.pravilo)))
+  for (const tekst of ['SALON RADI, 5 DANA U SEDMICI', 'GRAŠAK, 4 GODINE iskustva', 'Kosa ima 3 godine.', 'Nikola Tesla je izumitelj.', 'Dijete je imalo 4 godine i bilo je mirno.'])
+    assert.ok(!blok(tekst), 'lažna blokada: ' + tekst)
   for (const tekst of ['Danas od 5 godina imamo novi salon.', 'Podgorica od 2 godine ima salon.', 'Sada od 3 godine radimo i nedjeljom.'])
     assert.ok(!blok(tekst), 'blokirano bez razloga: ' + tekst)
   jeste(F.objaveImePrezime_('Danas je u salonu bio Luka Petrović.'), ['Luka Petrović'])
@@ -746,6 +757,27 @@ t('sitemap: potvrđen tekst za Kutak nije u Graškovom sitemap-u (ni na jednom j
   assert.ok(R.renderSitemap(nepotvrdjeno, TAX).includes('/kutak/k1'))
 })
 
+// S-K2-2: nepoznato stanje (Kutak ne odgovara, a nema ranije potvrde) se javlja posebno; poznato (odgovor bez sluga, nepostavljena adresa, topla potvrda) ne. Ide unutar sljedećeg testa (zajednička predmemorija).
+const nepoznatoTest = async () => {
+  R.zaboraviPotvrde()
+  const mrtav = lazniKutak(['a-tekst'], { greska: true })
+  const tekst = (slug) => ({ ...mk(slug, 'igraonica', ['cnr'], ['igre-u-kuci']), na_kutku: true })
+  let izlaz = await R.oznaciKutak([tekst('a-tekst')], ENV, mrtav.dohvati, 1000)
+  assert.equal(izlaz.nepoznato, true); assert.equal(izlaz[0].kutak_potvrdjen, false)
+  R.zaboraviPotvrde()
+  izlaz = await R.oznaciKutak([tekst('a-tekst')], ENV, lazniKutak([]).dohvati, 1000); assert.equal(izlaz.nepoznato, false)         // Kutak odgovorio: nema kopije
+  izlaz = await R.oznaciKutak([tekst('a-tekst')], {}, lazniKutak([]).dohvati, 1000); assert.equal(izlaz.nepoznato, false)             // nema adrese: znamo da je samoreferentno
+  R.zaboraviPotvrde()
+  await R.oznaciKutak([tekst('a-tekst')], ENV, lazniKutak(['a-tekst']).dohvati, 1000)
+  izlaz = await R.oznaciKutak([tekst('a-tekst')], ENV, mrtav.dohvati, 7 * 3600 * 1000)                                              // topla instanca drži potvrdu
+  assert.equal(izlaz.nepoznato, false); assert.equal(izlaz[0].kutak_potvrdjen, true)
+  R.zaboraviPotvrde()
+  // handleri: nepoznato stanje daje kratak keš, ne dugi
+  const kod = fs.readFileSync(path.join(koren, 'api/kutak.js'), 'utf8')
+  assert.ok(/oz\.nepoznato \|\| ozLista\.nepoznato \? KES_STARO : KES/.test(kod) && /ozLista\.nepoznato \? KES_STARO : KES/.test(kod) && kod.includes('stale-if-error=86400'))
+  assert.ok(/oz\.nepoznato \?/.test(fs.readFileSync(path.join(koren, 'api/sitemap.js'), 'utf8')))
+}
+
 const lazniKutak = (potvrdjeni, kako = {}) => {
   const pozivi = []
   const dohvati = async (adresa, init) => {
@@ -808,6 +840,7 @@ t('V2: potvrdiKutak i oznaciKutak (pamćenje potvrde, ponovni pokušaj, grupe, p
   assert.equal((await R.oznaciKutak([mk('g1', 'igraonica', ['cnr'], ['igre-u-kuci'])], ENV, k2.dohvati, 0)).length, 1); assert.equal(k2.pozivi.length, 0)
   assert.deepEqual(await R.oznaciKutak(null, ENV, k2.dohvati, 0), [])
   R.zaboraviPotvrde()
+  await nepoznatoTest()
 })
 
 await Promise.all(zadaci)

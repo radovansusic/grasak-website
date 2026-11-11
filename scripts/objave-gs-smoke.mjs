@@ -433,9 +433,9 @@ t('Kutak: vrijeme uključenja se čuva pri ponovnom čuvanju, isključenje upisu
   assert.equal(sveRedovi().find((o) => o.slug === x.r.slug).kutak, 'skinuto ' + prvo)   // drugo isključenje ništa ne mijenja
   const ponovo = akcija('sacuvaj', { objava: { ...j, na_kutku: true }, potvrda_upozorenja: true }); assert.ok(ponovo.ok && ponovo.na_kutku === true)
   assert.match(sveRedovi().find((o) => o.slug === x.r.slug).kutak, /^\d{4}-\d\d-\d\dT/)
-  assert.equal(poziv('ZAGLAVLJE_OBJAVE[ZAGLAVLJE_OBJAVE.length - 1]'), 'Na Kutku')
+  assert.equal(poziv('ZAGLAVLJE_OBJAVE[ZAGLAVLJE_OBJAVE.length - 2]'), 'Na Kutku')
   // postojeći redovi bez nove kolone: čitaju se kao isključeno
-  assert.equal(J(ctx.objavaIzReda_(new Array(29).fill(''))).kutak, '')
+  assert.equal(J(ctx.objavaIzReda_(new Array(30).fill(''))).kutak, '')
 })
 
 t('Kutak: akcija=kutak vraća samo objavljene tekstove sa oznakom, samo crnogorski, sa tačnim oblikom polja; nema zadrzano ni razloga', () => {
@@ -480,6 +480,28 @@ t('V1: povuceno nosi slug teksta koji je bio objavljen sa oznakom: i kad je ozna
   assert.ok(!f.objave.some((o) => o.slug === x.r.slug) && f.povuceno.includes(x.r.slug), 'isključenje oznake mora skinuti tekst sa Kutka')
   const y = objaviKutak('Sklonjen sa oznakom'); akcija('skloni', { slug: y.r.slug })
   assert.ok(feed().povuceno.includes(y.r.slug))
+})
+
+t('S-K2-1: tekst koji je bio na Kutku ide u povuceno u sva četiri slučaja: odštiklirano, status vraćen na nacrt, Skloni, ručno "ne" ili prazna ćelija "Na Kutku"; nacrt koji nikad nije bio na Kutku ne', () => {
+  const nova = (naslov) => { const x = objaviKutak(naslov); assert.ok(feed().objave.some((o) => o.slug === x.r.slug)); return x.r.slug }
+  const izmijeni = (slug, f) => { const red = ctx.objavaPoSlugu_(slug, true); f(red); ctx.objaveUpisi_(red, red.red); poziv('objaveKesObrisi_("")') }
+  const jePovuceno = (slug) => { const f = feed(); return f.povuceno.includes(slug) && !f.objave.some((o) => o.slug === slug) }
+  const a = nova('Povlačenje jedan odštiklirano'); const ja = akcija('jedna', { slug: a }).objava
+  assert.ok(akcija('sacuvaj', { objava: { ...ja, na_kutku: false }, potvrda_upozorenja: true }).ok); assert.ok(jePovuceno(a), 'odštiklirano')
+  const b = nova('Povlačenje dva nacrt'); izmijeni(b, (r) => { r.status = 'nacrt' }); assert.ok(jePovuceno(b), 'vraćeno na nacrt')
+  const c = nova('Povlačenje tri skloni'); akcija('skloni', { slug: c }); assert.ok(jePovuceno(c), 'Skloni')
+  for (const [i, rucno] of ['ne', '0', 'false', '', 'NE'].entries()) {
+    const d = nova('Povlačenje četiri ručno ' + ['ne', 'nula', 'false', 'prazno', 'veliko'][i]); izmijeni(d, (r) => { r.kutak = rucno }); assert.ok(jePovuceno(d), 'ručno "' + rucno + '"')
+  }
+  // trajna oznaka postoji samo za tekst koji je bio objavljen sa štiklirom; ručno ispražnjena kolona "Kutak bio" nije predviđena
+  const nikad = akcija('sacuvaj', { objava: kutakOb('Povlačenje nikad na Kutku'), potvrda_upozorenja: true }); assert.ok(nikad.ok)
+  poziv('objaveKesObrisi_("")'); assert.ok(!feed().povuceno.includes(nikad.slug) && !JSON.stringify(feed()).includes(nikad.slug))
+  const red = sveRedovi().find((o) => o.slug === a); assert.match(red.kutak_bio, /^\d{4}-\d\d-\d\dT/)
+  assert.equal(poziv('ZAGLAVLJE_OBJAVE[ZAGLAVLJE_OBJAVE.length - 1]'), 'Kutak bio')
+  // ponovno štikliranje i objava vraća tekst: nije u povuceno
+  const jb = akcija('jedna', { slug: a }).objava
+  assert.ok(akcija('sacuvaj', { objava: { ...jb, na_kutku: true }, potvrda_upozorenja: true }).ok)
+  poziv('objaveKesObrisi_("")'); assert.ok(feed().objave.some((o) => o.slug === a) && !feed().povuceno.includes(a))
 })
 
 t('S5: odgovor akcija=kutak ide u strane ispod 100 KB: svaka strana staje u keš, svaki tekst je na tačno jednoj strani, povuceno samo na prvoj', () => {

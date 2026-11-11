@@ -2787,7 +2787,7 @@ const OBJAVE_REL = [
   '\\u0440\\u0435\\u0431\\u0435\\u043d\\u043e\\u043a', '\\u0440\\u0435\\u0431\\u0451\\u043d\\u043e\\u043a', '\\u043c\\u0430\\u043b\\u044c\\u0447\\u0438\\u043a\\w*', '\\u0434\\u0435\\u0432\\u043e\\u0447\\u043a\\w*', '\\u0441\\u044b\\u043d\\w*', '\\u0434\\u043e\\u0447\\u044c', '\\u0434\\u043e\\u0447\\u043a\\w*', '\\u043c\\u0430\\u043b\\u044b\\u0448\\w*', '\\u043c\\u0430\\u043c\\u0430', '\\u043c\\u0430\\u043c\\u0443', '\\u043f\\u0430\\u043f\\u0430', '\\u043f\\u0430\\u043f\\u0443', '\\u043a\\u043b\\u0438\\u0435\\u043d\\u0442\\w*',
   '\\u00e7ocuk\\w*', 'o\\u011f\\w*', 'k\\u0131z\\w*', 'bebek\\w*', 'anne\\w*', 'baba\\w*', 'm\\u00fc\\u015fteri\\w*',
 ].join('|');
-const OBJAVE_IMENA_OK = /^(?:gra[šs]ak.*|грашак.*|podgoric.*|crn[aeou].*|montenegro.*|mjesec.*|januar.*|februar.*|mart.*|april.*|maj.*|jun.*|jul.*|avgust.*|septemb.*|oktob.*|novemb.*|decemb.*|ponedjelj.*|utorak.*|srijed.*|četvrt.*|petak.*|subot.*|nedjelj.*|koje|koji|kada|kako|gdje|ako|bez|kroz|pri|ali|ili|kao|šta|što|savjet.*|igra.*|danas|sada|tada|ovdje|obično|često|ponekad|uvijek|dječij.*|kutak.*|frizersk.*|salon.*|evropsk.*|svjetsk.*|nova|novo|novi|the|and|for|with|are|you|your|our|from|that|this)$/i;   // nije ime: Grašak, Podgorica, mjeseci, dani, veznici
+const OBJAVE_IMENA_OK = /^(?:gra[šs]ak.*|грашак.*|podgoric.*|crn[aeou].*|montenegro.*|mjesec.*|januar.*|februar.*|mart.*|april.*|maj.*|jun.*|jul.*|avgust.*|septemb.*|oktob.*|novemb.*|decemb.*|ponedjelj.*|utorak.*|srijed.*|četvrt.*|petak.*|subot.*|nedjelj.*|koje|koji|kada|kako|gdje|ako|bez|kroz|pri|ali|ili|kao|šta|što|savjet.*|igra.*|kosa|danas|sada|tada|ovdje|obično|često|ponekad|uvijek|dječij.*|kutak.*|frizersk.*|salon.*|evropsk.*|svjetsk.*|nova|novo|novi|the|and|for|with|are|you|your|our|from|that|this)$/i;   // nije ime: Grašak, Podgorica, mjeseci, dani, veznici
 const OBJAVE_VELIKO = 'A-ZÀ-ÞČĆŠŽĐĞİŞЀ-Я';
 const OBJAVE_MALO = 'a-zà-ÿĀ-ɏа-џ';
 const OBJAVE_IME = '[' + OBJAVE_VELIKO + '][' + OBJAVE_MALO + ']{2,}';
@@ -2811,7 +2811,7 @@ function objaveImena_(tekst) {
   const relRe = new RegExp('(^|[^' + OB_L + '])(' + objaveSlova_(OBJAVE_REL) + ')(?=[ \\t]+(?:(?:po[ \\t]+imenu|named|\\u043f\\u043e[ \\t]+\\u0438\\u043c\\u0435\\u043d\\u0438|adl\\u0131)[ \\t]+)?(' + OB_W + '))', 'gi');
   const posRe = new RegExp('(^|[^' + OB_L + '])(' + OBJAVE_IME + '(?:ov|ev|in)(?:a|o|e|i|u|og|oj|om|ih)?|' + OBJAVE_IME + '[\'\\u2019]s)[ \\t]+(?:' + objaveSlova_(OBJAVE_REL) + ')(?![' + OB_L + '])', 'g');
   const godRe = '(?:god\\w*|mjes\\w*|years?|y\\.?\\s?o|yo|\\u043b\\u0435\\u0442|\\u0433\\u043e\\u0434\\u0430?|yaş\\w*|months?)';
-  const uzRe = new RegExp('(' + OBJAVE_IME + ')(?:,\\s*|\\s*\\(\\s*|\\s+(?:ima|has|is|od|je\\s+napunio\\w*|turns)\\s+)(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')\\s?' + objaveSlova_(godRe), 'g');
+  const uzRe = new RegExp('(' + OBJAVE_IME + ')(?:,\\s*|\\s*\\(\\s*|\\s+(?:ima|imao|imala|je\\s+imao|je\\s+imala|has|had|is|was|od|je\\s+napunio\\w*|je\\s+napunila|turns)\\s+)(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')\\s?' + objaveSlova_(godRe), 'g');
   const uzGoleRe = new RegExp('(' + OBJAVE_IME + ')\\s*\\(\\s*\\d{1,2}\\s*\\)', 'g');
   const preRe = new RegExp('(?:\\d{1,2}|' + OBJAVE_BR_CNR + ')[\\s-]*(?:godišnj\\w*|year[\\s-]old|yo|\\u0433\\u043e\\u0434\\w*|\\u043b\\u0435\\u0442\\u043d\\w*|yaşındaki)[ \\t]+(?:(?:' + objaveSlova_(OBJAVE_REL) + ')[ \\t]+)?(' + OBJAVE_IME + ')', 'gi');
   t.split('\n').forEach(linija => {
@@ -2840,6 +2840,11 @@ function objaveImena_(tekst) {
       while ((m = posRe.exec(r)) !== null) { if (ok(m[2].replace(/['\u2019]s$/, ''))) nalazi.push(m[2]); }
       uzRe.lastIndex = 0;
       while ((m = uzRe.exec(r)) !== null) { if (ok(m[1])) nalazi.push(m[1]); }
+      // sve velika slova ("LUKA, 4 GODINE"): ime se čita kao "Luka", a riječ godina ostaje malim slovima
+      if (/[A-ZÀ-ÞČĆŠŽĐ]{3,}/.test(r)) {
+        const mala = r.replace(new RegExp('[' + OBJAVE_VELIKO + ']{3,}', 'g'), w => (/^(?:GOD|MJES|YEAR|MONTH|YO$)/.test(w) ? w.toLowerCase() : w.charAt(0) + w.slice(1).toLowerCase()));
+        if (mala !== r) { uzRe.lastIndex = 0; while ((m = uzRe.exec(mala)) !== null) { if (ok(m[1])) nalazi.push(m[1]); } }
+      }
       if (imaRel) { uzGoleRe.lastIndex = 0; while ((m = uzGoleRe.exec(r)) !== null) { if (ok(m[1])) nalazi.push(m[1]); } }
       preRe.lastIndex = 0;
       while ((m = preRe.exec(r)) !== null) { if (ok(m[1])) nalazi.push(m[1]); }
@@ -3419,11 +3424,23 @@ function objaveKutakVrijednost_(zeljeno, staro, sada) {
 }
 
 /**
- * Tekst je MOGAO biti na Kutku: oznaka je ikad bila uključena, tekst je ikad bio objavljen (ima vrijeme objave) i iz rubrike i vrste koje smiju.
- * Samo takvi slugovi idu u `povuceno` javnog odgovora; nacrt koji nikad nije objavljen nikad ne izlazi (slug je naslov).
+ * Kolona "Kutak bio": trajna oznaka (vrijeme) da je tekst ikad bio objavljen sa štiklirom. Upisuje je SAMO skripta, pri čuvanju, objavi i skidanju,
+ * i nikad je ne briše: ne diraju je odštiklirenje, povratak na nacrt, Skloni ni ručno "ne" ili prazna ćelija "Na Kutku". Zato povlačenje sa Kutka ne zavisi od ćelije "Na Kutku".
+ */
+function objaveKutakBioVrijednost_(o, staro, sada) {
+  if (String(staro == null ? '' : staro).trim()) return String(staro).trim();
+  return objaveNaKutku_(o) ? sada : '';
+}
+
+/**
+ * Tekst je MOGAO biti na Kutku, pa ide u `povuceno` kad danas nije u odgovoru: ima trajnu oznaku "Kutak bio" (bilo koji status, i nacrt, i ručno ispražnjena ćelija "Na Kutku"),
+ * ili (stariji redovi bez oznake) ima uključenu ili "skinuto" ćeliju, bio je objavljen i iz rubrike je i vrste koje smiju.
+ * Nacrt koji nikad nije bio objavljen sa štiklirom nikad ne izlazi (slug je naslov).
  */
 function objaveKutakBioJavan_(o) {
-  return !!o && objaveKutakBilo_(o.kutak) && (o.status === 'objavljeno' || o.status === 'sklonjeno') && !!(o.objavljeno || o.datum) && objaveKutakDozvoljeno_(o.rubrika, o.vrsta);
+  if (!o) return false;
+  if (String(o.kutak_bio == null ? '' : o.kutak_bio).trim()) return true;
+  return objaveKutakBilo_(o.kutak) && (o.status === 'objavljeno' || o.status === 'sklonjeno') && !!(o.objavljeno || o.datum) && objaveKutakDozvoljeno_(o.rubrika, o.vrsta);
 }
 
 /** Tekst ide na Kutak samo kad je objavljen, označen i iz rubrike i vrste koje smiju. */
@@ -3458,7 +3475,7 @@ const LIST_OBJAVE = 'Objave';
 // Redoslijed kolona je ugovor sa tabelom: nove kolone idu samo na kraj. listObjava_ dopisuje zaglavlje ako ga stara tabela nema.
 const ZAGLAVLJE_OBJAVE = ['Slug', 'Datum', 'Status', 'Autor', 'Vrsta', 'Izvor naziv', 'Izvor URL',
   'Naslov cnr', 'Tijelo cnr', 'Naslov en', 'Tijelo en', 'Naslov ru', 'Tijelo ru', 'Naslov tr', 'Tijelo tr', 'Azurirano', 'Napisao',
-  'Rubrika', 'Oznake', 'Koraci cnr', 'Koraci en', 'Koraci ru', 'Koraci tr', 'Potvrda en', 'Potvrda ru', 'Potvrda tr', 'Objavljeno', 'Izvor jezik', 'Zdravlje potvrda', 'Na Kutku'];
+  'Rubrika', 'Oznake', 'Koraci cnr', 'Koraci en', 'Koraci ru', 'Koraci tr', 'Potvrda en', 'Potvrda ru', 'Potvrda tr', 'Objavljeno', 'Izvor jezik', 'Zdravlje potvrda', 'Na Kutku', 'Kutak bio'];
 const OK_ = ZAGLAVLJE_OBJAVE.reduce((o, k, i) => { o[k] = i; return o; }, {});
 const OBJAVE_STATUSI = ['nacrt', 'objavljeno', 'sklonjeno'];
 const OBJAVE_AUTOR = 'Grašak';
@@ -3503,7 +3520,7 @@ function objavaIzReda_(r) {
     tijelo: { cnr: t(r[OK_['Tijelo cnr']]), en: t(r[OK_['Tijelo en']]), ru: t(r[OK_['Tijelo ru']]), tr: t(r[OK_['Tijelo tr']]) },
     azurirano: t(r[OK_['Azurirano']]), napisao: t(r[OK_['Napisao']]),
     rubrika: t(r[OK_['Rubrika']]).trim(), oznake: objaveNizSlugova_(t(r[OK_['Oznake']])), koraci: koraci, potvrda: potvrda, objavljeno: t(r[OK_['Objavljeno']]), izvor_jezik: t(r[OK_['Izvor jezik']]).trim().toLowerCase(), zdravlje_potvrda: t(r[OK_['Zdravlje potvrda']]).trim(),
-    kutak: t(r[OK_['Na Kutku']]).trim(),
+    kutak: t(r[OK_['Na Kutku']]).trim(), kutak_bio: t(r[OK_['Kutak bio']]).trim(),
   };
 }
 
@@ -3518,7 +3535,7 @@ function redIzObjave_(ob) {
   ['en', 'ru', 'tr'].forEach(j => { red[OK_['Potvrda ' + j]] = ob.potvrda && ob.potvrda[j] ? 'da' : ''; });
   red[OK_['Azurirano']] = ob.azurirano || ''; red[OK_['Napisao']] = ob.napisao || '';
   red[OK_['Rubrika']] = ob.rubrika || ''; red[OK_['Oznake']] = (ob.oznake || []).join(','); red[OK_['Objavljeno']] = ob.objavljeno || ''; red[OK_['Izvor jezik']] = ob.izvor_jezik || ''; red[OK_['Zdravlje potvrda']] = ob.zdravlje_potvrda || '';
-  red[OK_['Na Kutku']] = ob.kutak || '';
+  red[OK_['Na Kutku']] = ob.kutak || ''; red[OK_['Kutak bio']] = ob.kutak_bio || '';
   return red;
 }
 
@@ -3542,6 +3559,7 @@ function objavaPoSlugu_(slug, samoCitaj) {
 }
 
 function objaveUpisi_(ob, red) {
+  ob.kutak_bio = objaveKutakBioVrijednost_(ob, ob.kutak_bio, objaveSada_());   // trajna oznaka: ovaj tekst je bio objavljen sa štiklirom
   const sh = listObjava_();
   const v = [redIzObjave_(ob)];
   if (red) sh.getRange(red, 1, 1, ZAGLAVLJE_OBJAVE.length).setValues(v);
@@ -4060,7 +4078,7 @@ function objaveSacuvaj_(o, z) {
     if (pr.upozorenja.length && z.potvrda_upozorenja !== true) return { ok: false, poruka: 'Tekst nosi upozorenja: potvrdite ih.', upozorenja: pr.upozorenja, trebaPotvrda: true };
   }
   const zapisZdravlja = stanje === 'objavljeno' && (pr.zdravstvene || []).length ? objaveZapisZdravlja_(pr, o) : (stara ? stara.zdravlje_potvrda || '' : '');
-  const ob = { kutak: objaveKutakVrijednost_(u.na_kutku, stara ? stara.kutak : '', objaveSada_()), zdravlje_potvrda: zapisZdravlja, slug: slug, datum: stara ? stara.datum : '', objavljeno: stara ? stara.objavljeno : '', status: stanje, vrsta: u.vrsta, rubrika: u.rubrika, oznake: u.oznake, izvor_naziv: u.izvor_naziv, izvor_url: u.izvor_url, izvor_jezik: u.izvor_jezik,
+  const ob = { kutak: objaveKutakVrijednost_(u.na_kutku, stara ? stara.kutak : '', objaveSada_()), kutak_bio: stara ? stara.kutak_bio || '' : '', zdravlje_potvrda: zapisZdravlja, slug: slug, datum: stara ? stara.datum : '', objavljeno: stara ? stara.objavljeno : '', status: stanje, vrsta: u.vrsta, rubrika: u.rubrika, oznake: u.oznake, izvor_naziv: u.izvor_naziv, izvor_url: u.izvor_url, izvor_jezik: u.izvor_jezik,
     naslov: u.naslov, tijelo: u.tijelo, koraci: u.koraci, potvrda: u.potvrda, azurirano: objaveSada_(), napisao: stara ? stara.napisao || o.ime : o.ime };
   objaveUpisi_(ob, stara ? stara.red : 0);
   objaveKesObrisi_(slug);

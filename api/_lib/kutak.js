@@ -589,6 +589,7 @@ async function pitajKutak(adresa, grupa, env, dohvati) {
 export async function potvrdiKutak(slugovi, env = {}, dohvati = fetch, sada = Date.now()) {
   const adresa = potvrdaAdresa(env)
   const potvrdjeni = new Set()
+  potvrdjeni.nepoznato = false   // true: Kutak nije odgovorio, a za neki tekst nema ni ranije potvrde (hladna instanca): stanje je nepoznato, ne "nije potvrđeno"
   if (!adresa) return potvrdjeni
   const trazeni = [...new Set((slugovi || []).filter((s) => SLUG_RE.test(String(s))))].slice(0, POTVRDA_NAJVISE)
   const treba = []
@@ -606,6 +607,7 @@ export async function potvrdiKutak(slugovi, env = {}, dohvati = fetch, sada = Da
         const drzi = !!staro && staro.poz !== null && sada - staro.poz < STARO_NAJVISE_MS
         potvrde.set(s, { ok: drzi, do: sada + POTVRDA_NEGATIVNO_MS, poz: drzi ? staro.poz : null })
         if (drzi) potvrdjeni.add(s)
+        else potvrdjeni.nepoznato = true
       } else if (odg.has(s)) {
         potvrde.set(s, { ok: true, do: sada + POTVRDA_POZITIVNO_MS, poz: sada })
         potvrdjeni.add(s)
@@ -624,5 +626,7 @@ export async function oznaciKutak(objave, env = {}, dohvati = fetch, sada = Date
   const slugovi = lista.filter((o) => o && o.na_kutku === true).map((o) => o.slug)
   if (!slugovi.length) return lista
   const p = await potvrdiKutak(slugovi, env, dohvati, sada)
-  return lista.map((o) => (o && o.na_kutku === true ? { ...o, kutak_potvrdjen: p.has(o.slug) } : o))
+  const izlaz = lista.map((o) => (o && o.na_kutku === true ? { ...o, kutak_potvrdjen: p.has(o.slug) } : o))
+  izlaz.nepoznato = p.nepoznato === true   // handler tada šalje kratak keš, da se privremeno samoreferentno stanje ne učvrsti u CDN-u
+  return izlaz
 }
