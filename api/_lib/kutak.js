@@ -210,7 +210,7 @@ footer a:hover{color:var(--sunce)}
 @media(min-width:640px){.foot-grid{grid-template-columns:1fr 1fr}}
 @media(min-width:960px){.foot-grid{grid-template-columns:1.3fr 1fr 1.2fr 1fr}}
 .foot-brand{display:flex;align-items:center;gap:12px;font:800 24px/1 "Baloo 2",cursive;color:#fff}
-.foot-brand img{width:52px;height:52px;border-radius:14px;box-shadow:0 0 0 2px rgba(255,255,255,.2)}
+.foot-brand img{width:64px;height:64px;border-radius:50%;background:#fff;padding:4px;box-shadow:0 0 0 3px var(--sunce)}
 .foot-quote{margin:14px 0 0;font-size:14px}
 .drustvene{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0;padding:0;list-style:none}
 .drustvene a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.1);font-weight:900;font-size:14px}
@@ -271,7 +271,7 @@ function podnozje(jez) {
   const dr = (href, oznaka, ikona, novo = true) => `<li><a href="${esc(href)}" aria-label="${esc(oznaka)}"${novo ? ' target="_blank" rel="noreferrer"' : ''}>${ikona}</a></li>`
   const lnk = (href, tx) => `<li><a href="${esc(href)}">${esc(tx)}</a></li>`
   return `<footer><div class="foot-in"><div class="foot-grid">
-<div><a class="foot-brand" href="/"><img src="/brand/grasak-logo-bijela.svg" alt="" width="52" height="52"><span>GRAŠAK</span></a><p class="foot-quote">${esc(P.citat)}</p>
+<div><a class="foot-brand" href="/"><img src="/brand/grasak-logo-zelena.svg" alt="" width="64" height="64"><span>GRAŠAK</span></a><p class="foot-quote">${esc(P.citat)}</p>
 <ul class="drustvene">${dr('https://instagram.com/djecijisalon', 'Instagram', IKONA.instagram)}${dr('https://www.facebook.com/p/Dje%C4%8Diji-salon-Gra%C5%A1ak-61559455795290/', 'Facebook', IKONA.facebook)}${dr('https://wa.me/38269371111', 'WhatsApp', IKONA.whatsapp)}<li><a href="viber://chat?number=%2B38269371111" aria-label="Viber">V</a></li>${dr(MAPA_URL, P.mapa, IKONA.mapa)}</ul></div>
 <nav aria-label="${esc(P.brzo)}"><h2>${esc(P.brzo)}</h2><ul class="lista">${lnk('/', T.pocetna)}${lnk('/usluge', T.usluge)}${lnk('/o-nama', T.onama)}${lnk('/galerija', T.galerija)}${lnk('/zakazi', T.zakazi)}${lnk('/kontakt', T.kontakt)}${lnk(putanja(jez), T.nazad)}</ul></nav>
 <div><h2>${esc(P.kontakt)}</h2><ul class="lista kont"><li>${IKONA.mapa}<a href="${MAPA_URL}" target="_blank" rel="noreferrer">${esc(SALON.adresa[jez][0])}<br>${esc(SALON.adresa[jez][1])}</a></li><li>${IKONA.telefon}<a href="tel:${esc(SALON.telefonTel)}">${esc(SALON.telefon)}</a></li><li>${IKONA.mejl}<a href="mailto:grasaksalon@gmail.com">grasaksalon@gmail.com</a></li></ul></div>
