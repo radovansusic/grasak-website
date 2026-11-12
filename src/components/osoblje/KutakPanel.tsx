@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { AlertTriangle, Check, EyeOff, Languages, Loader2, Plus, Save, Send, ShieldCheck, Sparkles } from 'lucide-react'
 import { osoblje, SkriptaPrekinuta, type Pristup } from '@/lib/osoblje'
 import {
-  JEZIK_NAZIV, praznaObjava,
+  JEZIK_NAZIV, javiIndexNow, praznaObjava,
   type ObjavaStavka, type ObjavaUredjaj, type Paznja, type ProvjeraObjave, type Taksonomija,
 } from '@/lib/kutak'
 import { inputCls } from './pomocno'
@@ -181,6 +181,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
       setProvjera({ blokirano: (r.blokirano as ProvjeraObjave['blokirano']) || [], upozorenja: (r.upozorenja as string[]) || [], zdravstvene: (r.zdravstvene as ProvjeraObjave['zdravstvene']) || [], greske: r.greske as Record<string, string> })
       return
     }
+    if (typeof s.slug === 'string') javiIndexNow(s.slug)
     setObj((o) => (o ? { ...o, status: 'objavljeno' } : o))
     setPaznja([])
     javi(r.poruka || 'Objavljeno.')
@@ -192,6 +193,7 @@ export default function KutakPanel({ pristup }: { pristup: Pristup }) {
     const r = await poziv('objave_skloni', { slug })
     setRadi('')
     if (!r.ok) { setGreska(r.poruka || 'Nije sklonjeno.'); return }
+    javiIndexNow(slug)
     if (obj && obj.slug === slug) setObj({ ...obj, status: 'sklonjeno' })
     javi(r.poruka || 'Sklonjeno.')
     setOsvjezi((x) => x + 1)

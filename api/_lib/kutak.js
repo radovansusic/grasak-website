@@ -166,6 +166,8 @@ body{margin:0;background:var(--krem);color:var(--tinta);font:18px/1.7 Nunito,sys
 h1{font:800 clamp(30px,6vw,44px)/1.15 "Baloo 2",cursive;color:var(--tamna);margin:0 0 10px;text-wrap:balance}
 h2{font:800 24px/1.25 "Baloo 2",cursive;color:var(--tamna);margin:0 0 10px}
 .nazad{margin:0 0 14px;font-size:14px;font-weight:700}
+.nazad a{color:#2d6a26;text-decoration:none}
+.nazad a:hover{text-decoration:underline}
 .meta{color:#4f5d55;font-size:14px;font-weight:700;margin:0 0 22px}
 .sub{margin:0 0 20px;color:#3e4d44}
 article p{margin:0 0 1.1em}

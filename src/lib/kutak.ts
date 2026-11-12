@@ -168,3 +168,20 @@ export interface Nalaz { jezik: Lang; pravilo: string; nadjeno: string }
 export interface Zdravstvena { jezik: Lang; nadjeno: string }
 export interface ProvjeraObjave { blokirano: Nalaz[]; upozorenja: string[]; zdravstvene?: Zdravstvena[]; greske?: Record<string, string> }
 export interface Paznja { mjesto: string; poruka: string }
+
+/**
+ * IndexNow (P18): poslije uspješnog "Objavi" ili "Skloni" javlja tražilicama (Bing, Yandex...) da su se adrese teksta
+ * promijenile. Ne čeka odgovor i nikad ne baca: neuspjela dojava ne smije dirnuti objavu ni poruku u panelu.
+ */
+export function javiIndexNow(slug: string, dohvati: typeof fetch = fetch): void {
+  try {
+    void dohvati('/api/indexnow', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ slug }),
+      keepalive: true,
+    }).catch(() => undefined)
+  } catch {
+    /* dojava je usput */
+  }
+}
