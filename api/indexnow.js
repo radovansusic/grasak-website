@@ -1,7 +1,7 @@
 // POST /api/indexnow  { slug }  - zove ga panel (kartica Kutak) poslije uspješnog "Objavi" ili "Skloni".
 // Ne objavljuje ništa i ne čita tajne: samo javlja IndexNow-u adrese jednog teksta na grasaksalon.me.
 // Zaštita (provjera P18): samo POST sa istog sajta i JSON tijelom; slug po obrascu; dojava ide samo za tekst koji
-// skripta potvrdi kao javan ili sklonjen (izmišljen slug ne šalje ništa); isti slug najviše jednom u minuti po instanci;
+// skripta potvrdi kao javan ili sklonjen (izmišljen slug ne šalje ništa); isti slug i stanje najviše jednom u minuti po instanci;
 // adrese se grade na serveru, nikad iz zahtjeva. Odgovor ne otkriva ništa o mreži; panel ga ionako ne čeka.
 import { SITE, SLUG_RE, ucitajObjavu } from './_lib/kutak.js'
 import { adreseTeksta, dojavi } from './_lib/indexnow.js'
@@ -36,7 +36,6 @@ export default async function handler(req, res, zavisnosti = {}) {
   const slug = b && typeof b.slug === 'string' ? b.slug : ''
   if (!SLUG_RE.test(slug) || slug.length > 120) return odgovori(res, 400, { ok: false })
   const sad = Date.now()
-  if (sad - (zadnjeSlato.get(slug) || 0) < RAZMAK_MS) return odgovori(res, 200, { ok: true, poslato: false })
   const dohvati = zavisnosti.dohvati || fetch
   let j = null
   try { j = await ucitajObjavu(slug, process.env, dohvati) } catch { j = null }
@@ -44,9 +43,14 @@ export default async function handler(req, res, zavisnosti = {}) {
   if (j && j.ok && j.objava) adrese = adreseTeksta(slug, j.objava)
   else if (j && j.sklonjena === true) adrese = adreseTeksta(slug, null)   // upravo sklonjen: sva četiri jezika, da tražilice vide da ga nema
   if (!adrese.length) return odgovori(res, 200, { ok: true, poslato: false })
-  if (zadnjeSlato.size > 500) zadnjeSlato.clear()
-  zadnjeSlato.set(slug, sad)
+  // Razmak po paru slug + stanje: Objavi pa Skloni u istoj minuti šalje obje dojave; vrijeme se pamti tek poslije uspjeha.
+  const kljucRazmaka = slug + (j && j.ok ? ':javan' : ':sklonjen')
+  if (sad - (zadnjeSlato.get(kljucRazmaka) || 0) < RAZMAK_MS) return odgovori(res, 200, { ok: true, poslato: false })
   const ishod = await dojavi(adrese, dohvati)
+  if (ishod.ok) {
+    if (zadnjeSlato.size > 500) zadnjeSlato.clear()
+    zadnjeSlato.set(kljucRazmaka, sad)
+  }
   console.log('indexnow ' + slug + ' ' + (ishod.ok ? 'ok' : 'neuspjeh') + ' ' + (ishod.status || '-') + ' ' + ishod.broj + (ishod.greska ? ' ' + ishod.greska : ''))
   return odgovori(res, 200, { ok: true, poslato: ishod.ok })
 }

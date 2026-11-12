@@ -110,6 +110,18 @@ await t('ruta: isti slug dvaput u minuti -> jedna dojava', async () => {
   const res = lazniRes(); await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), res, { dohvati: dohvatiSa(OB, 202, p) })
   assert.equal(p.length, 1); assert.equal(JSON.parse(res.tijelo).poslato, false)
 })
+await t('ruta: Objavi pa Skloni u istoj minuti -> dvije dojave; pad IndexNow-a ne troši razmak', async () => {
+  _zaboravi()
+  const p = []
+  await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), lazniRes(), { dohvati: dohvatiSa(OB, 202, p) })
+  await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), lazniRes(), { dohvati: dohvatiSa('sklonjena', 202, p) })
+  assert.equal(p.length, 2)
+  _zaboravi()
+  const q = []
+  await handler(lazniReq('POST', { slug: 'drugi' }), lazniRes(), { dohvati: dohvatiSa(OB, 'pad', q) })
+  await handler(lazniReq('POST', { slug: 'drugi' }), lazniRes(), { dohvati: dohvatiSa(OB, 202, q) })
+  assert.equal(q.length, 2)
+})
 await t('ruta: bez JSON zaglavlja 415; neispravno tijelo 400; getter koji baca 400', async () => {
   _zaboravi()
   let res = lazniRes(); await handler(lazniReq('POST', 'x', 'https://grasaksalon.me', 'text/plain'), res, { dohvati: dohvatiSa(OB) }); assert.equal(res.statusCode, 415)
