@@ -203,8 +203,25 @@ ul.mreza p.meta{margin:10px 0 0;font-size:13px}
 .cta{margin:34px 0 0;padding:22px 24px;border-radius:24px;background:var(--blijedo)}
 .cta p{margin:0 0 12px;font-weight:800;font-family:"Baloo 2",cursive;font-size:22px;color:var(--tamna)}
 .povezano{margin:44px 0 0}
-footer{background:var(--tamna);color:rgba(255,255,255,.88);font-size:14px;padding:22px 0}
-footer a{color:#fff}
+footer{background:var(--tamna);color:rgba(255,255,255,.85);font-size:15px;line-height:1.6;margin-top:24px;border-top:6px solid var(--sunce);border-radius:36px 36px 0 0}
+footer a{color:#fff;text-decoration:none}
+footer a:hover{color:var(--sunce)}
+.foot-grid{display:grid;gap:30px;padding:40px 0 26px;grid-template-columns:1fr}
+@media(min-width:640px){.foot-grid{grid-template-columns:1fr 1fr}}
+@media(min-width:960px){.foot-grid{grid-template-columns:1.3fr 1fr 1.2fr 1fr}}
+.foot-brand{display:flex;align-items:center;gap:12px;font:800 24px/1 "Baloo 2",cursive;color:#fff}
+.foot-brand img{width:52px;height:52px;border-radius:14px;box-shadow:0 0 0 2px rgba(255,255,255,.2)}
+.foot-quote{margin:14px 0 0;font-size:14px}
+.drustvene{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0;padding:0;list-style:none}
+.drustvene a{display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.1);font-weight:900;font-size:14px}
+.drustvene a:hover{background:var(--zelena);color:#fff}
+.drustvene svg{width:20px;height:20px}
+footer h2{font:800 18px/1.2 "Baloo 2",cursive;color:#fff;margin:0 0 12px}
+footer ul.lista{list-style:none;margin:0;padding:0}
+footer ul.lista li{margin:0 0 8px}
+footer ul.kont li{display:flex;gap:10px;align-items:flex-start}
+footer ul.kont svg{width:18px;height:18px;flex:0 0 18px;margin-top:3px;color:var(--sunce)}
+.foot-dno{border-top:1px solid rgba(255,255,255,.12);padding:16px 0 22px;font-size:13px;color:rgba(255,255,255,.6);text-align:center}
 a:focus-visible{outline:3px solid var(--tinta);outline-offset:3px}
 .top a:focus-visible,footer a:focus-visible{outline-color:var(--sunce)}
 `
@@ -229,6 +246,38 @@ function prekidac(jez, putanjeZaJezik) {
 
 /** Radno vrijeme iz iste datoteke kao podnožje sajta (src/data/salon.js): dani i sati po redovima, spojeni sa " · ". */
 export const radnoVrijeme = (jez) => SALON.radno.map((_, i) => radnoRed(jez, i)).join(' · ')
+
+const IKONA = {
+  instagram: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg>',
+  facebook: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 3h-2.5A3.5 3.5 0 0 0 9 6.5V9H7v3h2v9h3v-9h2.5l.5-3h-3V7a1 1 0 0 1 1-1h2z"/></svg>',
+  whatsapp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 21l1.7-4.6A8.5 8.5 0 1 1 8 19.6z"/></svg>',
+  mapa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+  telefon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+  mejl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+  sat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+}
+const MAPA_URL = 'https://www.google.com/maps/place/GRA%C5%A0AK/data=!4m2!3m1!1s0x0:0x1ae339b0be9d7c95'
+const PODNOZJE = {
+  cnr: { citat: '„Bez straha. Kroz igru. Samo osmjesi i super frizure!"', brzo: 'Brzi linkovi', kontakt: 'Kontakt', radno: 'Radno vrijeme', mapa: 'Lokacija', prava: '© 2025 Grašak · Prvi dječiji frizerski salon u Crnoj Gori' },
+  en: { citat: '“No fear. Through play. Only smiles and great haircuts!”', brzo: 'Quick links', kontakt: 'Contact', radno: 'Working hours', mapa: 'Location', prava: '© 2025 Grašak · The first kids hair salon in Montenegro' },
+  ru: { citat: '«Без страха. Через игру. Только улыбки и отличные стрижки!»', brzo: 'Быстрые ссылки', kontakt: 'Контакты', radno: 'Часы работы', mapa: 'Локация', prava: '© 2025 Grašak · Первая детская парикмахерская в Черногории' },
+  tr: { citat: '“Korkusuz. Oyunla. Sadece gülümsemeler ve harika saç kesimleri!”', brzo: 'Hızlı bağlantılar', kontakt: 'İletişim', radno: 'Çalışma saatleri', mapa: 'Konum', prava: '© 2025 Grašak · Karadağ’ın ilk çocuk kuaförü' },
+}
+
+/** Podnožje strana Kutka u istom rasporedu kao podnožje sajta (src/components/Footer.tsx): znak i mreže, linkovi, kontakt, radno vrijeme. */
+function podnozje(jez) {
+  const T = tekst(jez)
+  const P = PODNOZJE[jez] || PODNOZJE.cnr
+  const dr = (href, oznaka, ikona, novo = true) => `<li><a href="${esc(href)}" aria-label="${esc(oznaka)}"${novo ? ' target="_blank" rel="noreferrer"' : ''}>${ikona}</a></li>`
+  const lnk = (href, tx) => `<li><a href="${esc(href)}">${esc(tx)}</a></li>`
+  return `<footer><div class="foot-in"><div class="foot-grid">
+<div><a class="foot-brand" href="/"><img src="/brand/grasak-logo-bijela.svg" alt="" width="52" height="52"><span>GRAŠAK</span></a><p class="foot-quote">${esc(P.citat)}</p>
+<ul class="drustvene">${dr('https://instagram.com/djecijisalon', 'Instagram', IKONA.instagram)}${dr('https://www.facebook.com/p/Dje%C4%8Diji-salon-Gra%C5%A1ak-61559455795290/', 'Facebook', IKONA.facebook)}${dr('https://wa.me/38269371111', 'WhatsApp', IKONA.whatsapp)}<li><a href="viber://chat?number=%2B38269371111" aria-label="Viber">V</a></li>${dr(MAPA_URL, P.mapa, IKONA.mapa)}</ul></div>
+<nav aria-label="${esc(P.brzo)}"><h2>${esc(P.brzo)}</h2><ul class="lista">${lnk('/', T.pocetna)}${lnk('/usluge', T.usluge)}${lnk('/o-nama', T.onama)}${lnk('/galerija', T.galerija)}${lnk('/zakazi', T.zakazi)}${lnk('/kontakt', T.kontakt)}${lnk(putanja(jez), T.nazad)}</ul></nav>
+<div><h2>${esc(P.kontakt)}</h2><ul class="lista kont"><li>${IKONA.mapa}<a href="${MAPA_URL}" target="_blank" rel="noreferrer">${esc(SALON.adresa[jez][0])}<br>${esc(SALON.adresa[jez][1])}</a></li><li>${IKONA.telefon}<a href="tel:${esc(SALON.telefonTel)}">${esc(SALON.telefon)}</a></li><li>${IKONA.mejl}<a href="mailto:grasaksalon@gmail.com">grasaksalon@gmail.com</a></li></ul></div>
+<div><h2>${esc(P.radno)}</h2><ul class="lista kont">${SALON.radno.map((_, i) => `<li>${IKONA.sat}<span>${esc(radnoRed(jez, i))}</span></li>`).join('')}<li>${IKONA.sat}<span>${esc(SALON.neradan[jez])}</span></li></ul></div>
+</div></div><div class="foot-dno">${esc(P.prava)}</div></footer>`
+}
 
 function okvir({ jez, naslov, opis, canonical, robots, glava, tijelo, jeziciPutanje, trenutno }) {
   const T = tekst(jez)
@@ -255,7 +304,7 @@ ${tijelo}
 ${jeziciPutanje ? prekidac(jez, jeziciPutanje) : ''}
 <div class="cta"><p>${esc(T.slogan)}</p><a class="btn" href="/zakazi">${esc(T.zakazi)}</a></div>
 </main>
-<footer><div class="foot-in">${NAZIV} - ${esc(T.salon)}, ${esc(SALON.adresa[jez].join(' '))} · <a href="tel:${esc(SALON.telefonTel)}">${esc(SALON.telefon)}</a> · ${esc(radnoVrijeme(jez))} · <a href="/">${esc(T.pocetna)}</a></div></footer>
+${podnozje(jez)}
 </body>
 </html>
 `
