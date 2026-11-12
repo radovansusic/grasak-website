@@ -408,7 +408,7 @@ export default function Home() {
       {/* BRAND INTERLUDE */}
       <BrandStrip className="bg-white" />
 
-      {/* 6a. AKTUELNOSTI */}
+      {/* 6a. IZ GRAŠKOVOG KUTKA */}
       <Aktuelnosti />
 
       {/* 6b. POKLON VAUČERI */}
