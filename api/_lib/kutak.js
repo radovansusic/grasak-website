@@ -36,6 +36,8 @@ const TEKST = {
     povezano: 'Još iz rubrike', oznakaNaslov: 'Oznaka', oznakaOpis: 'Tekstovi iz Graškovog kutka sa oznakom', rubrikaPrazna: 'U ovoj rubrici još nema tekstova.',
     oznakaPrazna: 'Sa ovom oznakom još nema tekstova.', jezik: 'Jezik', nazad: 'Graškov kutak',
     minuta: (n) => `${n} min čitanja`,
+    citanja: (n) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'čitanje' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'čitanja' : 'čitanja'}`,
+    svidja: 'Sviđa mi se', poredak: 'Redoslijed', najnovije: 'Najnovije', najcitanije: 'Najčitanije', najdraze: 'Najdraže',
   },
   en: {
     naslov: 'Grašak\'s Corner', kratko: 'Corner', sub: 'Tips, games and news for parents of little ones from Grašak, the children\'s hair salon.',
@@ -46,6 +48,8 @@ const TEKST = {
     povezano: 'More from', oznakaNaslov: 'Tag', oznakaOpis: 'Posts from Grašak\'s Corner tagged', rubrikaPrazna: 'There are no posts in this topic yet.',
     oznakaPrazna: 'There are no posts with this tag yet.', jezik: 'Language', nazad: 'Grašak\'s Corner',
     minuta: (n) => `${n} min read`,
+    citanja: (n) => `${n} ${n === 1 ? 'read' : 'reads'}`,
+    svidja: 'I like it', poredak: 'Order', najnovije: 'Newest', najcitanije: 'Most read', najdraze: 'Most liked',
   },
   ru: {
     naslov: 'Уголок Grašak', kratko: 'Уголок', sub: 'Советы, игры и новости для родителей малышей от детской парикмахерской Grašak.',
@@ -56,6 +60,8 @@ const TEKST = {
     povezano: 'Ещё из рубрики', oznakaNaslov: 'Метка', oznakaOpis: 'Тексты из Уголка Grašak с меткой', rubrikaPrazna: 'В этой рубрике пока нет текстов.',
     oznakaPrazna: 'С этой меткой пока нет текстов.', jezik: 'Язык', nazad: 'Уголок Grašak',
     minuta: (n) => `${n} мин чтения`,
+    citanja: (n) => `${n} ${n % 10 === 1 && n % 100 !== 11 ? 'прочтение' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'прочтения' : 'прочтений'}`,
+    svidja: 'Нравится', poredak: 'Порядок', najnovije: 'Новые', najcitanije: 'Самые читаемые', najdraze: 'Самые любимые',
   },
   tr: {
     naslov: 'Grašak Köşesi', kratko: 'Köşe', sub: 'Çocuk kuaförü Grašak\'tan minikler için ipuçları, oyunlar ve haberler.',
@@ -66,6 +72,8 @@ const TEKST = {
     povezano: 'Konudan daha fazlası', oznakaNaslov: 'Etiket', oznakaOpis: 'Grašak Köşesi\'nden şu etiketli yazılar', rubrikaPrazna: 'Bu konuda henüz yazı yok.',
     oznakaPrazna: 'Bu etiketle henüz yazı yok.', jezik: 'Dil', nazad: 'Grašak Köşesi',
     minuta: (n) => `${n} dk okuma`,
+    citanja: (n) => `${n} okunma`,
+    svidja: 'Beğendim', poredak: 'Sıralama', najnovije: 'En yeni', najcitanije: 'En çok okunan', najdraze: 'En beğenilen',
   },
 }
 export const tekst = (jez) => TEKST[jez] || TEKST.cnr
@@ -120,10 +128,12 @@ export function izRute(urlString) {
   }
   jez = jez || 'cnr'
   const vrsta = (u.searchParams.get('vrsta') || '').slice(0, 40)
+  const por = u.searchParams.get('poredak') || ''
+  const poredak = por === 'citano' || por === 'svidja' ? por : ''
   const tip = tema ? 'tema' : oznaka ? 'oznaka' : slug ? 'objava' : 'lista'
   const kljuc = tema || oznaka || slug
   const ok = JEZICI.includes(jez) && (!kljuc || SLUG_RE.test(kljuc)) && (!vrsta || SLUG_RE.test(vrsta))
-  return { jez, tip, kljuc, vrsta, ok }
+  return { jez, tip, kljuc, vrsta, poredak, ok }
 }
 
 export function datumLijep(iso, jez) {
@@ -166,6 +176,14 @@ body{margin:0;background:var(--krem);color:var(--tinta);font:18px/1.7 Nunito,sys
 h1{font:800 clamp(30px,6vw,44px)/1.15 "Baloo 2",cursive;color:var(--tamna);margin:0 0 10px;text-wrap:balance}
 h2{font:800 24px/1.25 "Baloo 2",cursive;color:var(--tamna);margin:0 0 10px}
 .nazad{margin:0 0 14px;font-size:14px;font-weight:700}
+.srce{color:var(--koral)}
+.svidja-red{margin:26px 0 0}
+.svidja{font:800 16px/1 Nunito,system-ui,sans-serif;display:inline-flex;align-items:center;gap:8px;border:3px solid var(--koral);background:#fff;color:var(--tinta);border-radius:999px;padding:10px 18px;cursor:pointer}
+.svidja[aria-pressed=true]{background:var(--koral);color:#fff}
+.svidja[aria-pressed=true] .srce{color:#fff}
+.svidja .n:not(:empty)::before{content:'· '}
+p.citanja{margin-top:-14px}
+.poredak{margin-top:4px}
 .nazad a{color:#2d6a26;text-decoration:none}
 .nazad a:hover{text-decoration:underline}
 .meta{color:#4f5d55;font-size:14px;font-weight:700;margin:0 0 22px}
@@ -330,11 +348,29 @@ function renderKoraci(koraci, jez) {
   return `<section class="danas"><h2>${esc(tekst(jez).danas)}</h2><ol>${k.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></section>`
 }
 
-function karticaTeksta(o, jez, tax) {
+function karticaTeksta(o, jez, tax, brojevi) {
   const T = tekst(jez)
   const r = rubrikaPo(tax, o.rubrika)
   const v = vrstaPo(tax, o.vrsta)
-  return `<li class="r-${bojaKlasa(r && r.boja)}"><span class="vr">${esc(v ? v.naziv[jez] || v.naziv.cnr : '')}</span><a class="n" href="${esc(putanja(jez, o.slug))}">${esc(o.naslov[jez])}</a><p>${esc((o.recenica && o.recenica[jez]) || (o.opis && o.opis[jez]) || '')}</p><p class="meta">${esc(T.minuta((o.minuta && o.minuta[jez]) || 1))}</p></li>`
+  const b = brojevi && brojevi[o.slug]
+  const meta = [esc(T.minuta((o.minuta && o.minuta[jez]) || 1))]
+  if (b && b.c > 0) meta.push(esc(T.citanja(b.c)))
+  if (b && b.l > 0) meta.push(`<span class="srce" aria-label="${esc(T.svidja)}">&#9829;</span> ${b.l}`)
+  return `<li class="r-${bojaKlasa(r && r.boja)}"><span class="vr">${esc(v ? v.naziv[jez] || v.naziv.cnr : '')}</span><a class="n" href="${esc(putanja(jez, o.slug))}">${esc(o.naslov[jez])}</a><p>${esc((o.recenica && o.recenica[jez]) || (o.opis && o.opis[jez]) || '')}</p><p class="meta">${meta.join(' · ')}</p></li>`
+}
+
+/** Redoslijed liste: najnovije (kako skripta šalje), najčitanije ili najdraže; jednaki brojevi zadržavaju redoslijed skripte. */
+export function poredaj(lista, poredak, brojevi) {
+  if (!poredak || !brojevi) return lista
+  const k = poredak === 'citano' ? 'c' : 'l'
+  return lista.map((o, i) => ({ o, i })).sort((a, b) => ((brojevi[b.o.slug] || {})[k] || 0) - ((brojevi[a.o.slug] || {})[k] || 0) || a.i - b.i).map((x) => x.o)
+}
+
+function izborPoretka(jez, baza, vrsta, poredak) {
+  const T = tekst(jez)
+  const q = (p) => { const u = new URLSearchParams(); if (vrsta) u.set('vrsta', vrsta); if (p) u.set('poredak', p); const x = u.toString(); return baza + (x ? '?' + x : '') }
+  const stavka = (p, tx) => `<li><a href="${esc(q(p))}"${poredak === p ? ' aria-current="true"' : ''}>${esc(tx)}</a></li>`
+  return `<ul class="filter vrste poredak" aria-label="${esc(T.poredak)}">${stavka('', T.najnovije)}${stavka('citano', T.najcitanije)}${stavka('svidja', T.najdraze)}</ul>`
 }
 
 /**
@@ -397,12 +433,15 @@ export function renderObjava(ob, jez, tax, lista) {
 <p><a class="pill b-${bojaKlasa(rub.boja)}" href="${esc(putanjaTema(jez, rub.slug))}">${esc(rub.naziv[jez] || rub.naziv.cnr)}</a> <span class="vr" style="display:inline;margin-left:6px">${esc(vrs.naziv[jez] || vrs.naziv.cnr)}</span></p>
 <h1>${esc(ob.naslov[jez])}</h1>
 <p class="meta">${meta}</p>
+<p class="meta citanja" data-oblici="${esc(JSON.stringify([1, 2, 5, 11, 21].map((n) => T.citanja(n).replace(/^\d+ /, ''))))}" hidden></p>
 ${paragrafi(ob.tijelo[jez])}
 ${renderKoraci(koraci, jez)}
 ${izvor}
 ${napomena}
 ${oznake.length ? `<ul class="oznake" aria-label="${esc(T.oznake)}">${oznake.map((o) => `<li><a href="${esc(putanjaOznaka(jez, o.slug))}">${esc(o.naziv[jez] || o.naziv.cnr)}</a></li>`).join('')}</ul>` : ''}
 </article>
+<p class="svidja-red"><button type="button" class="svidja" data-slug="${esc(ob.slug)}" aria-pressed="false" hidden><span class="srce" aria-hidden="true">&#9829;</span> <span class="tx">${esc(T.svidja)}</span> <span class="n"></span></button></p>
+<script src="/kutak-brojac.js" defer></script>
 <p style="margin:30px 0 0"><a class="btn" href="/zakazi">${esc(T.zakazi)}</a></p>
 ${povezani.length ? `<aside class="povezano"><h2>${esc(T.povezano)} ${esc(rub.naziv[jez] || rub.naziv.cnr)}</h2><ul class="mreza">${povezani.map((o) => karticaTeksta(o, jez, tax)).join('\n')}</ul></aside>` : ''}
 </div>`
@@ -435,7 +474,7 @@ function filteri(jez, tax, lista, trenutnaRubrika, trenutnaVrsta, trenutnaOznaka
  * Indeksiranje: lista i rubrika samo ako imaju bar jedan tekst, oznaka tek sa 5 tekstova; filter ?vrsta= nikad.
  * Vraća null ako rubrika ili oznaka ne postoje u taksonomiji. Hreflang lista nema (to nijesu prevodi istog teksta); samo canonical.
  */
-export function renderLista(lista, jez, tax, { tip = 'lista', kljuc = '', vrsta = '' } = {}) {
+export function renderLista(lista, jez, tax, { tip = 'lista', kljuc = '', vrsta = '', poredak = '', brojevi = null } = {}) {
   tax = tax || {}
   const T = tekst(jez)
   const rub = tip === 'tema' ? rubrikaPo(tax, kljuc) : null
@@ -443,20 +482,22 @@ export function renderLista(lista, jez, tax, { tip = 'lista', kljuc = '', vrsta 
   if ((tip === 'tema' && !rub) || (tip === 'oznaka' && !ozn)) return null
   const vrstaOk = vrsta && vrstaPo(tax, vrsta) ? vrsta : ''
   const svi = naJeziku(lista, jez).filter((o) => (!rub || o.rubrika === rub.slug) && (!ozn || (o.oznake || []).includes(ozn.slug)))
-  const sad = vrstaOk ? svi.filter((o) => o.vrsta === vrstaOk) : svi
+  const porOk = brojevi && (poredak === 'citano' || poredak === 'svidja') ? poredak : ''
+  const sad = poredaj(vrstaOk ? svi.filter((o) => o.vrsta === vrstaOk) : svi, porOk, brojevi)
   const ime = rub ? rub.naziv[jez] || rub.naziv.cnr : ozn ? ozn.naziv[jez] || ozn.naziv.cnr : T.naslov
   const opis = rub ? rub.opis[jez] || rub.opis.cnr : ozn ? `${T.oznakaOpis} "${ime}".` : T.sub
   const baza = tip === 'tema' ? putanjaTema(jez, kljuc) : tip === 'oznaka' ? putanjaOznaka(jez, kljuc) : putanja(jez)
   const canonical = SITE + baza   // filter po vrsti pokazuje na osnovnu stranu
   const nGrasku = svi.filter((o) => !naKutku(o)).length   // tekstovi sa domom na Kutku ne daju Grašku indeksirane liste
   const dovoljno = tip === 'oznaka' ? nGrasku >= OZNAKA_MIN_TEKSTOVA : nGrasku >= 1
-  const robots = dovoljno && !vrstaOk ? 'index, follow' : 'noindex, follow'
+  const robots = dovoljno && !vrstaOk && !porOk ? 'index, follow' : 'noindex, follow'
   const prazno = tip === 'tema' ? T.rubrikaPrazna : tip === 'oznaka' ? T.oznakaPrazna : T.prazno
   const naslovH1 = tip === 'oznaka' ? `${T.oznakaNaslov}: ${ime}` : ime
   const tijelo = `<h1>${esc(naslovH1)}</h1>
 <p class="sub">${esc(opis)}</p>
 ${filteri(jez, tax, lista, rub ? rub.slug : '', vrstaOk, ozn ? ozn.slug : '')}
-${sad.length ? `<ul class="mreza">\n${sad.map((o) => karticaTeksta(o, jez, tax)).join('\n')}\n</ul>` : `<p>${esc(prazno)}</p>`}`
+${brojevi && sad.length > 1 ? izborPoretka(jez, baza, vrstaOk, porOk) : ''}
+${sad.length ? `<ul class="mreza">\n${sad.map((o) => karticaTeksta(o, jez, tax, brojevi)).join('\n')}\n</ul>` : `<p>${esc(prazno)}</p>`}`
   const naslovStrane = tip === 'lista' ? `${T.naslov} | ${NAZIV}` : `${naslovH1} | ${T.naslov} | ${NAZIV}`
   const jeziciPutanje = {}
   JEZICI.forEach((j) => { jeziciPutanje[j] = (tip === 'tema' ? putanjaTema(j, kljuc) : tip === 'oznaka' ? putanjaOznaka(j, kljuc) : putanja(j)) + (vrstaOk ? '?vrsta=' + vrstaOk : '') })

@@ -511,12 +511,12 @@ t('greške, RSS, sitemap bez praznih rubrika i slabih oznaka, hreflang samo međ
 })
 
 t('rute i adresa skripte', async () => {
-  jeste(R.izRute('/api/kutak?jez=en&slug=abc-def'), { jez: 'en', tip: 'objava', kljuc: 'abc-def', vrsta: '', ok: true })
-  jeste(R.izRute('/en/kutak/abc-def'), { jez: 'en', tip: 'objava', kljuc: 'abc-def', vrsta: '', ok: true })
-  jeste(R.izRute('/kutak'), { jez: 'cnr', tip: 'lista', kljuc: '', vrsta: '', ok: true })
-  jeste(R.izRute('/ru/kutak/tema/igraonica?vrsta=savjet'), { jez: 'ru', tip: 'tema', kljuc: 'igraonica', vrsta: 'savjet', ok: true })
-  jeste(R.izRute('/api/kutak?jez=tr&oznaka=vrtic'), { jez: 'tr', tip: 'oznaka', kljuc: 'vrtic', vrsta: '', ok: true })
-  jeste(R.izRute('/tr/kutak/oznaka/vrtic'), { jez: 'tr', tip: 'oznaka', kljuc: 'vrtic', vrsta: '', ok: true })
+  jeste(R.izRute('/api/kutak?jez=en&slug=abc-def'), { jez: 'en', tip: 'objava', kljuc: 'abc-def', vrsta: '', poredak: '', ok: true })
+  jeste(R.izRute('/en/kutak/abc-def'), { jez: 'en', tip: 'objava', kljuc: 'abc-def', vrsta: '', poredak: '', ok: true })
+  jeste(R.izRute('/kutak'), { jez: 'cnr', tip: 'lista', kljuc: '', vrsta: '', poredak: '', ok: true })
+  jeste(R.izRute('/ru/kutak/tema/igraonica?vrsta=savjet'), { jez: 'ru', tip: 'tema', kljuc: 'igraonica', vrsta: 'savjet', poredak: '', ok: true })
+  jeste(R.izRute('/api/kutak?jez=tr&oznaka=vrtic'), { jez: 'tr', tip: 'oznaka', kljuc: 'vrtic', vrsta: '', poredak: '', ok: true })
+  jeste(R.izRute('/tr/kutak/oznaka/vrtic'), { jez: 'tr', tip: 'oznaka', kljuc: 'vrtic', vrsta: '', poredak: '', ok: true })
   assert.equal(R.izRute('/api/kutak?slug=../x').ok, false); assert.equal(R.izRute('/api/kutak?jez=de').ok, false); assert.equal(R.izRute('/api/kutak?vrsta=../x').ok, false)
   assert.equal(R.putanja('cnr', 'a-b'), '/kutak/a-b'); assert.equal(R.putanja('tr'), '/tr/kutak'); assert.equal(R.putanjaTema('en', 'igraonica'), '/en/kutak/tema/igraonica'); assert.equal(R.putanjaOznaka('ru', 'vrtic'), '/ru/kutak/oznaka/vrtic')
   assert.equal(R.skriptaAdresa({ OBJAVE_API_URL: 'u1', VITE_ZAKAZIVANJE_API: 'u2' }), 'u1')

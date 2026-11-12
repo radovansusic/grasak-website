@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:objave": "node scripts/objave-test.mjs && node scripts/objave-gs-smoke.mjs && node scripts/indexnow-test.mjs"
+    "test:objave": "node scripts/objave-test.mjs && node scripts/objave-gs-smoke.mjs && node scripts/indexnow-test.mjs && node scripts/brojac-test.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
