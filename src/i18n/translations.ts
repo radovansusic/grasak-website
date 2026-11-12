@@ -113,7 +113,8 @@ const cnr: Dict = {
     tagline: 'Dječiji frizerski salon',
     book: 'Zakaži termin',
     menu: 'Meni',
-    kutak: 'Kutak',
+    kutak: 'Graškov kutak',
+    kutakKratko: 'Kutak',
   },
   footer: {
     quote: '„Bez straha. Kroz igru. Samo osmjesi i super frizure!"',
@@ -611,7 +612,8 @@ const en: Dict = {
     tagline: 'Kids hair salon',
     book: 'Book an appointment',
     menu: 'Menu',
-    kutak: 'Corner',
+    kutak: "Grašak's Corner",
+    kutakKratko: 'Corner',
   },
   footer: {
     quote: '“No fear. Through play. Only smiles and great haircuts!”',
@@ -1108,7 +1110,8 @@ const ru: Dict = {
     tagline: 'Детская парикмахерская',
     book: 'Записаться',
     menu: 'Меню',
-    kutak: 'Уголок',
+    kutak: 'Уголок Grašak',
+    kutakKratko: 'Уголок',
   },
   footer: {
     quote: '«Без страха. Через игру. Только улыбки и отличные стрижки!»',
@@ -1605,7 +1608,8 @@ const tr: Dict = {
     tagline: 'Çocuk kuaförü',
     book: 'Randevu al',
     menu: 'Menü',
-    kutak: 'Köşe',
+    kutak: 'Grašak Köşesi',
+    kutakKratko: 'Köşe',
   },
   footer: {
     quote: '“Korkusuz. Oyunla. Sadece gülümsemeler ve harika saç kesimleri!”',
