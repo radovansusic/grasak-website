@@ -3,9 +3,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
-import { EventEmitter } from 'node:events'
 import { KLJUC, HOST, INDEXNOW_ENDPOINT, adreseTeksta, dojavi } from '../api/_lib/indexnow.js'
-import handler from '../api/indexnow.js'
+import handler, { _zaboravi } from '../api/indexnow.js'
 
 const koren = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 let prosli = 0
@@ -17,18 +16,17 @@ const lazniRes = () => {
   r.end = (s) => { r.tijelo = s || '' }
   return r
 }
-const lazniReq = (method, body, origin = 'https://grasaksalon.me') => {
-  const q = new EventEmitter()
-  q.method = method
-  q.headers = origin ? { origin } : {}
-  q.destroy = () => {}
-  setTimeout(() => { if (body !== undefined) q.emit('data', typeof body === 'string' ? body : JSON.stringify(body)); q.emit('end') }, 0)
+const lazniReq = (method, body, origin = 'https://grasaksalon.me', ct = 'application/json') => {
+  const q = { method, headers: {} }
+  if (origin) q.headers.origin = origin
+  if (ct) q.headers['content-type'] = ct
+  if (body !== undefined) q.body = body
   return q
 }
 // lažna skripta + lažni IndexNow
 const dohvatiSa = (objava, indexStatus = 202, poziviIndex = []) => async (url, init) => {
   if (url === INDEXNOW_ENDPOINT) { poziviIndex.push(JSON.parse(init.body)); if (indexStatus === 'pad') throw new TypeError('mreza'); return new Response('', { status: indexStatus }) }
-  if (String(url).includes('akcija=objava')) return new Response(JSON.stringify(objava ? { ok: true, objava } : { ok: false, nema: true }), { status: 200, headers: { 'content-type': 'application/json' } })
+  if (String(url).includes('akcija=objava')) return new Response(JSON.stringify(objava === 'sklonjena' ? { ok: false, nema: true, sklonjena: true } : objava ? { ok: true, objava } : { ok: false, nema: true }), { status: 200, headers: { 'content-type': 'application/json' } })
   throw new Error('neočekivan fetch ' + url)
 }
 const OB = { slug: 'prvo-sisanje', rubrika: 'sisanje-i-njega', naslov: { cnr: 'N', en: 'E', ru: '', tr: '' }, tijelo: { cnr: 't', en: 't', ru: '', tr: '' } }
@@ -74,21 +72,49 @@ await t('ruta: samo POST, samo isti sajt, slug po obrascu', async () => {
   res = lazniRes(); await handler(lazniReq('POST', 'nije json'), res, { dohvati: dohvatiSa(OB) }); assert.equal(res.statusCode, 400)
 })
 await t('ruta: objavljen tekst -> jedna dojava sa adresama iz skripte', async () => {
+  _zaboravi()
   const p = []
   const res = lazniRes(); await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), res, { dohvati: dohvatiSa(OB, 202, p) })
   assert.equal(res.statusCode, 200); assert.equal(JSON.parse(res.tijelo).poslato, true)
   assert.equal(p.length, 1); assert.equal(p[0].urlList.length, 6); assert.equal(p[0].host, 'grasaksalon.me')
 })
 await t('ruta: IndexNow pada -> i dalje 200, bez izuzetka', async () => {
+  _zaboravi()
   const res = lazniRes(); await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), res, { dohvati: dohvatiSa(OB, 'pad') })
   assert.equal(res.statusCode, 200); assert.equal(JSON.parse(res.tijelo).poslato, false)
 })
 await t('ruta: INDEXNOW=off ne šalje ništa', async () => {
+  _zaboravi()
   process.env.INDEXNOW = 'off'
   const p = []
   const res = lazniRes(); await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), res, { dohvati: dohvatiSa(OB, 202, p) })
   delete process.env.INDEXNOW
   assert.equal(res.statusCode, 200); assert.equal(p.length, 0)
+})
+await t('ruta: izmišljen slug (skripta kaže nema) ne šalje ništa', async () => {
+  _zaboravi()
+  const p = []
+  const res = lazniRes(); await handler(lazniReq('POST', { slug: 'ne-postoji' }), res, { dohvati: dohvatiSa(null, 202, p) })
+  assert.equal(res.statusCode, 200); assert.equal(JSON.parse(res.tijelo).poslato, false); assert.equal(p.length, 0)
+})
+await t('ruta: upravo sklonjen tekst -> adrese na sva četiri jezika', async () => {
+  _zaboravi()
+  const p = []
+  const res = lazniRes(); await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), res, { dohvati: dohvatiSa('sklonjena', 202, p) })
+  assert.equal(JSON.parse(res.tijelo).poslato, true); assert.equal(p[0].urlList.length, 8)
+})
+await t('ruta: isti slug dvaput u minuti -> jedna dojava', async () => {
+  _zaboravi()
+  const p = []
+  await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), lazniRes(), { dohvati: dohvatiSa(OB, 202, p) })
+  const res = lazniRes(); await handler(lazniReq('POST', { slug: 'prvo-sisanje' }), res, { dohvati: dohvatiSa(OB, 202, p) })
+  assert.equal(p.length, 1); assert.equal(JSON.parse(res.tijelo).poslato, false)
+})
+await t('ruta: bez JSON zaglavlja 415; neispravno tijelo 400; getter koji baca 400', async () => {
+  _zaboravi()
+  let res = lazniRes(); await handler(lazniReq('POST', 'x', 'https://grasaksalon.me', 'text/plain'), res, { dohvati: dohvatiSa(OB) }); assert.equal(res.statusCode, 415)
+  const q = lazniReq('POST', undefined); Object.defineProperty(q, 'body', { get() { throw new SyntaxError('json') } })
+  res = lazniRes(); await handler(q, res, { dohvati: dohvatiSa(OB) }); assert.equal(res.statusCode, 400)
 })
 await t('panel zove dojavu tek poslije uspješnog Objavi i Skloni', () => {
   const s = fs.readFileSync(path.join(koren, 'src/components/osoblje/KutakPanel.tsx'), 'utf8')
