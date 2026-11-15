@@ -43,13 +43,19 @@ type Odgovor<T> = T & { ok: boolean; poruka?: string }
 /** Prijava u panel: ime iz lista Osoblje + lična šifra. */
 export interface Pristup { ime: string; sifra: string }
 
+/** Google je vratio nešto što nije JSON (strana sa greškom): skripta je prekinuta prije odgovora, npr. zbog isteka vremena. Veza postoji, pa to nije "nema veze". */
+export class SkriptaPrekinuta extends Error {
+  constructor() { super('Skripta nije vratila odgovor') }
+}
+
 export async function osoblje<T = object>(akcija: string, pristup: Pristup, podaci: Record<string, unknown> = {}): Promise<Odgovor<T>> {
   const r = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify({ akcija: 'osoblje_' + akcija, ime: pristup.ime, sifra: pristup.sifra, ...podaci }),
   })
-  return r.json()
+  const tekst = await r.text()
+  try { return JSON.parse(tekst) as Odgovor<T> } catch { throw new SkriptaPrekinuta() }
 }
 
 /* ---- sedmica, istorija klijenta, lista predstojećih ---- */

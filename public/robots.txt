@@ -3,3 +3,4 @@ Allow: /
 Disallow: /panel
 Disallow: /admin
 Disallow: /osoblje
+Sitemap: https://grasaksalon.me/sitemap.xml

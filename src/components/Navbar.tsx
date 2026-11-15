@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink } from 'react-router'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Phone, CalendarCheck } from 'lucide-react'
+import { Menu, X, Phone, CalendarCheck, BookOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { kutakPutanja, useKutakIma } from '@/lib/kutak'
 import { useLang } from '@/i18n/LanguageContext'
 import type { Lang } from '@/i18n/translations'
 
@@ -35,7 +36,8 @@ function LangSwitcher({ className }: { className?: string }) {
 }
 
 export default function Navbar() {
-  const { tr } = useLang()
+  const { tr, lang } = useLang()
+  const kutakIma = useKutakIma()
   const links = [
     { to: '/', label: tr('nav.home') },
     { to: '/usluge', label: tr('nav.usluge') },
@@ -71,7 +73,7 @@ export default function Navbar() {
           !compact && (scrolled ? 'py-2 shadow-lg shadow-grass-deep/10' : 'py-4 shadow-sm'),
         )}
       >
-        <Link to="/" className="flex items-center gap-3" onClick={() => setOpen(false)}>
+        <Link to="/" className="flex shrink-0 items-center gap-3" onClick={() => setOpen(false)}>
           <img
             src="/brand/grasak-logo-zuta.svg"
             alt="Grašak logo"
@@ -80,9 +82,9 @@ export default function Navbar() {
               compact ? 'h-9' : 'h-12',
             )}
           />
-          <span className={cn('hidden flex-col leading-tight transition-opacity duration-300 sm:flex', compact && 'opacity-0')}>
+          <span className={cn('hidden flex-col leading-tight transition-opacity duration-300 sm:flex lg:hidden xl:flex', compact && 'opacity-0')}>
             <span className="font-display text-lg font-bold text-ink">GRAŠAK</span>
-            <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-grass-deep">
+            <span className="whitespace-nowrap text-[10px] font-bold uppercase tracking-[0.1em] text-grass-deep">
               {tr('nav.tagline')}
             </span>
           </span>
@@ -105,15 +107,21 @@ export default function Navbar() {
               </NavLink>
             </li>
           ))}
+          {kutakIma && (
+            <li>
+              <a href={kutakPutanja(lang)} className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-sun px-3 py-2 text-sm font-extrabold text-grass-darkest shadow-sm ring-1 ring-grass/20 transition-colors hover:bg-sun-light"><BookOpen className="h-4 w-4" aria-hidden="true" /><span className="hidden 2xl:inline">{tr('nav.kutak')}</span><span className="2xl:hidden" aria-label={tr('nav.kutak')}>{tr('nav.kutakKratko')}</span></a>
+            </li>
+          )}
         </ul>
 
         <div className="hidden items-center gap-2 lg:flex">
           <LangSwitcher />
           <a
             href="tel:+38269371111"
-            className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-coral px-4 py-2 text-sm font-bold text-white transition-transform hover:scale-105"
+            aria-label="069 371 111"
+            className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-full bg-coral px-3 py-2 text-sm font-bold text-white transition-transform hover:scale-105 xl:px-4"
           >
-            <Phone className="h-4 w-4" /> 069 371 111
+            <Phone className="h-4 w-4" /> <span className="hidden xl:inline">069 371 111</span>
           </a>
           <Link
             to="/zakazi"
@@ -167,6 +175,11 @@ export default function Navbar() {
                   </NavLink>
                 </motion.li>
               ))}
+              {kutakIma && (
+                <li className="w-full max-w-xs">
+                  <a href={kutakPutanja(lang)} onClick={() => setOpen(false)} className="flex items-center justify-center gap-2 rounded-full bg-sun px-6 py-4 text-center font-display text-2xl font-bold text-grass-darkest shadow-md"><BookOpen className="h-6 w-6" aria-hidden="true" />{tr('nav.kutak')}</a>
+                </li>
+              )}
               <motion.li
                 initial={{ opacity: 0, x: 24 }}
                 animate={{ opacity: 1, x: 0 }}
