@@ -4,7 +4,7 @@
  * 4 godine na terminu 2026. = 2022.
  */
 
-const BROJ_GODINA = 18 // izbor od ove godine unazad
+const BROJ_GODINA = 20 // tekuća godina pa unazad, do tinejdžera (19 god.)
 
 export function izborGodista(danas = new Date()): string[] {
   const g = danas.getFullYear()

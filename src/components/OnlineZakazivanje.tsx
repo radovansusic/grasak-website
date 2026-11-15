@@ -303,7 +303,7 @@ export default function OnlineZakazivanje() {
                 </div>
               )}
               <input name="dijete" maxLength={60} value={podaci.dijete} onChange={upisi('dijete')} placeholder={tr('zakazi.child')} className={inputCls + ' sm:col-span-2'} />
-              <BiracGodista naslov={tr('zakazi.age')} vrijednost={podaci.uzrast} onIzbor={(g) => setPodaci((p) => ({ ...p, uzrast: g }))} className="sm:col-span-2" />
+              <BiracGodista naslov={tr('zakazi.age')} ponisti={tr('zakazi.ageClear')} vrijednost={podaci.uzrast} onIzbor={(g) => setPodaci((p) => ({ ...p, uzrast: g }))} className="sm:col-span-2" />
               <input name="roditelj" required maxLength={60} value={podaci.roditelj} onChange={upisi('roditelj')} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
               <input name="telefon" required type="tel" inputMode="tel" value={podaci.telefon} onChange={upisi('telefon')} placeholder="069 123 456" autoComplete="tel" className={inputCls} />
               <input name="email" type="email" inputMode="email" maxLength={80} value={podaci.email} onChange={upisi('email')} placeholder={tr('zakazi.email')} autoComplete="email" className={inputCls + ' sm:col-span-2'} />
