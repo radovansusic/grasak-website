@@ -8,6 +8,7 @@ import { t as prevodi } from '@/i18n/translations'
 import { sendBookingEmail } from '@/lib/booking'
 import MjesecniKalendar, { type StanjeDana } from '@/components/MjesecniKalendar'
 import { citajMoj, pisiPrefill } from '@/lib/moj'
+import BiracGodista from '@/components/BiracGodista'
 import {
   isoDatum, linkOtkazivanja, napraviIcs, preuzmiIcs, ucitajKonfig, ucitajPeriod, ucitajSlotove, zakazi,
   type Konfig, type Lokacija, type Slot, type Usluga,
@@ -127,7 +128,7 @@ export default function OnlineZakazivanje() {
         // kopija salonu na email (ista veza kao stara forma)
         void sendBookingEmail({
           Termin: `${d}.${m}. u ${vrijeme}`, Lokacija: lok.naziv, Frizer: osoba, Usluga: usluga.naziv,
-          Dijete: `${polje('dijete')} (${polje('uzrast') || '-'} god.)`, Roditelj: polje('roditelj'),
+          Dijete: polje('dijete') || '-', Godište: polje('uzrast') || '-', Roditelj: polje('roditelj'),
           Telefon: polje('telefon'), Napomena: polje('napomena') || '-', Izvor: 'Sajt - online zakazivanje (u kalendaru)',
           Email: polje('email') || '-', Kartica: podaci.kartica ? 'Veseli Grašak' : '-',
         })
@@ -301,8 +302,8 @@ export default function OnlineZakazivanje() {
                   ))}
                 </div>
               )}
-              <input name="dijete" maxLength={60} value={podaci.dijete} onChange={upisi('dijete')} placeholder={tr('zakazi.child')} className={inputCls} />
-              <input name="uzrast" maxLength={10} inputMode="numeric" value={podaci.uzrast} onChange={upisi('uzrast')} placeholder={tr('zakazi.age')} className={inputCls} />
+              <input name="dijete" maxLength={60} value={podaci.dijete} onChange={upisi('dijete')} placeholder={tr('zakazi.child')} className={inputCls + ' sm:col-span-2'} />
+              <BiracGodista naslov={tr('zakazi.age')} vrijednost={podaci.uzrast} onIzbor={(g) => setPodaci((p) => ({ ...p, uzrast: g }))} className="sm:col-span-2" />
               <input name="roditelj" required maxLength={60} value={podaci.roditelj} onChange={upisi('roditelj')} placeholder={tr('zakazi.parent')} autoComplete="name" className={inputCls} />
               <input name="telefon" required type="tel" inputMode="tel" value={podaci.telefon} onChange={upisi('telefon')} placeholder="069 123 456" autoComplete="tel" className={inputCls} />
               <input name="email" type="email" inputMode="email" maxLength={80} value={podaci.email} onChange={upisi('email')} placeholder={tr('zakazi.email')} autoComplete="email" className={inputCls + ' sm:col-span-2'} />

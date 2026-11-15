@@ -15,6 +15,8 @@ import KlijentiPanel from '@/components/osoblje/Klijenti'
 import { Prozor, Tab } from '@/components/osoblje/zajednicko'
 import { OZNAKA_IZVORA, inputCls, lijepDatum, nazivTermina, pomjeri, proslo } from '@/components/osoblje/pomocno'
 import { API_URL, isoDatum } from '@/lib/zakazivanje'
+import { godisteSaUzrastom } from '@/lib/godiste'
+import BiracGodista from '@/components/BiracGodista'
 import {
   OCEKIVANA_VERZIJA_SKRIPTE, osoblje,
   type DanOsoblje, type Pristup, type Izvjestaj, type KonfigOsoblje, type OsobaDan, type Profil, type TerminOsoblje,
@@ -427,6 +429,7 @@ function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, radno, onZa
 }) {
   const [rezim, setRezim] = useState<'termin' | 'pauza'>('termin')
   const [usluga, setUsluga] = useState(konfig.usluge[0]?.id || '')
+  const [godiste, setGodiste] = useState('')
   const [salje, setSalje] = useState(false)
   const [greska, setGreska] = useState('')
   const posalji = async (e: FormEvent<HTMLFormElement>) => {
@@ -436,7 +439,7 @@ function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, radno, onZa
     try {
       const r = await osoblje('zakazi', pristup, {
         lok: lokId, osoba, usluga, datum, vrijeme,
-        dijete: f.get('dijete'), telefon: f.get('telefon'), roditelj: f.get('roditelj'), napomena: f.get('napomena'),
+        dijete: f.get('dijete'), uzrast: godiste, telefon: f.get('telefon'), roditelj: f.get('roditelj'), napomena: f.get('napomena'),
         email: f.get('email'), kartica: f.get('kartica') === 'on',
       })
       if (r.ok) onGotovo(r.poruka || 'Upisano.')
@@ -467,6 +470,7 @@ function NoviTermin({ pristup, konfig, lokId, datum, osoba, vrijeme, radno, onZa
           ))}
         </div>
         <input name="dijete" maxLength={60} placeholder="Ime djeteta (nije obavezno)" className={inputCls} autoFocus />
+        <BiracGodista naslov="Godište djeteta" vrijednost={godiste} onIzbor={setGodiste} />
         <input name="telefon" type="tel" inputMode="tel" placeholder="Telefon roditelja" className={inputCls} />
         <input name="roditelj" maxLength={60} placeholder="Ime roditelja" className={inputCls} />
         <input name="email" type="email" inputMode="email" maxLength={80} placeholder="Email roditelja (potvrda i podsjetnik)" className={inputCls} />
@@ -512,7 +516,7 @@ function DetaljiTermina({ pristup, konfig, lokId, datum, osoba, t, onZatvori, on
       <div className="mb-4">
         {red('Vrijeme', `${t.od} - ${t.do} · ${osoba}`)}
         {red('Usluga', t.usluga)}
-        {red('Uzrast', t.uzrast && t.uzrast + ' god.')}
+        {red('Godište', godisteSaUzrastom(t.uzrast, datum))}
         {red('Roditelj', t.roditelj)}
         {red('Telefon', t.telefon && <a href={'tel:' + t.telefon} className="inline-flex items-center gap-1 font-bold text-grass-deep"><Phone className="h-4 w-4" /> {t.telefon}</a>)}
         {red('Email', t.email && <a href={'mailto:' + t.email} className="inline-flex items-center gap-1 font-bold text-grass-deep"><Mail className="h-4 w-4" /> {t.email}</a>)}

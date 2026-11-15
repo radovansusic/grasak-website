@@ -26,9 +26,9 @@ const CFG = {
   EMAIL_IME: 'Grašak - dječiji frizerski salon',
 };
 
-const VERZIJA_SKRIPTE = '2026-11-07a';   // panel javlja kad je skripta starija od sajta
+const VERZIJA_SKRIPTE = '2026-11-15a';   // panel javlja kad je skripta starija od sajta
 const LIST_TERMINI = 'Termini';
-const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Uzrast',
+const ZAGLAVLJE = ['ID', 'Datum', 'Vrijeme', 'Kraj', 'Lokacija', 'Frizer', 'Usluga', 'Dijete', 'Godište',
                    'Roditelj', 'Telefon', 'Napomena', 'Izvor', 'Status', 'Potvrda SMS', 'Podsjetnik SMS', 'Azurirano', 'Kartica', 'Email'];
 const KOL = ZAGLAVLJE.reduce((o, k, i) => { o[k] = i; return o; }, {});   // indeks od 0
 const STATUSI = ['zakazan', 'nije_dosao', 'otkazan'];
@@ -58,6 +58,7 @@ function postavi() {
   sh.getRange('A:S').setNumberFormat('@'); // tekst: datumi, vremena i +382 brojevi ostaju kako su upisani
   sh.getRange(1, 1, 1, ZAGLAVLJE.length).setValues([ZAGLAVLJE]).setFontWeight('bold').setBackground('#e7f5e4');
   sh.setFrozenRows(1);
+  pretvoriUzrastUGodiste_(sh);                      // stari uzrast ("4") -> godište ("2022")
   const ob = ss.getSheetByName(LIST_OBAVJESTENJA);
   if (ob) ob.getRange('A:J').setNumberFormat('@'); // datum i vrijeme ostaju tekst, ne postaju datum
   listKlijenata_();                                 // CRM list "Klijenti"
@@ -137,7 +138,7 @@ function redZaDogadjaj_(ev, lokPoFrizeru, tz) {
   r[KOL['Frizer']] = n.frizer;
   r[KOL['Usluga']] = n.usluga;
   r[KOL['Dijete']] = n.klijent;
-  r[KOL['Uzrast']] = poljeIzOpisa(opis, 'Uzrast');
+  r[KOL['Godište']] = godisteIzOpisa_(opis, ev.getStartTime());
   r[KOL['Roditelj']] = poljeIzOpisa(opis, 'Roditelj');
   r[KOL['Telefon']] = telefonZaTabelu(izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis));
   r[KOL['Napomena']] = poljeIzOpisa(opis, 'Napomena');
@@ -349,7 +350,7 @@ function vratiTermineIzTabele_() {
     const telefon = telefonIzTabele(r[KOL['Telefon']]);
     const kartica = String(r[KOL['Kartica']] || '').toLowerCase() === 'da';
     const ev = kal_().createEvent(frizer + ' - ' + usluga + (dijete ? ' (' + dijete + ')' : ''), pocetak, krajD, {
-      description: 'Roditelj: ' + (r[KOL['Roditelj']] || '-') + '\nTelefon: ' + (telefon || '-') + '\nUzrast: ' + (r[KOL['Uzrast']] || '-') +
+      description: 'Roditelj: ' + (r[KOL['Roditelj']] || '-') + '\nTelefon: ' + (telefon || '-') + '\nGodište: ' + (r[KOL['Godište']] || '-') +
         '\nNapomena: ' + (r[KOL['Napomena']] || '-') + '\nKartica: ' + (kartica ? 'da' : '-') + '\nEmail: ' + (r[KOL['Email']] || '-') +
         '\nKod: ' + napraviKod_() + '\nIzvor: ' + (r[KOL['Izvor']] || 'tabela'),
     });
@@ -616,6 +617,47 @@ function poljeIzOpisa(opis, kljuc) {
   const m = String(opis || '').match(new RegExp('^' + kljuc + ':[ \\t]*(.*)$', 'mi'));
   const v = m ? m[1].trim() : '';
   return v === '-' ? '' : v;
+}
+
+/**
+ * Godište djeteta: "2022" ostaje; stari uzrast ("4", "4 god", "18 mj") -> godina rođenja prema datumu termina (ref).
+ * 4 godine na terminu 2026. = 2022. Nepoznat tekst ostaje kakav je.
+ */
+function normalizujGodiste(v, ref) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s || s === '-') return '';
+  const d = ref instanceof Date && !isNaN(ref) ? ref : new Date();
+  const god = s.match(/(?:^|\D)((?:19|20)\d{2})(?:\D|$)/);
+  if (god) return god[1];
+  const mj = s.match(/^(\d{1,2})\s*(mj|mes|mjes|мес|mon|ay)/i);
+  if (mj) return String(new Date(d.getFullYear(), d.getMonth() - Number(mj[1]), 1).getFullYear());
+  const g = s.match(/^(\d{1,2})(?:[.,]\d+)?(?!\d)/);
+  if (g && Number(g[1]) <= 25) return String(d.getFullYear() - Number(g[1]));
+  return s;
+}
+
+/** Godište iz opisa događaja; stari događaji imaju red "Uzrast: 4". */
+function godisteIzOpisa_(opis, ref) {
+  return normalizujGodiste(poljeIzOpisa(opis, 'Godište') || poljeIzOpisa(opis, 'Godiste') || poljeIzOpisa(opis, 'Uzrast'), ref);
+}
+
+/** Jednom (u Postavi): kolona Godište u listu Termini, stari uzrast -> godina rođenja prema datumu termina. */
+function pretvoriUzrastUGodiste_(sh) {
+  if (sh.getLastRow() < 2) return 0;
+  const n = sh.getLastRow() - 1;
+  const datumi = sh.getRange(2, KOL['Datum'] + 1, n, 1).getValues();
+  const opseg = sh.getRange(2, KOL['Godište'] + 1, n, 1);
+  const stare = opseg.getValues();
+  let promjena = 0;
+  const nove = stare.map((r, i) => {
+    const d = datumTekst(datumi[i][0], CFG.TZ);
+    const ref = d ? Utilities.parseDate(d + ' 12:00', CFG.TZ, 'yyyy-MM-dd HH:mm') : new Date();
+    const v = normalizujGodiste(r[0], ref);
+    if (String(v) !== String(r[0])) promjena++;
+    return [v];
+  });
+  if (promjena) opseg.setValues(nove);
+  return promjena;
 }
 
 /** Postavlja (ili dodaje) red "Kljuc: vrijednost" u opisu događaja. */
@@ -1009,7 +1051,7 @@ function napraviId(naziv) {
  *
  * GET  ?akcija=konfig                                  -> lokacije, osobe, usluge
  * GET  ?akcija=slotovi&lok=ID&osoba=Ime&usluga=ID&datum=yyyy-MM-dd -> termini dana (slobodno/zauzeto)
- * POST {akcija:'zakazi', lok, osoba, usluga, datum, vrijeme, dijete, uzrast, roditelj, telefon, napomena}
+ * POST {akcija:'zakazi', lok, osoba, usluga, datum, vrijeme, dijete, uzrast (godište, npr. 2022), roditelj, telefon, napomena}
  * POST {akcija:'vaucer', vrsta, dijete, kupac, telefon, napomena}
  * POST {akcija:'osoblje_*', pin, ...} - panel za osoblje (Osoblje.gs)
  *
@@ -1201,7 +1243,7 @@ function zakazi_(z) {
   const telefon = normalizujTelefon(z.telefon);
   const dijete = cistTekst(z.dijete, 60);
   const roditelj = cistTekst(z.roditelj, 60);
-  const uzrast = cistTekst(z.uzrast, 10);
+  const godiste = normalizujGodiste(cistTekst(z.godiste || z.uzrast, 10), new Date());
   const napomena = cistTekst(z.napomena, 300);
   if (!roditelj) return { ok: false, poruka: 'Upišite ime i prezime roditelja.' };   // ime djeteta nije obavezno
   if (telefon.replace(/\D/g, '').length < 10) return { ok: false, poruka: 'Upišite ispravan broj telefona.' };
@@ -1220,7 +1262,7 @@ function zakazi_(z) {
   const pocetak = Utilities.parseDate(z.datum + ' ' + z.vrijeme, tz, 'yyyy-MM-dd HH:mm');
   const kraj = new Date(pocetak.getTime() + u.trajanje * 60000);
   const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + (dijete ? ' (' + dijete + ')' : ''), pocetak, kraj, {
-    description: 'Roditelj: ' + roditelj + '\nTelefon: ' + telefon + '\nUzrast: ' + (uzrast || '-') +
+    description: 'Roditelj: ' + roditelj + '\nTelefon: ' + telefon + '\nGodište: ' + (godiste || '-') +
       '\nNapomena: ' + (napomena || '-') + '\nKartica: ' + (kartica ? 'da' : '-') + '\nEmail: ' + (email || '-') +
       '\nKod: ' + napraviKod_() + '\nIzvor: sajt',
   });
@@ -1484,7 +1526,7 @@ function danIzDogadjaja_(lok, datum, dogadjaji, neradni) {
       const opis = ev.getDescription();
       termini.push({
         id: ev.getId(), od: s, do: k, usluga: n.usluga, dijete: n.klijent,
-        uzrast: poljeIzOpisa(opis, 'Uzrast'), roditelj: poljeIzOpisa(opis, 'Roditelj'),
+        uzrast: godisteIzOpisa_(opis, ev.getStartTime()), roditelj: poljeIzOpisa(opis, 'Roditelj'),   // uzrast = godište (npr. 2022)
         telefon: izvuciTelefon(poljeIzOpisa(opis, 'Telefon') || opis), napomena: poljeIzOpisa(opis, 'Napomena'),
         izvor: poljeIzOpisa(opis, 'Izvor') || 'kalendar', status: ev.getTag('status') || 'zakazan',
         kartica: !!poljeIzOpisa(opis, 'Kartica'), email: poljeIzOpisa(opis, 'Email'),
@@ -1612,7 +1654,7 @@ function zakaziOsoblje_(o, p, z) {
   const ev = kal_().createEvent(z.osoba + ' - ' + u.naziv + (dijete ? ' (' + dijete + ')' : ''), pocetak,
     new Date(pocetak.getTime() + u.trajanje * 60000), {
       description: 'Roditelj: ' + (cist_(z.roditelj, 60) || '-') + '\nTelefon: ' + (telefon || '-') +
-        '\nUzrast: ' + (cist_(z.uzrast, 10) || '-') + '\nNapomena: ' + (cist_(z.napomena, 300) || '-') +
+        '\nGodište: ' + (normalizujGodiste(cist_(z.godiste || z.uzrast, 10), new Date()) || '-') + '\nNapomena: ' + (cist_(z.napomena, 300) || '-') +
         '\nKartica: ' + (kartica ? 'da' : '-') + '\nEmail: ' + (email || '-') + '\nKod: ' + napraviKod_() +
         '\nIzvor: telefon - ' + o.ime,
     });
