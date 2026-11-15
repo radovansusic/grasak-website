@@ -956,8 +956,8 @@ t('gola zagrada "Riječ (N)": oznaka odnosa i riječ usred rečenice zadržavaju
   assert.ok(u('Danas je u salonu bio Luka Petrović.').some((x) => x.startsWith('ime i prezime u tekstu (Luka Petrović)')), 'ime i prezime')
 })
 t('verzija skripte i panela je ista', () => {
-  assert.ok(/VERZIJA_SKRIPTE = '2026-11-11g'/.test(gs))
-  assert.ok(/OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-11g'/.test(fs.readFileSync(path.join(koren, 'src/lib/osoblje.ts'), 'utf8')))
+  assert.ok(/VERZIJA_SKRIPTE = '2026-11-15a'/.test(gs))
+  assert.ok(/OCEKIVANA_VERZIJA_SKRIPTE = '2026-11-15a'/.test(fs.readFileSync(path.join(koren, 'src/lib/osoblje.ts'), 'utf8')))
 })
 
 /* ---------- datum teksta: prazan ili neispravan datum ne daje prazan datum nigdje ---------- */
